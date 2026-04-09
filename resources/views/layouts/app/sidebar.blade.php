@@ -14,32 +14,67 @@
         </flux:sidebar.header>
 
         <flux:sidebar.nav>
-            <flux:sidebar.group :heading="__('Platform')" class="grid">
-                <flux:sidebar.item icon="home" :href="route('dashboard')" :current="request()->routeIs('dashboard')"
-                    wire:navigate>
+            <!-- Dashboard -->
+            <flux:sidebar.group :heading="__('Navigation')" class="grid">
+                <flux:sidebar.item :href="route('dashboard')" :current="request()->routeIs('dashboard')" wire:navigate>
                     {{ __('Dashboard') }}
                 </flux:sidebar.item>
+            </flux:sidebar.group>
 
-                <flux:sidebar.item icon="building-office" href="{{ route('structures.index') }}"
-                    :current="request()->routeIs('structures.*')">
+            <!-- Gestion des Structures -->
+            <flux:sidebar.group :heading="__('Organisation')" class="grid">
+                <flux:sidebar.item href="{{ route('structures.index') }}" :current="request()->routeIs('structures.*')">
                     {{ __('Structures') }}
+                </flux:sidebar.item>
+            </flux:sidebar.group>
+
+            <!-- Hiérarchie des Activités -->
+            <flux:sidebar.group :heading="__('Planification')" class="grid">
+                <flux:sidebar.item href="{{ route('objectifs.index') }}" :current="request()->routeIs('objectifs.*')">
+                    {{ __('Objectifs Stratégiques') }}
+                </flux:sidebar.item>
+
+                <flux:sidebar.item href="{{ route('resultats.index') }}" :current="request()->routeIs('resultats.*')">
+                    {{ __('Résultats Stratégiques') }}
+                </flux:sidebar.item>
+
+                <flux:sidebar.item href="{{ route('extrants.index') }}" :current="request()->routeIs('extrants.*')">
+                    {{ __('Extrants') }}
+                </flux:sidebar.item>
+
+                <flux:sidebar.item href="{{ route('activites.index') }}" :current="request()->routeIs('activites.*')">
+                    {{ __('Activités') }}
+                </flux:sidebar.item>
+            </flux:sidebar.group>
+
+            {{-- Groupe Gestion Terrain --}}
+            <flux:sidebar.group :heading="__('Gestion Terrain')" class="grid">
+                <flux:sidebar.item icon="clipboard-document-list" :href="route('activites.index')"
+                    :current="request()->routeIs('activites.*')" wire:navigate>
+                    {{ __('Saisie des Activités') }}
+                </flux:sidebar.item>
+
+                <flux:sidebar.item icon="chart-bar" :href="route('activites.dashboard')"
+                    :current="request()->routeIs('activites.dashboard')" wire:navigate>
+                    {{ __('Tableau de bord') }}
+                </flux:sidebar.item>
+            </flux:sidebar.group>
+
+            {{-- Groupe Analyse Budgétaire --}}
+            <flux:sidebar.group :heading="__('Analyse Budgétaire')" class="grid">
+                <flux:sidebar.item icon="chart-pie" :href="route('analyse-budgetaire.dashboard')"
+                    :current="request()->routeIs('analyse-budgetaire.dashboard')" wire:navigate>
+                    {{ __('Tableau de bord') }}
+                </flux:sidebar.item>
+
+                <flux:sidebar.item icon="chart-bar" :href="route('analyse-budgetaire.comparaison')"
+                    :current="request()->routeIs('analyse-budgetaire.comparaison')" wire:navigate>
+                    {{ __('Comparaison') }}
                 </flux:sidebar.item>
             </flux:sidebar.group>
         </flux:sidebar.nav>
 
         <flux:spacer />
-
-        <flux:sidebar.nav>
-            <flux:sidebar.item icon="folder-git-2" href="https://github.com/laravel/livewire-starter-kit"
-                target="_blank">
-                {{ __('Repository') }}
-            </flux:sidebar.item>
-
-            <flux:sidebar.item icon="book-open-text" href="https://laravel.com/docs/starter-kits#livewire"
-                target="_blank">
-                {{ __('Documentation') }}
-            </flux:sidebar.item>
-        </flux:sidebar.nav>
 
         <x-desktop-user-menu class="hidden lg:block" :name="auth()->user()->name" />
     </flux:sidebar>
@@ -70,7 +105,7 @@
                 <flux:menu.separator />
 
                 <flux:menu.radio.group>
-                    <flux:menu.item :href="route('profile.edit')" icon="cog" wire:navigate>
+                    <flux:menu.item :href="route('profile.edit')" wire:navigate>
                         {{ __('Settings') }}
                     </flux:menu.item>
                 </flux:menu.radio.group>
@@ -79,8 +114,8 @@
 
                 <form method="POST" action="{{ route('logout') }}" class="w-full">
                     @csrf
-                    <flux:menu.item as="button" type="submit" icon="arrow-right-start-on-rectangle"
-                        class="w-full cursor-pointer" data-test="logout-button">
+                    <flux:menu.item as="button" type="submit" class="w-full cursor-pointer"
+                        data-test="logout-button">
                         {{ __('Log out') }}
                     </flux:menu.item>
                 </form>
@@ -93,4 +128,4 @@
     @fluxScripts
 </body>
 
-</html>
+</html

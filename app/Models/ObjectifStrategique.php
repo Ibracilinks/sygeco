@@ -22,9 +22,20 @@ class ObjectifStrategique extends Model
         'is_active' => 'boolean',
     ];
 
+    /**
+     * Relation avec les résultats stratégiques
+     */
     public function resultatsStrategiques()
     {
         return $this->hasMany(ResultatStrategique::class);
+    }
+
+    /**
+     * Alias pour la relation (pour faciliter l'utilisation)
+     */
+    public function resultats()
+    {
+        return $this->resultatsStrategiques();
     }
 
     public function scopeActive($query)

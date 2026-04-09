@@ -8,9 +8,9 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('resultats_strategiques', function (Blueprint $table) {
+        Schema::create('resultat_strategiques', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('objectif_strategique_id')->constrained('objectifs_strategiques')->onDelete('cascade');
+            $table->foreignId('objectif_strategique_id')->constrained('objectif_strategiques')->onDelete('cascade');
             $table->string('code', 20)->unique();
             $table->text('libelle');
             $table->text('description')->nullable();
@@ -25,6 +25,6 @@ return new class extends Migration
 
     public function down(): void
     {
-        Schema::dropIfExists('resultats_strategiques');
+        Schema::dropIfExists('resultat_strategiques');
     }
 };

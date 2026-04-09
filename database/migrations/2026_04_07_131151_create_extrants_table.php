@@ -10,7 +10,7 @@ return new class extends Migration
     {
         Schema::create('extrants', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('resultat_strategique_id')->constrained('resultats_strategiques')->onDelete('cascade');
+            $table->foreignId('resultat_strategique_id')->constrained('resultat_strategiques')->onDelete('cascade');
             $table->string('code', 20)->unique();
             $table->text('libelle');
             $table->text('description')->nullable();
@@ -27,4 +27,4 @@ return new class extends Migration
     {
         Schema::dropIfExists('extrants');
     }
-};  
+};
