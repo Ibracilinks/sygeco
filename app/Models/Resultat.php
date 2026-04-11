@@ -1,0 +1,85 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
+
+class Resultat extends Model
+{
+    use HasFactory, SoftDeletes;
+
+    protected $table = 'resultats';
+
+    protected $fillable = [
+        'objectif_id',
+        'code',
+        'libelle',
+        'description',
+        'ordre',
+        'is_active',
+    ];
+
+    protected $casts = [
+        'is_active' => 'boolean',
+    ];
+
+    // Relations
+    public function objectif()
+    {
+        return $this->belongsTo(Objectif::class);
+    }
+
+    public function extrants()
+    {
+        return $this->hasMany(Extrant::class);
+    }
+
+    // Scopes
+    public function scopeActif($query)
+    {
+        return $query->where('is_active', true);
+    }
+
+    public function scopeOrdered($query)
+    {
+        return $query->orderBy('ordre')->orderBy('code');
+    }
+
+    // Accesseurs
+    public function getFullNameAttribute()
+    {
+        return $this->code . ' - ' . $this->libelle;
+    }
+
+    public function getStatutLabelAttribute()
+    {
+        return $this->is_active ? '✅ Actif' : '❌ Inactif';
+    }
+
+    public function getStatutColorAttribute()
+    {
+        return $this->is_active ? 'green' : 'red';
+    }
+
+    // Méthodes métier
+    public function getNbExtrantsAttribute()
+    {
+        return $this->extrants()->count();
+    }
+
+    public function getNbActivitesAttribute()
+    {
+        return $this->extrants->sum(function ($extrant) {
+            return $extrant->activites->count();
+        });
+    }
+
+    public function getBudgetTotalAttribute()
+    {
+        return $this->extrants->sum(function ($extrant) {
+            return $extrant->activites->sum('cout');
+        });
+    }
+}

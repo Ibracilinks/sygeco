@@ -16,60 +16,72 @@
         <flux:sidebar.nav>
             <!-- Dashboard -->
             <flux:sidebar.group :heading="__('Navigation')" class="grid">
-                <flux:sidebar.item :href="route('dashboard')" :current="request()->routeIs('dashboard')" wire:navigate>
+                <flux:sidebar.item icon="home" :href="route('dashboard')" :current="request()->routeIs('dashboard')"
+                    wire:navigate>
                     {{ __('Dashboard') }}
                 </flux:sidebar.item>
             </flux:sidebar.group>
 
-            <!-- Gestion des Structures -->
+            <!-- Organisation -->
             <flux:sidebar.group :heading="__('Organisation')" class="grid">
-                <flux:sidebar.item href="{{ route('structures.index') }}" :current="request()->routeIs('structures.*')">
-                    {{ __('Structures') }}
+                <flux:sidebar.item icon="building-office" href="{{ route('departements.index') }}"
+                    :current="request()->routeIs('departements.*')">
+                    {{ __('Départements') }}
+                </flux:sidebar.item>
+
+                <flux:sidebar.item icon="users" href="{{ route('users.index') }}"
+                    :current="request()->routeIs('users.*')">
+                    {{ __('Utilisateurs') }}
                 </flux:sidebar.item>
             </flux:sidebar.group>
 
-            <!-- Hiérarchie des Activités -->
-            <flux:sidebar.group :heading="__('Planification')" class="grid">
-                <flux:sidebar.item href="{{ route('objectifs.index') }}" :current="request()->routeIs('objectifs.*')">
-                    {{ __('Objectifs Stratégiques') }}
+            <!-- Planification Stratégique -->
+            <flux:sidebar.group :heading="__('Planification Stratégique')" class="grid">
+                <flux:sidebar.item icon="chart-pie" href="{{ route('objectifs.index') }}"
+                    :current="request()->routeIs('objectifs.*')">
+                    {{ __('Objectifs') }}
                 </flux:sidebar.item>
 
-                <flux:sidebar.item href="{{ route('resultats.index') }}" :current="request()->routeIs('resultats.*')">
-                    {{ __('Résultats Stratégiques') }}
+                <flux:sidebar.item icon="document-text" href="{{ route('resultats.index') }}"
+                    :current="request()->routeIs('resultats.*')">
+                    {{ __('Résultats') }}
                 </flux:sidebar.item>
 
-                <flux:sidebar.item href="{{ route('extrants.index') }}" :current="request()->routeIs('extrants.*')">
+                <flux:sidebar.item icon="document-text" href="{{ route('extrants.index') }}"
+                    :current="request()->routeIs('extrants.*')">
                     {{ __('Extrants') }}
                 </flux:sidebar.item>
 
-                <flux:sidebar.item href="{{ route('activites.index') }}" :current="request()->routeIs('activites.*')">
+                <flux:sidebar.item icon="clipboard-document-list" href="{{ route('activites.index') }}"
+                    :current="request()->routeIs('activites.*')">
                     {{ __('Activités') }}
                 </flux:sidebar.item>
             </flux:sidebar.group>
 
-            {{-- Groupe Gestion Terrain --}}
+            <!-- Gestion Terrain -->
             <flux:sidebar.group :heading="__('Gestion Terrain')" class="grid">
-                <flux:sidebar.item icon="clipboard-document-list" :href="route('activites.index')"
-                    :current="request()->routeIs('activites.*')" wire:navigate>
-                    {{ __('Saisie des Activités') }}
+                <flux:sidebar.item icon="pencil-square" href="#" :current="false">
+                    {{ __('Mes Activités') }}
                 </flux:sidebar.item>
 
-                <flux:sidebar.item icon="chart-bar" :href="route('activites.dashboard')"
-                    :current="request()->routeIs('activites.dashboard')" wire:navigate>
-                    {{ __('Tableau de bord') }}
+                <flux:sidebar.item icon="chart-bar" href="{{ route('indicateurs.index') }}"
+                    :current="request()->routeIs('indicateurs.*')">
+                    {{ __('Indicateurs') }}
                 </flux:sidebar.item>
             </flux:sidebar.group>
 
-            {{-- Groupe Analyse Budgétaire --}}
-            <flux:sidebar.group :heading="__('Analyse Budgétaire')" class="grid">
-                <flux:sidebar.item icon="chart-pie" :href="route('analyse-budgetaire.dashboard')"
-                    :current="request()->routeIs('analyse-budgetaire.dashboard')" wire:navigate>
-                    {{ __('Tableau de bord') }}
+            <!-- Pilotage & Reporting -->
+            <flux:sidebar.group :heading="__('Pilotage')" class="grid">
+                <flux:sidebar.item icon="document-text" href="#" :current="false">
+                    {{ __('Tableaux de Bord') }}
                 </flux:sidebar.item>
 
-                <flux:sidebar.item icon="chart-bar" :href="route('analyse-budgetaire.comparaison')"
-                    :current="request()->routeIs('analyse-budgetaire.comparaison')" wire:navigate>
-                    {{ __('Comparaison') }}
+                <flux:sidebar.item icon="home" href="#" :current="false">
+                    {{ __('Génération Rapports') }}
+                </flux:sidebar.item>
+
+                <flux:sidebar.item icon="chart-pie" href="#" :current="false">
+                    {{ __('Analyse Budgétaire') }}
                 </flux:sidebar.item>
             </flux:sidebar.group>
         </flux:sidebar.nav>
@@ -125,7 +137,9 @@
 
     {{ $slot }}
 
+    @stack('scripts')
     @fluxScripts
+
 </body>
 
 </html

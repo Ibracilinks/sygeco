@@ -13,18 +13,24 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        User::create([
+
+        $user = User::create([
             'name' => 'Admin',
             'email' => 'admin@canam.ml',
             'password' => bcrypt('password'),
         ]);
 
         $this->call([
-            StructureSeeder::class,
-            ObjectifStrategiqueSeeder::class,
-            ResultatStrategiqueSeeder::class,
+            RoleAndPermissionSeeder::class,
+            DepartementSeeder::class,
+            ObjectifSeeder::class,
+            ResultatSeeder::class,
             ExtrantSeeder::class,
             ActiviteSeeder::class,
+            // IndicateurSeeder::class,
+            // IndicateurValeurSeeder::class,
         ]);
+
+        $user->assignRole('dbcgoq');
     }
 }

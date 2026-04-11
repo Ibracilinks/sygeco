@@ -8,23 +8,25 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('extrants', function (Blueprint $table) {
+        Schema::create('objectifs', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('resultat_strategique_id')->constrained('resultat_strategiques')->onDelete('cascade');
             $table->string('code', 20)->unique();
-            $table->text('libelle');
+            $table->string('libelle', 500);
             $table->text('description')->nullable();
+            $table->integer('annee');
+            $table->enum('statut', ['actif', 'inactif'])->default('actif');
             $table->integer('ordre')->default(0);
-            $table->boolean('is_active')->default(true);
             $table->timestamps();
             $table->softDeletes();
 
-            $table->index('resultat_strategique_id');
+            $table->index('annee');
+            $table->index('statut');
+            $table->index('code');
         });
     }
 
     public function down(): void
     {
-        Schema::dropIfExists('extrants');
+        Schema::dropIfExists('objectifs');
     }
 };

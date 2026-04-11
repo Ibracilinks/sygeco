@@ -3,7 +3,7 @@
 
         <div class="mb-6">
             <h1 class="text-2xl font-bold dark:text-white">Créer un extrant</h1>
-            <p class="text-zinc-500 dark:text-zinc-400">Associé à un résultat stratégique</p>
+            <p class="text-zinc-500 dark:text-zinc-400 mt-1">Ajoutez un extrant à un objectif stratégique</p>
         </div>
 
         <div
@@ -12,51 +12,64 @@
                 @csrf
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Objectif -->
                     <div>
-                        <label class="block text-sm font-medium dark:text-white mb-2">Résultat Stratégique *</label>
-                        <select name="resultat_strategique_id"
+                        <label class="block text-sm font-medium dark:text-white mb-2">Objectif *</label>
+                        <select name="objectif_id"
                             class="w-full rounded-lg border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-zinc-900 px-3 py-2 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
-                            <option value="">Sélectionnez un résultat</option>
-                            @foreach ($resultats as $resultat)
-                                <option value="{{ $resultat->id }}"
-                                    {{ old('resultat_strategique_id') == $resultat->id ? 'selected' : '' }}>
-                                    {{ $resultat->code }} - {{ Str::limit($resultat->libelle, 60) }}
+                            <option value="">Sélectionnez un objectif</option>
+                            @foreach ($objectifs as $objectif)
+                                <option value="{{ $objectif->id }}"
+                                    {{ old('objectif_id', $selectedObjectif) == $objectif->id ? 'selected' : '' }}>
+                                    {{ $objectif->code }} - {{ $objectif->annee }} -
+                                    {{ Str::limit($objectif->libelle, 50) }}
                                 </option>
                             @endforeach
                         </select>
-                        @error('resultat_strategique_id')
+                        @error('objectif_id')
                             <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                         @enderror
                     </div>
 
+                    <!-- Code -->
                     <div>
                         <label class="block text-sm font-medium dark:text-white mb-2">Code *</label>
                         <input type="text" name="code" value="{{ old('code') }}"
                             class="w-full rounded-lg border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-zinc-900 px-3 py-2 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            placeholder="ex: EXT_1.1">
+                            placeholder="ex: EXT_001">
                         @error('code')
                             <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                         @enderror
                     </div>
 
+                    <!-- Ordre -->
                     <div>
                         <label class="block text-sm font-medium dark:text-white mb-2">Ordre</label>
                         <input type="number" name="ordre" value="{{ old('ordre', 0) }}"
-                            class="w-full rounded-lg border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-zinc-900 px-3 py-2 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            class="w-full rounded-lg border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-zinc-900 px-3 py-2 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            placeholder="Ordre d'affichage">
                         @error('ordre')
                             <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                         @enderror
                     </div>
 
+                    <!-- Statut -->
                     <div>
-                        <label class="inline-flex items-center mt-7">
-                            <input type="checkbox" name="is_active" value="1"
-                                {{ old('is_active', true) ? 'checked' : '' }}
-                                class="rounded border-neutral-300 dark:border-neutral-600 text-blue-600 focus:ring-blue-500">
-                            <span class="ml-2 dark:text-white">Actif</span>
-                        </label>
+                        <label class="block text-sm font-medium dark:text-white mb-2">Statut</label>
+                        <div class="mt-2">
+                            <label class="inline-flex items-center">
+                                <input type="checkbox" name="is_active" value="1"
+                                    {{ old('is_active', true) ? 'checked' : '' }}
+                                    class="rounded border-neutral-300 dark:border-neutral-600 text-blue-600 focus:ring-blue-500">
+                                <span class="ml-2 dark:text-white">Actif</span>
+                            </label>
+                        </div>
+                        @error('is_active')
+                            <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                        @enderror
                     </div>
 
+                    <!-- Libellé -->
                     <div class="md:col-span-2">
                         <label class="block text-sm font-medium dark:text-white mb-2">Libellé *</label>
                         <textarea name="libelle" rows="3"
@@ -67,6 +80,7 @@
                         @enderror
                     </div>
 
+                    <!-- Description -->
                     <div class="md:col-span-2">
                         <label class="block text-sm font-medium dark:text-white mb-2">Description (optionnelle)</label>
                         <textarea name="description" rows="3"

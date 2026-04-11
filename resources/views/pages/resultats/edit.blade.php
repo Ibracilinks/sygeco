@@ -1,9 +1,9 @@
-<x-layouts::app title="Modifier un Résultat Stratégique">
+<x-layouts::app title="Modifier un Résultat">
     <div class="flex h-full w-full flex-1 flex-col gap-4 rounded-xl">
 
         <div class="mb-6">
             <h1 class="text-2xl font-bold dark:text-white">Modifier le résultat stratégique</h1>
-            <p class="text-zinc-500 dark:text-zinc-400">{{ $resultat->code }}</p>
+            <p class="text-zinc-500 dark:text-zinc-400 mt-1">Code: {{ $resultat->code }}</p>
         </div>
 
         <div
@@ -14,18 +14,18 @@
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
-                        <label class="block text-sm font-medium dark:text-white mb-2">Objectif Stratégique *</label>
-                        <select name="objectif_strategique_id"
+                        <label class="block text-sm font-medium dark:text-white mb-2">Objectif *</label>
+                        <select name="objectif_id"
                             class="w-full rounded-lg border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-zinc-900 px-3 py-2 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
-                            <option value="">Sélectionnez un objectif</option>
                             @foreach ($objectifs as $objectif)
                                 <option value="{{ $objectif->id }}"
-                                    {{ old('objectif_strategique_id', $resultat->objectif_strategique_id) == $objectif->id ? 'selected' : '' }}>
-                                    {{ $objectif->code }} - {{ Str::limit($objectif->libelle, 60) }}
+                                    {{ old('objectif_id', $resultat->objectif_id) == $objectif->id ? 'selected' : '' }}>
+                                    {{ $objectif->code }} - {{ $objectif->annee }} -
+                                    {{ Str::limit($objectif->libelle, 50) }}
                                 </option>
                             @endforeach
                         </select>
-                        @error('objectif_strategique_id')
+                        @error('objectif_id')
                             <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                         @enderror
                     </div>
@@ -33,8 +33,7 @@
                     <div>
                         <label class="block text-sm font-medium dark:text-white mb-2">Code *</label>
                         <input type="text" name="code" value="{{ old('code', $resultat->code) }}"
-                            class="w-full rounded-lg border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-zinc-900 px-3 py-2 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            placeholder="ex: RS_I">
+                            class="w-full rounded-lg border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-zinc-900 px-3 py-2 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
                         @error('code')
                             <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                         @enderror
@@ -50,19 +49,24 @@
                     </div>
 
                     <div>
-                        <label class="inline-flex items-center mt-7">
-                            <input type="checkbox" name="is_active" value="1"
-                                {{ old('is_active', $resultat->is_active) ? 'checked' : '' }}
-                                class="rounded border-neutral-300 dark:border-neutral-600 text-blue-600 focus:ring-blue-500">
-                            <span class="ml-2 dark:text-white">Actif</span>
-                        </label>
+                        <label class="block text-sm font-medium dark:text-white mb-2">Statut</label>
+                        <div class="mt-2">
+                            <label class="inline-flex items-center">
+                                <input type="checkbox" name="is_active" value="1"
+                                    {{ old('is_active', $resultat->is_active) ? 'checked' : '' }}
+                                    class="rounded border-neutral-300 dark:border-neutral-600 text-blue-600 focus:ring-blue-500">
+                                <span class="ml-2 dark:text-white">Actif</span>
+                            </label>
+                        </div>
+                        @error('is_active')
+                            <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                        @enderror
                     </div>
 
                     <div class="md:col-span-2">
                         <label class="block text-sm font-medium dark:text-white mb-2">Libellé *</label>
                         <textarea name="libelle" rows="3"
-                            class="w-full rounded-lg border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-zinc-900 px-3 py-2 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            placeholder="Description du résultat stratégique">{{ old('libelle', $resultat->libelle) }}</textarea>
+                            class="w-full rounded-lg border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-zinc-900 px-3 py-2 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500">{{ old('libelle', $resultat->libelle) }}</textarea>
                         @error('libelle')
                             <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                         @enderror
@@ -71,8 +75,7 @@
                     <div class="md:col-span-2">
                         <label class="block text-sm font-medium dark:text-white mb-2">Description (optionnelle)</label>
                         <textarea name="description" rows="3"
-                            class="w-full rounded-lg border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-zinc-900 px-3 py-2 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            placeholder="Description détaillée">{{ old('description', $resultat->description) }}</textarea>
+                            class="w-full rounded-lg border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-zinc-900 px-3 py-2 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500">{{ old('description', $resultat->description) }}</textarea>
                         @error('description')
                             <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                         @enderror

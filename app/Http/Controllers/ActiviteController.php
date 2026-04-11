@@ -4,10 +4,11 @@ namespace App\Http\Controllers;
 
 use App\Models\Activite;
 use App\Models\Extrant;
+use App\Models\Departement;
+use App\Models\Departement as ModelsDepartement;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 
 class ActiviteController extends Controller
 {
@@ -16,92 +17,108 @@ class ActiviteController extends Controller
      */
     public function index(Request $request)
     {
-        $query = Activite::with('extrant');
+        $query = Activite::with(['extrant.objectif', 'departement', 'saisiePar']);
 
-        // Filtre par recherche
-        if ($request->filled('search')) {
-            $search = $request->search;
-            $query->where(function ($q) use ($search) {
-                $q->where('code', 'like', "%{$search}%")
-                    ->orWhere('libelle', 'like', "%{$search}%")
-                    ->orWhere('description', 'like', "%{$search}%");
-            });
-        }
-
-        // Filtre par statut
-        if ($request->filled('statut')) {
-            $query->where('is_active', $request->statut == '1');
-        }
-
-        // Filtre par extrant
+        // Filtres
         if ($request->filled('extrant_id')) {
             $query->where('extrant_id', $request->extrant_id);
         }
 
-        $activites = $query->orderBy('ordre')->orderBy('created_at', 'desc')->paginate(15);
-        $extrants = Extrant::where('is_active', true)->get();
+        if ($request->filled('departement_id')) {
+            $query->where('departement_id', $request->departement_id);
+        }
 
-        return view('pages.activites.index', compact('activites', 'extrants'));
+        if ($request->filled('statut')) {
+            $query->where('statut', $request->statut);
+        }
+
+        if ($request->filled('trimestre')) {
+            $query->pourTrimestre($request->trimestre);
+        }
+
+        if ($request->filled('search')) {
+            $query->where(function ($q) use ($request) {
+                $q->where('nom_activite', 'like', "%{$request->search}%")
+                    ->orWhere('indicateur_objectivement_verifiable', 'like', "%{$request->search}%");
+            });
+        }
+
+        // Si l'utilisateur est chef de département, filtrer par son département
+        if (Auth::user()->hasRole('chef_departement') && Auth::user()->departement_id) {
+            $query->where('departement_id', Auth::user()->departement_id);
+        }
+
+        $activites = $query->orderBy('date_saisie', 'desc')->paginate(15)->withQueryString();
+
+        $extrants = Extrant::with('objectif')->actif()->ordered()->get();
+        $departements = Departement::active()->ordered()->get();
+        $statuts = ['brouillon', 'soumis', 'valide'];
+
+        return view('pages.activites.index', compact('activites', 'extrants', 'departements', 'statuts'));
     }
 
     /**
      * Formulaire de création
      */
-    public function create()
+    public function create(Request $request)
     {
-        $extrants = Extrant::where('is_active', true)->orderBy('code')->get();
-        return view('pages.activites.create', compact('extrants'));
+        $extrants = Extrant::with('objectif')->actif()->ordered()->get();
+        $departements = Departement::active()->ordered()->get();
+
+        // Si l'utilisateur est chef de département, son département est automatique
+        $departementId = Departement::get()->random()->first()->id;
+        // Valeur par défaut aléatoire
+
+        $selectedExtrant = $request->get('extrant_id');
+
+        return view('pages.activites.create', compact('extrants', 'departements', 'departementId', 'selectedExtrant'));
     }
 
     /**
-     * Enregistrer une activité
+     * Enregistrement
      */
     public function store(Request $request)
     {
-        $validator = Validator::make($request->all(), [
+        $validated = $request->validate([
             'extrant_id' => 'required|exists:extrants,id',
-            'code' => 'required|string|max:50|unique:activites,code',
-            'libelle' => 'required|string|max:255',
-            'description' => 'nullable|string',
-            'budget_previsionnel_global' => 'required|numeric|min:0',
-            'date_debut_prevue' => 'nullable|date',
-            'date_fin_prevue' => 'nullable|date|after_or_equal:date_debut_prevue',
-            'ordre' => 'nullable|integer|min:0',
-            'is_active' => 'sometimes|boolean',
+            'departement_id' => 'required|exists:departements,id',
+            'nom_activite' => 'required|string',
+            'indicateur_objectivement_verifiable' => 'required|string',
+            'moyen_verification' => 'required|string',
+            'cout' => 'required|numeric|min:0',
+            'trimestre_1' => 'nullable|in:on,oui',
+            'trimestre_2' => 'nullable|in:on,oui',
+            'trimestre_3' => 'nullable|in:on,oui',
+            'trimestre_4' => 'nullable|in:on,oui',
+            'commentaires' => 'nullable|string',
         ]);
 
-        if ($validator->fails()) {
-            return redirect()->back()->withErrors($validator)->withInput();
-        }
+        $activite = new Activite();
+        $activite->extrant_id = $validated['extrant_id'];
+        $activite->departement_id = $validated['departement_id'];
+        $activite->nom_activite = $validated['nom_activite'];
+        $activite->indicateur_objectivement_verifiable = $validated['indicateur_objectivement_verifiable'];
+        $activite->moyen_verification = $validated['moyen_verification'];
+        $activite->cout = $validated['cout'];
+        $activite->trimestre_1 = isset($validated['trimestre_1']) ? 'oui' : 'non';
+        $activite->trimestre_2 = isset($validated['trimestre_2']) ? 'oui' : 'non';
+        $activite->trimestre_3 = isset($validated['trimestre_3']) ? 'oui' : 'non';
+        $activite->trimestre_4 = isset($validated['trimestre_4']) ? 'oui' : 'non';
+        $activite->saisi_par = Auth::id();
+        $activite->date_saisie = now();
+        $activite->commentaires = $validated['commentaires'] ?? null;
+        $activite->save();
 
-        try {
-            $activite = Activite::create([
-                'extrant_id' => $request->extrant_id,
-                'code' => $request->code,
-                'libelle' => $request->libelle,
-                'description' => $request->description,
-                'budget_previsionnel_global' => $request->budget_previsionnel_global,
-                'date_debut_prevue' => $request->date_debut_prevue,
-                'date_fin_prevue' => $request->date_fin_prevue,
-                'ordre' => $request->ordre ?? 0,
-                'is_active' => $request->has('is_active'),
-            ]);
-
-            return redirect()->route('activites.show', $activite)
-                ->with('success', 'Activité créée avec succès.');
-        } catch (\Exception $e) {
-            return redirect()->back()
-                ->with('error', 'Erreur lors de la création: ' . $e->getMessage())
-                ->withInput();
-        }
+        return redirect()->route('activites.index')
+            ->with('success', 'Activité créée avec succès.');
     }
 
     /**
-     * Afficher une activité
+     * Détail d'une activité
      */
     public function show(Activite $activite)
     {
-        $activite->load('extrant');
+        $activite->load(['extrant.objectif', 'departement', 'saisiePar']);
         return view('pages.activites.show', compact('activite'));
     }
 
@@ -110,159 +127,100 @@ class ActiviteController extends Controller
      */
     public function edit(Activite $activite)
     {
-        $extrants = Extrant::where('is_active', true)->orderBy('code')->get();
-        return view('pages.activites.edit', compact('activite', 'extrants'));
+        if (!$activite->estModifiable() && !Auth::user()->hasRole('dbcgoq')) {
+            return redirect()->route('activites.index')
+                ->with('error', 'Cette activité ne peut plus être modifiée.');
+        }
+
+        $extrants = Extrant::with('objectif')->actif()->ordered()->get();
+        $departements = Departement::active()->ordered()->get();
+
+        return view('pages.activites.edit', compact('activite', 'extrants', 'departements'));
     }
 
     /**
-     * Mettre à jour une activité
+     * Mise à jour
      */
     public function update(Request $request, Activite $activite)
     {
-        $validator = Validator::make($request->all(), [
+        if (!$activite->estModifiable() && !Auth::user()->hasRole('dbcgoq')) {
+            return redirect()->route('activites.index')
+                ->with('error', 'Cette activité ne peut plus être modifiée.');
+        }
+
+        $validated = $request->validate([
             'extrant_id' => 'required|exists:extrants,id',
-            'code' => 'required|string|max:50|unique:activites,code,' . $activite->id,
-            'libelle' => 'required|string|max:255',
-            'description' => 'nullable|string',
-            'budget_previsionnel_global' => 'required|numeric|min:0',
-            'date_debut_prevue' => 'nullable|date',
-            'date_fin_prevue' => 'nullable|date|after_or_equal:date_debut_prevue',
-            'ordre' => 'nullable|integer|min:0',
-            'is_active' => 'sometimes|boolean',
+            'departement_id' => 'required|exists:departements,id',
+            'nom_activite' => 'required|string',
+            'indicateur_objectivement_verifiable' => 'required|string',
+            'moyen_verification' => 'required|string',
+            'cout' => 'required|numeric|min:0',
+            'trimestre_1' => 'nullable|in:on,oui',
+            'trimestre_2' => 'nullable|in:on,oui',
+            'trimestre_3' => 'nullable|in:on,oui',
+            'trimestre_4' => 'nullable|in:on,oui',
+            'commentaires' => 'nullable|string',
         ]);
 
-        if ($validator->fails()) {
-            return redirect()->back()->withErrors($validator)->withInput();
-        }
+        $activite->update([
+            'extrant_id' => $validated['extrant_id'],
+            'departement_id' => $validated['departement_id'],
+            'nom_activite' => $validated['nom_activite'],
+            'indicateur_objectivement_verifiable' => $validated['indicateur_objectivement_verifiable'],
+            'moyen_verification' => $validated['moyen_verification'],
+            'cout' => $validated['cout'],
+            'trimestre_1' => isset($validated['trimestre_1']) ? 'oui' : 'non',
+            'trimestre_2' => isset($validated['trimestre_2']) ? 'oui' : 'non',
+            'trimestre_3' => isset($validated['trimestre_3']) ? 'oui' : 'non',
+            'trimestre_4' => isset($validated['trimestre_4']) ? 'oui' : 'non',
+            'commentaires' => $validated['commentaires'] ?? null,
+        ]);
 
-        try {
-            $activite->update([
-                'extrant_id' => $request->extrant_id,
-                'code' => $request->code,
-                'libelle' => $request->libelle,
-                'description' => $request->description,
-                'budget_previsionnel_global' => $request->budget_previsionnel_global,
-                'date_debut_prevue' => $request->date_debut_prevue,
-                'date_fin_prevue' => $request->date_fin_prevue,
-                'ordre' => $request->ordre ?? 0,
-                'is_active' => $request->has('is_active'),
-            ]);
-
-            return redirect()->route('activites.show', $activite)
-                ->with('success', 'Activité mise à jour avec succès.');
-        } catch (\Exception $e) {
-            return redirect()->back()
-                ->with('error', 'Erreur lors de la mise à jour: ' . $e->getMessage())
-                ->withInput();
-        }
+        return redirect()->route('activites.index')
+            ->with('success', 'Activité mise à jour.');
     }
 
     /**
-     * Supprimer une activité
+     * Suppression
      */
     public function destroy(Activite $activite)
     {
-        try {
-            $activite->delete();
+        if (!$activite->estModifiable() && !Auth::user()->hasRole('dbcgoq')) {
             return redirect()->route('activites.index')
-                ->with('success', 'Activité supprimée avec succès.');
-        } catch (\Exception $e) {
-            return redirect()->back()
-                ->with('error', 'Erreur lors de la suppression: ' . $e->getMessage());
-        }
-    }
-
-    /**
-     * Activer/Désactiver une activité
-     */
-    public function toggleStatus(Activite $activite)
-    {
-        $activite->is_active = !$activite->is_active;
-        $activite->save();
-
-        $status = $activite->is_active ? 'activée' : 'désactivée';
-        return redirect()->back()->with('success', "Activité {$status} avec succès.");
-    }
-
-    /**
-     * Dupliquer une activité
-     */
-    public function duplicate(Activite $activite)
-    {
-        $newActivite = $activite->replicate();
-        $newActivite->code = $activite->code . '_COPY';
-        $newActivite->is_active = false;
-        $newActivite->save();
-
-        return redirect()->route('activites.edit', $newActivite)
-            ->with('success', 'Activité dupliquée avec succès. Veuillez modifier le code.');
-    }
-
-    /**
-     * Exporter les activités en CSV
-     */
-    public function export(Request $request)
-    {
-        $query = Activite::with('extrant');
-
-        if ($request->filled('extrant_id')) {
-            $query->where('extrant_id', $request->extrant_id);
+                ->with('error', 'Cette activité ne peut pas être supprimée.');
         }
 
-        $activites = $query->orderBy('ordre')->get();
+        $activite->delete();
 
-        $filename = 'activites_' . date('Y-m-d_His') . '.csv';
-        $handle = fopen('php://temp', 'w+');
-
-        // En-têtes CSV
-        fputcsv($handle, ['Code', 'Libellé', 'Extrant', 'Budget (FCFA)', 'Date début', 'Date fin', 'Ordre', 'Statut']);
-
-        // Données
-        foreach ($activites as $activite) {
-            fputcsv($handle, [
-                $activite->code,
-                $activite->libelle,
-                $activite->extrant->code ?? '-',
-                number_format($activite->budget_previsionnel_global, 0, ',', ' '),
-                $activite->date_debut_prevue ? date('d/m/Y', strtotime($activite->date_debut_prevue)) : '-',
-                $activite->date_fin_prevue ? date('d/m/Y', strtotime($activite->date_fin_prevue)) : '-',
-                $activite->ordre,
-                $activite->is_active ? 'Actif' : 'Inactif',
-            ]);
-        }
-
-        rewind($handle);
-        $csvContent = stream_get_contents($handle);
-        fclose($handle);
-
-        return response($csvContent, 200, [
-            'Content-Type' => 'text/csv',
-            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
-        ]);
+        return redirect()->route('activites.index')
+            ->with('success', 'Activité supprimée.');
     }
 
     /**
-     * Tableau de bord des activités
+     * Soumettre une activité (brouillon -> soumis)
      */
-    public function dashboard()
+    public function soumettre(Activite $activite)
     {
-        $stats = [
-            'total' => Activite::count(),
-            'actives' => Activite::where('is_active', true)->count(),
-            'inactives' => Activite::where('is_active', false)->count(),
-            'budget_total' => Activite::sum('budget_previsionnel_global'),
-        ];
+        if ($activite->soumettre()) {
+            return redirect()->route('activites.index')
+                ->with('success', 'Activité soumise avec succès.');
+        }
 
-        $activitesParExtrant = Activite::select('extrant_id', DB::raw('count(*) as total'))
-            ->groupBy('extrant_id')
-            ->with('extrant')
-            ->get();
+        return redirect()->route('activites.index')
+            ->with('error', 'Impossible de soumettre cette activité.');
+    }
 
-        $recentActivites = Activite::with('extrant')
-            ->orderBy('created_at', 'desc')
-            ->limit(10)
-            ->get();
+    /**
+     * Valider une activité (soumis -> valide) - Réservé DBCGOQ
+     */
+    public function valider(Activite $activite)
+    {
+        if ($activite->valider()) {
+            return redirect()->route('activites.index')
+                ->with('success', 'Activité validée avec succès.');
+        }
 
-        return view('pages.activites.dashboard', compact('stats', 'activitesParExtrant', 'recentActivites'));
+        return redirect()->route('activites.index')
+            ->with('error', 'Impossible de valider cette activité.');
     }
 }

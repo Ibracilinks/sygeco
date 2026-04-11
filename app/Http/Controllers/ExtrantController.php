@@ -3,79 +3,108 @@
 namespace App\Http\Controllers;
 
 use App\Models\Extrant;
-use App\Models\ResultatStrategique;
+use App\Models\Objectif;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 class ExtrantController extends Controller
 {
     /**
-     * Display a listing of the resource.
+     * Liste des extrants
      */
-    public function index()
+    public function index(Request $request)
     {
-        $extrants = Extrant::with('resultatStrategique')->orderBy('ordre')->paginate(15);
-        return view('pages.extrants.index', compact('extrants'));
+        $query = Extrant::with('objectif');
+
+        if ($request->filled('objectif_id')) {
+            $query->where('objectif_id', $request->objectif_id);
+        }
+
+        if ($request->filled('is_active')) {
+            $query->where('is_active', $request->is_active);
+        }
+
+        if ($request->filled('search')) {
+            $query->where(function ($q) use ($request) {
+                $q->where('code', 'like', "%{$request->search}%")
+                    ->orWhere('libelle', 'like', "%{$request->search}%");
+            });
+        }
+
+        $extrants = $query->ordered()->paginate(15)->withQueryString();
+
+        $objectifs = Objectif::where('statut', 'actif')->orderBy('annee', 'desc')->get();
+
+        return view('pages.extrants.index', compact('extrants', 'objectifs'));
     }
 
     /**
-     * Show the form for creating a new resource.
+     * Formulaire de création
      */
-    public function create()
+    public function create(Request $request)
     {
-        $resultats = ResultatStrategique::active()->orderBy('ordre')->get();
-        return view('pages.extrants.create', compact('resultats'));
+        $objectifs = Objectif::where('statut', 'actif')->orderBy('annee', 'desc')->get();
+        $selectedObjectif = $request->get('objectif_id');
+
+        return view('pages.extrants.create', compact('objectifs', 'selectedObjectif'));
     }
 
     /**
-     * Store a newly created resource in storage.
+     * Enregistrement
      */
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'resultat_strategique_id' => 'required|exists:resultats_strategiques,id',
+            'objectif_id' => 'required|exists:objectifs,id',
             'code' => 'required|string|max:20|unique:extrants',
-            'libelle' => 'required|string',
+            'libelle' => 'required|string|max:500',
             'description' => 'nullable|string',
             'ordre' => 'nullable|integer',
             'is_active' => 'boolean',
         ]);
 
-        Extrant::create($validated);
+        $extrant = Extrant::create($validated);
 
         return redirect()->route('extrants.index')
-            ->with('success', 'Extrant créé avec succès.');
+            ->with('success', "Extrant {$extrant->code} créé avec succès.");
     }
 
     /**
-     * Display the specified resource.
+     * Détail d'un extrant
      */
-    public function show(string $id)
+    public function show(Extrant $extrant)
     {
-        $extrant = Extrant::with('resultatStrategique', 'activites')->findOrFail($id);
-        return view('pages.extrants.show', compact('extrant'));
+        $extrant->load(['objectif', 'activites' => function ($query) {
+            $query->latest()->limit(10);
+        }]);
+
+        $stats = [
+            'nb_activites' => $extrant->activites()->count(),
+            'budget_total' => $extrant->activites()->sum('cout'),
+            'budget_moyen' => $extrant->activites()->avg('cout') ?? 0,
+        ];
+
+        return view('pages.extrants.show', compact('extrant', 'stats'));
     }
 
     /**
-     * Show the form for editing the specified resource.
+     * Formulaire d'édition
      */
-    public function edit(string $id)
+    public function edit(Extrant $extrant)
     {
-        $extrant = Extrant::findOrFail($id);
-        $resultats = ResultatStrategique::active()->orderBy('ordre')->get();
-        return view('pages.extrants.edit', compact('extrant', 'resultats'));
+        $objectifs = Objectif::where('statut', 'actif')->orderBy('annee', 'desc')->get();
+        return view('pages.extrants.edit', compact('extrant', 'objectifs'));
     }
 
     /**
-     * Update the specified resource in storage.
+     * Mise à jour
      */
-    public function update(Request $request, string $id)
+    public function update(Request $request, Extrant $extrant)
     {
-        $extrant = Extrant::findOrFail($id);
-
         $validated = $request->validate([
-            'resultat_strategique_id' => 'required|exists:resultats_strategiques,id',
-            'code' => 'required|string|max:20|unique:extrants,code,' . $extrant->id,
-            'libelle' => 'required|string',
+            'objectif_id' => 'required|exists:objectifs,id',
+            'code' => ['required', 'string', 'max:20', Rule::unique('extrants')->ignore($extrant->id)],
+            'libelle' => 'required|string|max:500',
             'description' => 'nullable|string',
             'ordre' => 'nullable|integer',
             'is_active' => 'boolean',
@@ -84,23 +113,36 @@ class ExtrantController extends Controller
         $extrant->update($validated);
 
         return redirect()->route('extrants.index')
-            ->with('success', 'Extrant mis à jour.');
+            ->with('success', "Extrant {$extrant->code} mis à jour.");
     }
 
     /**
-     * Remove the specified resource from storage.
+     * Suppression
      */
-    public function destroy(string $id)
+    public function destroy(Extrant $extrant)
     {
-        $extrant = Extrant::findOrFail($id);
-
         if ($extrant->activites()->count() > 0) {
             return redirect()->route('extrants.index')
                 ->with('error', 'Impossible de supprimer un extrant qui a des activités.');
         }
 
+        $code = $extrant->code;
         $extrant->delete();
+
         return redirect()->route('extrants.index')
-            ->with('success', 'Extrant supprimé.');
+            ->with('success', "Extrant {$code} supprimé.");
+    }
+
+    /**
+     * Activer/Désactiver
+     */
+    public function toggleStatus(Extrant $extrant)
+    {
+        $extrant->update(['is_active' => !$extrant->is_active]);
+
+        $status = $extrant->is_active ? 'activé' : 'désactivé';
+
+        return redirect()->route('extrants.index')
+            ->with('success', "Extrant {$extrant->code} {$status}.");
     }
 }

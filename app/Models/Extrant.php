@@ -11,25 +11,68 @@ class Extrant extends Model
     use HasFactory, SoftDeletes;
 
     protected $fillable = [
-        'resultat_strategique_id',
+        'objectif_id',
         'code',
         'libelle',
         'description',
         'ordre',
-        'is_active'
+        'is_active',
     ];
 
     protected $casts = [
         'is_active' => 'boolean',
     ];
 
-    public function resultatStrategique()
+    // Relations
+    public function objectif()
     {
-        return $this->belongsTo(ResultatStrategique::class);
+        return $this->belongsTo(Objectif::class);
+    }
+    public function resultat()
+    {
+        return $this->belongsTo(Resultat::class);
     }
 
     public function activites()
     {
         return $this->hasMany(Activite::class);
+    }
+
+    // Scopes
+    public function scopeActif($query)
+    {
+        return $query->where('is_active', true);
+    }
+
+    public function scopeOrdered($query)
+    {
+        return $query->orderBy('ordre')->orderBy('code');
+    }
+
+    // Accesseurs
+    public function getFullNameAttribute()
+    {
+        return $this->code . ' - ' . $this->libelle;
+    }
+
+    public function getStatutLabelAttribute()
+    {
+        return $this->is_active ? '✅ Actif' : '❌ Inactif';
+    }
+
+    public function getStatutColorAttribute()
+    {
+        return $this->is_active ? 'green' : 'red';
+    }
+
+    // Méthodes métier
+    public function getNbActivitesAttribute()
+    {
+        return $this->activites()->count();
+    }
+
+    public function getBudgetTotalAttribute()
+    {
+        return $this->activites()->sum('cout');
     }
 }
