@@ -56,31 +56,9 @@
                     :current="request()->routeIs('activites.*')">
                     {{ __('Activités') }}
                 </flux:sidebar.item>
-            </flux:sidebar.group>
 
-            <!-- Gestion Terrain -->
-            <flux:sidebar.group :heading="__('Gestion Terrain')" class="grid">
-                <flux:sidebar.item icon="pencil-square" href="#" :current="false">
-                    {{ __('Mes Activités') }}
-                </flux:sidebar.item>
-
-                <flux:sidebar.item icon="chart-bar" href="{{ route('indicateurs.index') }}"
-                    :current="request()->routeIs('indicateurs.*')">
-                    {{ __('Indicateurs') }}
-                </flux:sidebar.item>
-            </flux:sidebar.group>
-
-            <!-- Pilotage & Reporting -->
-            <flux:sidebar.group :heading="__('Pilotage')" class="grid">
-                <flux:sidebar.item icon="document-text" href="#" :current="false">
-                    {{ __('Tableaux de Bord') }}
-                </flux:sidebar.item>
-
-                <flux:sidebar.item icon="home" href="#" :current="false">
-                    {{ __('Génération Rapports') }}
-                </flux:sidebar.item>
-
-                <flux:sidebar.item icon="chart-pie" href="#" :current="false">
+                <flux:sidebar.item icon="chart-pie" href="{{ route('budget.analysis') }}"
+                    :current="request()->routeIs('budget.analysis')">
                     {{ __('Analyse Budgétaire') }}
                 </flux:sidebar.item>
             </flux:sidebar.group>

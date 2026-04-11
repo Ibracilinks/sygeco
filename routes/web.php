@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\BudgetAnalysisController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DepartementController;
 use App\Http\Controllers\ExtrantController;
@@ -17,6 +18,7 @@ Route::get('/', function () {
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard');
+    Route::get('budget-analysis', [BudgetAnalysisController::class, 'index'])->name('budget.analysis');
 
     // Départements
     Route::resource('departements', DepartementController::class);

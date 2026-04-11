@@ -6,6 +6,8 @@
     'trend' => null, // 'up', 'down', 'neutral'
     'color' => 'blue',
     'icon' => null,
+    'divisor' => 1, // Divide value by this number
+    'decimals' => 0, // Number of decimal places
 ])
 
 @php
@@ -29,6 +31,7 @@
         'neutral' => 'M5 12h14',
     ];
 
+    $displayValue = is_numeric($value) ? $value / $divisor : $value;
     $percentageChange = $previous ? (($value - $previous) / $previous) * 100 : null;
 @endphp
 
@@ -39,7 +42,8 @@
                 <p class="text-sm font-medium text-zinc-500 dark:text-zinc-400">{{ $title }}</p>
             @endif
             <div class="flex items-baseline gap-2 mt-2">
-                <span class="text-3xl font-bold dark:text-white">{{ number_format($value, 0, ',', ' ') }}</span>
+                <span
+                    class="text-3xl font-bold dark:text-white">{{ is_numeric($displayValue) ? number_format($displayValue, $decimals, ',', ' ') : $displayValue }}</span>
                 @if ($unit)
                     <span class="text-sm text-zinc-500">{{ $unit }}</span>
                 @endif
