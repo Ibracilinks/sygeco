@@ -140,7 +140,9 @@
                                         ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
                                         : ($activite->statut == 'soumis'
                                             ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'
-                                            : 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300') }}">
+                                            : ($activite->motif_refus
+                                                ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
+                                                : 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300')) }}">
                                     {{ $activite->statut_label }}
                                 </span>
                             </td>
@@ -189,35 +191,49 @@
                                         @endcan
                                     @endif
 
-                                    @if ($activite->statut == 'brouillon')
-                                        <form action="{{ route('activites.soumettre', $activite) }}" method="POST"
-                                            class="inline">
-                                            @csrf
-                                            <button type="submit" class="text-blue-500 hover:text-blue-700"
-                                                title="Soumettre">
-                                                <svg class="w-5 h-5" fill="none" stroke="currentColor"
-                                                    viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round"
-                                                        stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path>
-                                                </svg>
-                                            </button>
-                                        </form>
-                                    @endif
+                                    @can('submit_activites')
+                                        @if ($activite->statut == 'brouillon')
+                                            <form action="{{ route('activites.soumettre', $activite) }}" method="POST"
+                                                class="inline">
+                                                @csrf
+                                                <button type="submit" class="text-blue-500 hover:text-blue-700"
+                                                    title="Soumettre">
+                                                    <svg class="w-5 h-5" fill="none" stroke="currentColor"
+                                                        viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round"
+                                                            stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path>
+                                                    </svg>
+                                                </button>
+                                            </form>
+                                        @endif
+                                    @endcan
 
-                                    @if ($activite->statut == 'soumis' && auth()->user()->hasRole('dbcgoq'))
-                                        <form action="{{ route('activites.valider', $activite) }}" method="POST"
-                                            class="inline">
-                                            @csrf
-                                            <button type="submit" class="text-green-500 hover:text-green-700"
-                                                title="Valider">
+                                    @can('validate_activites')
+                                        @if ($activite->statut == 'soumis')
+                                            <form action="{{ route('activites.valider', $activite) }}" method="POST"
+                                                class="inline">
+                                                @csrf
+                                                <button type="submit" class="text-green-500 hover:text-green-700"
+                                                    title="Valider">
+                                                    <svg class="w-5 h-5" fill="none" stroke="currentColor"
+                                                        viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round"
+                                                            stroke-width="2" d="M5 13l4 4L19 7"></path>
+                                                    </svg>
+                                                </button>
+                                            </form>
+
+                                            <button type="button"
+                                                onclick="openRefusModal({{ $activite->id }}, '{{ $activite->nom_activite }}')"
+                                                class="text-red-500 hover:text-red-700" title="Refuser">
                                                 <svg class="w-5 h-5" fill="none" stroke="currentColor"
                                                     viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round"
-                                                        stroke-width="2" d="M5 13l4 4L19 7"></path>
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                        d="M6 18L18 6M6 6l12 12"></path>
                                                 </svg>
                                             </button>
-                                        </form>
-                                    @endif
+                                        @endif
+                                    @endcan
                                 </div>
                             </td>
                         </tr>
@@ -238,6 +254,56 @@
     </div>
 </x-layouts::app>
 
+<!-- Modal de refus -->
+<div id="refusModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-50">
+    <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white dark:bg-zinc-800">
+        <div class="mt-3">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-medium text-gray-900 dark:text-white">Refuser l'activité</h3>
+                <button onclick="closeRefusModal()" class="text-gray-400 hover:text-gray-600">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+
+            <div class="mb-4">
+                <p class="text-sm text-gray-600 dark:text-gray-400 mb-2">
+                    Activité: <span id="activiteNom" class="font-medium"></span>
+                </p>
+                <p class="text-sm text-gray-600 dark:text-gray-400">
+                    Cette action renverra l'activité en brouillon avec le motif de refus indiqué.
+                </p>
+            </div>
+
+            <form id="refusForm" method="POST">
+                @csrf
+                <div class="mb-4">
+                    <label for="motif_refus" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Motif du refus *
+                    </label>
+                    <textarea id="motif_refus" name="motif_refus" rows="4"
+                        class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 dark:bg-zinc-700 dark:text-white"
+                        placeholder="Veuillez expliquer le motif du refus..." required minlength="10"></textarea>
+                    <p class="text-xs text-gray-500 mt-1">Minimum 10 caractères</p>
+                </div>
+
+                <div class="flex justify-end gap-3">
+                    <button type="button" onclick="closeRefusModal()"
+                        class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 border border-gray-300 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 dark:bg-zinc-700 dark:text-white dark:border-zinc-600 dark:hover:bg-zinc-600">
+                        Annuler
+                    </button>
+                    <button type="submit"
+                        class="px-4 py-2 text-sm font-medium text-white bg-red-600 border border-transparent rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500">
+                        Refuser l'activité
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 @push('scripts')
     <script>
         function updateQueryStringParameter(uri, key, value) {
@@ -252,6 +318,17 @@
             } else {
                 return uri + separator + key + "=" + value;
             }
+        }
+
+        function openRefusModal(activiteId, activiteNom) {
+            document.getElementById('activiteNom').textContent = activiteNom;
+            document.getElementById('refusForm').action = `/activites/${activiteId}/refuser`;
+            document.getElementById('refusModal').classList.remove('hidden');
+        }
+
+        function closeRefusModal() {
+            document.getElementById('refusModal').classList.add('hidden');
+            document.getElementById('motif_refus').value = '';
         }
     </script>
 @endpush

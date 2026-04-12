@@ -25,6 +25,8 @@ class DashboardController extends Controller
             'distributionBudgetaire' => $this->dashboardService->getDistributionBudgetaire(),
             'activitesParStatut' => $this->dashboardService->getActivitesParStatut(),
             'activitesParTrimestre' => $this->dashboardService->getActivitesParTrimestre(),
+            'soumissionParDepartement' => $this->dashboardService->getSoumissionParDepartement(),
+            'departementsEnRetard' => $this->dashboardService->getDepartementsEnRetard(),
         ]);
     }
 }

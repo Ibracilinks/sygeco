@@ -12,6 +12,7 @@ class Extrant extends Model
 
     protected $fillable = [
         'objectif_id',
+        'resultat_id',
         'code',
         'libelle',
         'description',

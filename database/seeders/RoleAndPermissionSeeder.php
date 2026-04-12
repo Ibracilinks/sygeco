@@ -31,6 +31,7 @@ class RoleAndPermissionSeeder extends Seeder
         Permission::create(['name' => 'create_activites']);
         Permission::create(['name' => 'edit_activites']);
         Permission::create(['name' => 'delete_activites']);
+        Permission::create(['name' => 'submit_activites']);
         Permission::create(['name' => 'validate_activites']);
 
         // Permissions pour Départements
@@ -44,6 +45,10 @@ class RoleAndPermissionSeeder extends Seeder
         Permission::create(['name' => 'create_users']);
         Permission::create(['name' => 'edit_users']);
         Permission::create(['name' => 'delete_users']);
+
+        // Permissions pour Exercices
+        Permission::create(['name' => 'view_exercices']);
+        Permission::create(['name' => 'manage_exercices']);
 
         // Permissions pour Indicateurs
         Permission::create(['name' => 'view_indicateurs']);
@@ -64,8 +69,10 @@ class RoleAndPermissionSeeder extends Seeder
             'view_activites',
             'create_activites',
             'edit_activites',
+            'submit_activites',
             'view_departements',
-            'view_users'
+            'view_users',
+            'view_exercices',
         ]);
 
         $roleAgent->givePermissionTo([

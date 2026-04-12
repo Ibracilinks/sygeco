@@ -37,6 +37,12 @@
 
             <!-- Planification Stratégique -->
             <flux:sidebar.group :heading="__('Planification Stratégique')" class="grid">
+                @can('view_exercices')
+                    <flux:sidebar.item icon="calendar-days" href="{{ route('exercices.index') }}"
+                        :current="request()->routeIs('exercices.*')">
+                        {{ __('Exercices') }}
+                    </flux:sidebar.item>
+                @endcan
                 <flux:sidebar.item icon="chart-pie" href="{{ route('objectifs.index') }}"
                     :current="request()->routeIs('objectifs.*')">
                     {{ __('Objectifs') }}
@@ -60,6 +66,14 @@
                 <flux:sidebar.item icon="chart-pie" href="{{ route('budget.analysis') }}"
                     :current="request()->routeIs('budget.analysis')">
                     {{ __('Analyse Budgétaire') }}
+                </flux:sidebar.item>
+                <flux:sidebar.item icon="check-badge" href="{{ route('validations.index') }}"
+                    :current="request()->routeIs('validations.*')">
+                    {{ __('Validations') }}
+                    @php $nbEnAttente = App\Models\Activite::where('statut', 'soumis')->count(); @endphp
+                    @if ($nbEnAttente > 0)
+                        <flux:badge class="ml-auto">{{ $nbEnAttente }}</flux:badge>
+                    @endif
                 </flux:sidebar.item>
             </flux:sidebar.group>
         </flux:sidebar.nav>
@@ -120,4 +134,4 @@
 
 </body>
 
-</html
+</html>

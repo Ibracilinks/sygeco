@@ -35,6 +35,25 @@
         <div class="flex flex-wrap gap-4 items-center justify-between">
             <div class="flex gap-4">
                 <div class="relative">
+                    <label class="sr-only">Exercice</label>
+                    <select id="filter-exercice" onchange="window.location.href=this.value"
+                        class="rounded-lg border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-zinc-800 px-4 py-2 text-sm dark:text-white max-w-[14rem]">
+                        <option
+                            value="{{ route('objectifs.index', array_merge(request()->except('page'), ['exercice_id' => ''])) }}"
+                            {{ request('exercice_id') === '' ? 'selected' : '' }}>Tous les exercices</option>
+                        @foreach ($exercices ?? [] as $ex)
+                            <option
+                                value="{{ route('objectifs.index', array_merge(request()->except('page'), ['exercice_id' => $ex->id])) }}"
+                                {{ request()->has('exercice_id')
+                                    ? (string) request('exercice_id') === (string) $ex->id
+                                    : (isset($exerciceId) && (int) $exerciceId === (int) $ex->id) }}>
+                                Ex. {{ $ex->annee }}
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
+
+                <div class="relative">
                     <select id="filter-annee" onchange="window.location.href=this.value"
                         class="rounded-lg border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-zinc-800 px-4 py-2 text-sm dark:text-white">
                         <option value="{{ route('objectifs.index') }}" {{ !request('annee') ? 'selected' : '' }}>Toutes

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Resultat;
 use App\Models\Objectif;
+use App\Support\ActiveExercice;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -16,6 +17,11 @@ class ResultatController extends Controller
     public function index(Request $request)
     {
         $query = Resultat::with('objectif');
+
+        $exerciceId = ActiveExercice::id();
+        if ($exerciceId !== null) {
+            $query->whereHas('objectif', fn ($q) => $q->where('exercice_id', $exerciceId));
+        }
 
         if ($request->filled('objectif_id')) {
             $query->where('objectif_id', $request->objectif_id);
@@ -34,7 +40,11 @@ class ResultatController extends Controller
 
         $resultats = $query->ordered()->paginate(15)->withQueryString();
 
-        $objectifs = Objectif::where('statut', 'actif')->orderBy('annee', 'desc')->get();
+        $objectifs = Objectif::query()
+            ->where('statut', 'actif')
+            ->when($exerciceId !== null, fn ($q) => $q->where('exercice_id', $exerciceId))
+            ->orderBy('annee', 'desc')
+            ->get();
 
         return view('pages.resultats.index', compact('resultats', 'objectifs'));
     }
@@ -44,7 +54,12 @@ class ResultatController extends Controller
      */
     public function create(Request $request)
     {
-        $objectifs = Objectif::where('statut', 'actif')->orderBy('annee', 'desc')->get();
+        $exerciceId = ActiveExercice::id();
+        $objectifs = Objectif::query()
+            ->where('statut', 'actif')
+            ->when($exerciceId !== null, fn ($q) => $q->where('exercice_id', $exerciceId))
+            ->orderBy('annee', 'desc')
+            ->get();
         $selectedObjectif = $request->get('objectif_id');
 
         return view('pages.resultats.create', compact('objectifs', 'selectedObjectif'));
@@ -165,7 +180,13 @@ class ResultatController extends Controller
      */
     public function edit(Resultat $resultat)
     {
-        $objectifs = Objectif::where('statut', 'actif')->orderBy('annee', 'desc')->get();
+        $exerciceId = ActiveExercice::id();
+        $objectifs = Objectif::query()
+            ->where('statut', 'actif')
+            ->when($exerciceId !== null, fn ($q) => $q->where('exercice_id', $exerciceId))
+            ->orderBy('annee', 'desc')
+            ->get();
+
         return view('pages.resultats.edit', compact('resultat', 'objectifs'));
     }
 

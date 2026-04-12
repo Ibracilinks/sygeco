@@ -100,8 +100,7 @@
                     <h2 class="text-lg font-semibold dark:text-white">Top Extrants</h2>
                     <p class="text-sm text-zinc-500 dark:text-zinc-400">Par nombre d'activités</p>
                 </div>
-                <x-charts.pie-chart :labels="collect($topExtrants)->take(5)->pluck('code')->toArray()" :data="collect($topExtrants)->take(5)->pluck('nb_activites')->toArray()" type="pie"
-                    :height="300" />
+                <x-charts.pie-chart :labels="collect($topExtrants)->take(5)->pluck('code')->toArray()" :data="collect($topExtrants)->take(5)->pluck('nb_activites')->toArray()" type="pie" :height="300" />
             </div>
         </div>
 
@@ -142,10 +141,60 @@
                     <h2 class="text-lg font-semibold dark:text-white">Distribution Budgétaire</h2>
                     <p class="text-sm text-zinc-500 dark:text-zinc-400">Par tranche de coût</p>
                 </div>
-                <x-charts.pie-chart :labels="array_keys($distributionBudgetaire)" :data="array_values($distributionBudgetaire)" type="donut"
-                    :height="300" />
+                <x-charts.pie-chart :labels="array_keys($distributionBudgetaire)" :data="array_values($distributionBudgetaire)" type="donut" :height="300" />
             </div>
         </div>
+
+        <!-- Soumission par département + retards -->
+        @if (count($soumissionParDepartement ?? []) > 0)
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div
+                    class="rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-zinc-800 p-6">
+                    <div class="border-b border-neutral-200 dark:border-neutral-700 pb-4 mb-4">
+                        <h2 class="text-lg font-semibold dark:text-white">Soumission par département</h2>
+                        <p class="text-sm text-zinc-500 dark:text-zinc-400">Part des activités soumises ou validées (exercice
+                            filtré)</p>
+                    </div>
+                    <div class="space-y-3 max-h-80 overflow-y-auto">
+                        @foreach ($soumissionParDepartement as $row)
+                            <div>
+                                <div class="flex justify-between text-sm mb-1">
+                                    <span class="dark:text-white truncate pr-2">{{ $row['nom'] }}</span>
+                                    <span
+                                        class="font-semibold dark:text-white">{{ $row['soumises'] }}/{{ $row['total'] }}
+                                        ({{ $row['pct'] }}%)</span>
+                                </div>
+                                <div class="w-full bg-neutral-200 dark:bg-neutral-700 rounded-full h-2">
+                                    <div class="bg-emerald-500 h-2 rounded-full" style="width: {{ min(100, $row['pct']) }}%">
+                                    </div>
+                                </div>
+                            </div>
+                        @endforeach
+                    </div>
+                </div>
+                <div
+                    class="rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-zinc-800 p-6">
+                    <div class="border-b border-neutral-200 dark:border-neutral-700 pb-4 mb-4">
+                        <h2 class="text-lg font-semibold dark:text-white">Départements en retard</h2>
+                        <p class="text-sm text-zinc-500 dark:text-zinc-400">Au moins une activité encore en brouillon</p>
+                    </div>
+                    @if (count($departementsEnRetard ?? []) === 0)
+                        <p class="text-sm text-zinc-500 dark:text-zinc-400">Aucun département en retard sur cet exercice.</p>
+                    @else
+                        <ul class="divide-y divide-neutral-200 dark:divide-neutral-700">
+                            @foreach ($departementsEnRetard as $retard)
+                                <li class="py-3 flex justify-between text-sm">
+                                    <span class="dark:text-white">{{ $retard['nom'] }}</span>
+                                    <span
+                                        class="rounded-full bg-amber-100 text-amber-900 dark:bg-amber-900/40 dark:text-amber-100 px-2 py-0.5 text-xs font-medium">{{ $retard['nb_brouillon'] }}
+                                        brouillon(s)</span>
+                                </li>
+                            @endforeach
+                        </ul>
+                    @endif
+                </div>
+            </div>
+        @endif
 
         <!-- Ligne 5: Bar Charts -->
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">

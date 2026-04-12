@@ -3,21 +3,33 @@
 namespace App\Http\Controllers;
 
 use App\Models\Activite;
-use App\Models\Extrant;
 use App\Models\Departement;
-use App\Models\Departement as ModelsDepartement;
+use App\Models\Extrant;
+use App\Support\ActiveExercice;
+use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Validation\Rule;
 
 class ActiviteController extends Controller
 {
+    use AuthorizesRequests;
+
+    public function __construct()
+    {
+        $this->authorizeResource(Activite::class, 'activite', [
+            'except' => ['valider', 'refuser', 'soumettre'],
+        ]);
+    }
+
     /**
      * Liste des activités
      */
     public function index(Request $request)
     {
         $query = Activite::with(['extrant.objectif', 'departement', 'saisiePar']);
+
+        $exerciceId = ActiveExercice::id();
+        $query->forExercice($exerciceId);
 
         // Filtres
         if ($request->filled('extrant_id')) {
@@ -50,7 +62,12 @@ class ActiviteController extends Controller
 
         $activites = $query->orderBy('date_saisie', 'desc')->paginate(15)->withQueryString();
 
-        $extrants = Extrant::with('objectif')->actif()->ordered()->get();
+        $extrants = Extrant::query()
+            ->with('objectif')
+            ->actif()
+            ->when($exerciceId !== null, fn ($q) => $q->whereHas('objectif', fn ($oq) => $oq->where('exercice_id', $exerciceId)))
+            ->ordered()
+            ->get();
         $departements = Departement::active()->ordered()->get();
         $statuts = ['brouillon', 'soumis', 'valide'];
 
@@ -62,12 +79,16 @@ class ActiviteController extends Controller
      */
     public function create(Request $request)
     {
-        $extrants = Extrant::with('objectif')->actif()->ordered()->get();
+        $exerciceId = ActiveExercice::id();
+        $extrants = Extrant::query()
+            ->with('objectif')
+            ->actif()
+            ->when($exerciceId !== null, fn ($q) => $q->whereHas('objectif', fn ($oq) => $oq->where('exercice_id', $exerciceId)))
+            ->ordered()
+            ->get();
         $departements = Departement::active()->ordered()->get();
 
-        // Si l'utilisateur est chef de département, son département est automatique
-        $departementId = Departement::get()->random()->first()->id;
-        // Valeur par défaut aléatoire
+        $departementId = Auth::user()->departement_id ?? $departements->first()?->id;
 
         $selectedExtrant = $request->get('extrant_id');
 
@@ -92,6 +113,10 @@ class ActiviteController extends Controller
             'trimestre_4' => 'nullable|in:on,oui',
             'commentaires' => 'nullable|string',
         ]);
+
+        if (Auth::user()->hasRole('chef_departement') && Auth::user()->departement_id) {
+            $validated['departement_id'] = Auth::user()->departement_id;
+        }
 
         $activite = new Activite();
         $activite->extrant_id = $validated['extrant_id'];
@@ -118,7 +143,15 @@ class ActiviteController extends Controller
      */
     public function show(Activite $activite)
     {
-        $activite->load(['extrant.objectif', 'departement.responsable', 'saisiePar']);
+        $activite->load([
+            'extrant.objectif',
+            'departement.responsable',
+            'saisiePar',
+            'validePar',
+            'refusePar',
+            'validationHistoriques.utilisateur',
+        ]);
+
         return view('pages.activites.show', compact('activite'));
     }
 
@@ -127,12 +160,13 @@ class ActiviteController extends Controller
      */
     public function edit(Activite $activite)
     {
-        if (!$activite->estModifiable() && !Auth::user()->hasRole('dbcgoq')) {
-            return redirect()->route('activites.index')
-                ->with('error', 'Cette activité ne peut plus être modifiée.');
-        }
-
-        $extrants = Extrant::with('objectif')->actif()->ordered()->get();
+        $exerciceId = ActiveExercice::id();
+        $extrants = Extrant::query()
+            ->with('objectif')
+            ->actif()
+            ->when($exerciceId !== null, fn ($q) => $q->whereHas('objectif', fn ($oq) => $oq->where('exercice_id', $exerciceId)))
+            ->ordered()
+            ->get();
         $departements = Departement::active()->ordered()->get();
 
         return view('pages.activites.edit', compact('activite', 'extrants', 'departements'));
@@ -143,11 +177,6 @@ class ActiviteController extends Controller
      */
     public function update(Request $request, Activite $activite)
     {
-        if (!$activite->estModifiable() && !Auth::user()->hasRole('dbcgoq')) {
-            return redirect()->route('activites.index')
-                ->with('error', 'Cette activité ne peut plus être modifiée.');
-        }
-
         $validated = $request->validate([
             'extrant_id' => 'required|exists:extrants,id',
             'departement_id' => 'required|exists:departements,id',
@@ -161,6 +190,10 @@ class ActiviteController extends Controller
             'trimestre_4' => 'nullable|in:on,oui',
             'commentaires' => 'nullable|string',
         ]);
+
+        if (Auth::user()->hasRole('chef_departement') && Auth::user()->departement_id) {
+            $validated['departement_id'] = Auth::user()->departement_id;
+        }
 
         $activite->update([
             'extrant_id' => $validated['extrant_id'],
@@ -185,11 +218,6 @@ class ActiviteController extends Controller
      */
     public function destroy(Activite $activite)
     {
-        if (!$activite->estModifiable() && !Auth::user()->hasRole('dbcgoq')) {
-            return redirect()->route('activites.index')
-                ->with('error', 'Cette activité ne peut pas être supprimée.');
-        }
-
         $activite->delete();
 
         return redirect()->route('activites.index')
@@ -201,6 +229,8 @@ class ActiviteController extends Controller
      */
     public function soumettre(Activite $activite)
     {
+        $this->authorize('submit', $activite);
+
         if ($activite->soumettre()) {
             return redirect()->route('activites.index')
                 ->with('success', 'Activité soumise avec succès.');
@@ -215,6 +245,11 @@ class ActiviteController extends Controller
      */
     public function valider(Activite $activite)
     {
+        if (!Auth::user()->can('validate_activites')) {
+            return redirect()->route('activites.index')
+                ->with('error', 'Vous ne pouvez pas valider cette activité.');
+        }
+
         if ($activite->valider()) {
             return redirect()->route('activites.index')
                 ->with('success', 'Activité validée avec succès.');
@@ -222,5 +257,28 @@ class ActiviteController extends Controller
 
         return redirect()->route('activites.index')
             ->with('error', 'Impossible de valider cette activité.');
+    }
+
+    /**
+     * Refuser une activité (soumis -> brouillon)
+     */
+    public function refuser(Request $request, Activite $activite)
+    {
+        if (!Auth::user()->can('validate_activites')) {
+            return redirect()->route('activites.show', $activite)
+                ->with('error', 'Vous ne pouvez pas refuser cette activité.');
+        }
+
+        $validated = $request->validate([
+            'motif_refus' => 'required|string|min:10',
+        ]);
+
+        if ($activite->refuser($validated['motif_refus'])) {
+            return redirect()->route('activites.show', $activite)
+                ->with('success', 'Activité refusée et renvoyée en brouillon.');
+        }
+
+        return redirect()->route('activites.show', $activite)
+            ->with('error', 'Impossible de refuser cette activité.');
     }
 }
