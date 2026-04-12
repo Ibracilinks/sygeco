@@ -12,6 +12,33 @@
                 @csrf
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Exercice -->
+                    <div class="md:col-span-2">
+                        <label class="block text-sm font-medium dark:text-white mb-2">Exercice *</label>
+                        @if ($exercices->isEmpty())
+                            <p class="text-sm text-amber-700 dark:text-amber-300">Aucun exercice en base. Créez d’abord un
+                                exercice.</p>
+                            @can('manage_exercices')
+                                <a href="{{ route('exercices.create') }}"
+                                    class="mt-2 inline-block text-sm text-blue-600 hover:underline">Créer un exercice</a>
+                            @endcan
+                        @else
+                            <select name="exercice_id" required
+                                class="w-full rounded-lg border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-zinc-900 px-3 py-2 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                @foreach ($exercices as $ex)
+                                    <option value="{{ $ex->id }}"
+                                        {{ (string) old('exercice_id', $defaultExerciceId) === (string) $ex->id ? 'selected' : '' }}>
+                                        {{ $ex->annee }} ({{ $ex->statut }})
+                                    </option>
+                                @endforeach
+                            </select>
+                        @endif
+                        @error('exercice_id')
+                            <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                        @enderror
+                        <p class="mt-1 text-xs text-zinc-500">L'année de l'objectif est celle de l'exercice choisi.</p>
+                    </div>
+
                     <!-- Code -->
                     <div>
                         <label class="block text-sm font-medium dark:text-white mb-2">Code *</label>
@@ -19,21 +46,6 @@
                             class="w-full rounded-lg border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-zinc-900 px-3 py-2 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                             placeholder="ex: OS_001">
                         @error('code')
-                            <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                        @enderror
-                    </div>
-
-                    <!-- Année -->
-                    <div>
-                        <label class="block text-sm font-medium dark:text-white mb-2">Année *</label>
-                        <select name="annee"
-                            class="w-full rounded-lg border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-zinc-900 px-3 py-2 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
-                            <option value="2025" {{ old('annee') == '2025' ? 'selected' : '' }}>2025</option>
-                            <option value="2026" {{ old('annee') == '2026' ? 'selected' : '' }}>2026</option>
-                            <option value="2027" {{ old('annee') == '2027' ? 'selected' : '' }}>2027</option>
-                            <option value="2028" {{ old('annee') == '2028' ? 'selected' : '' }}>2028</option>
-                        </select>
-                        @error('annee')
                             <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                         @enderror
                     </div>

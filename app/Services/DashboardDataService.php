@@ -2,10 +2,11 @@
 
 namespace App\Services;
 
-use App\Models\Objectif;
-use App\Models\Extrant;
 use App\Models\Activite;
 use App\Models\Departement;
+use App\Models\Extrant;
+use App\Models\Objectif;
+use App\Support\ActiveExercice;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Cache;
 use Carbon\Carbon;
@@ -339,5 +340,67 @@ class DashboardDataService
 
             return $stats->count > 0 ? $stats->total / $stats->count : 0;
         });
+    }
+
+    /**
+     * Pourcentage de soumission (soumis + validé) par département pour un exercice.
+     *
+     * @return array<int, array{nom: string, total: int, soumises: int, pct: float}>
+     */
+    public function getSoumissionParDepartement(?int $exerciceId = null): array
+    {
+        $exerciceId ??= ActiveExercice::id();
+
+        if ($exerciceId === null) {
+            return [];
+        }
+
+        return Departement::query()
+            ->active()
+            ->ordered()
+            ->withCount([
+                'activites as total_activites' => fn ($q) => $q->forExercice($exerciceId),
+                'activites as activites_soumises' => fn ($q) => $q->forExercice($exerciceId)->whereIn('statut', ['soumis', 'valide']),
+            ])
+            ->get()
+            ->map(fn ($d) => [
+                'nom' => $d->nom,
+                'total' => (int) $d->total_activites,
+                'soumises' => (int) $d->activites_soumises,
+                'pct' => $d->total_activites > 0
+                    ? round(100 * $d->activites_soumises / $d->total_activites, 1)
+                    : 0.0,
+            ])
+            ->values()
+            ->all();
+    }
+
+    /**
+     * Départements avec au moins une activité en brouillon pour l'exercice.
+     *
+     * @return array<int, array{nom: string, nb_brouillon: int}>
+     */
+    public function getDepartementsEnRetard(?int $exerciceId = null): array
+    {
+        $exerciceId ??= ActiveExercice::id();
+
+        if ($exerciceId === null) {
+            return [];
+        }
+
+        return Departement::query()
+            ->active()
+            ->ordered()
+            ->withCount([
+                'activites as nb_brouillon' => fn ($q) => $q->forExercice($exerciceId)->where('statut', 'brouillon'),
+            ])
+            ->having('nb_brouillon', '>', 0)
+            ->get()
+            ->map(fn ($d) => [
+                'nom' => $d->nom,
+                'nb_brouillon' => (int) $d->nb_brouillon,
+            ])
+            ->values()
+            ->all();
     }
 }

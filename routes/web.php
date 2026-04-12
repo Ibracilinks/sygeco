@@ -3,6 +3,7 @@
 use App\Http\Controllers\BudgetAnalysisController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DepartementController;
+use App\Http\Controllers\ExerciceController;
 use App\Http\Controllers\ExtrantController;
 use App\Http\Controllers\ActiviteController;
 use App\Http\Controllers\IndicateurController;
@@ -10,6 +11,7 @@ use App\Http\Controllers\ObjectifController;
 use App\Http\Controllers\ResultatController;
 use App\Http\Controllers\StructureController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\ValidationController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -20,6 +22,15 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard');
     Route::get('budget-analysis', [BudgetAnalysisController::class, 'index'])->name('budget.analysis');
 
+    Route::middleware(['role:dbcgoq'])->prefix('validations')->name('validations.')->group(function () {
+        Route::get('/', [ValidationController::class, 'index'])->name('index');
+        Route::get('/{activite}', [ValidationController::class, 'show'])->name('show');
+        Route::post('/{activite}/valider', [ValidationController::class, 'valider'])->name('valider');
+        Route::post('/{activite}/refuser', [ValidationController::class, 'refuser'])->name('refuser');
+        Route::post('/valider-plusieurs', [ValidationController::class, 'validerPlusieurs'])->name('valider-plusieurs');
+        Route::get('/export/excel', [ValidationController::class, 'exporter'])->name('exporter');
+    });
+
     // Départements
     Route::resource('departements', DepartementController::class);
 
@@ -27,6 +38,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::resource('users', UserController::class);
 
     Route::resource('structures', StructureController::class);
+
+    Route::post('exercices/{exercice}/activate', [ExerciceController::class, 'activate'])->name('exercices.activate');
+    Route::resource('exercices', ExerciceController::class);
 
     Route::post('objectifs/{objectif}/toggle-statut', [ObjectifController::class, 'toggleStatut'])->name('objectifs.toggle-statut');
     Route::resource('objectifs', ObjectifController::class);
@@ -50,6 +64,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('/{activite}/duplicate', [ActiviteController::class, 'duplicate'])->name('duplicate');
         Route::post('/{activite}/soumettre', [ActiviteController::class, 'soumettre'])->name('soumettre');
         Route::post('/{activite}/valider', [ActiviteController::class, 'valider'])->name('valider');
+        Route::post('/{activite}/refuser', [ActiviteController::class, 'refuser'])->name('refuser');
     });
 
     Route::resource('indicateurs', IndicateurController::class);

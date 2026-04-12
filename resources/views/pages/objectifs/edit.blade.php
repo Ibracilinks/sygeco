@@ -3,7 +3,7 @@
 
         <div class="mb-6">
             <h1 class="text-2xl font-bold dark:text-white">Modifier l'objectif stratégique</h1>
-            <p class="text-zinc-500 dark:text-zinc-400">{{ $objectif->libelle }}</p>
+            <p class="text-zinc-500 dark:text-zinc-400 mt-1">{{ $objectif->libelle }}</p>
         </div>
 
         <div
@@ -13,6 +13,22 @@
                 @method('PUT')
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="md:col-span-2">
+                        <label class="block text-sm font-medium dark:text-white mb-2">Exercice *</label>
+                        <select name="exercice_id" required
+                            class="w-full rounded-lg border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-zinc-900 px-3 py-2 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            @foreach ($exercices as $ex)
+                                <option value="{{ $ex->id }}"
+                                    {{ (string) old('exercice_id', $objectif->exercice_id) === (string) $ex->id ? 'selected' : '' }}>
+                                    {{ $ex->annee }} ({{ $ex->statut }})
+                                </option>
+                            @endforeach
+                        </select>
+                        @error('exercice_id')
+                            <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
+                        @enderror
+                    </div>
+
                     <div>
                         <label class="block text-sm font-medium dark:text-white mb-2">Code *</label>
                         <input type="text" name="code" value="{{ old('code', $objectif->code) }}"
@@ -43,14 +59,16 @@
                         @enderror
                     </div>
 
-                    <div class="flex items-center gap-3">
-                        <label class="inline-flex items-center cursor-pointer">
-                            <input type="checkbox" name="is_active" value="1"
-                                {{ old('is_active', $objectif->is_active) ? 'checked' : '' }}
-                                class="rounded border-neutral-300 dark:border-neutral-600 text-blue-600 focus:ring-blue-500">
-                            <span class="ml-2 dark:text-white">Actif</span>
-                        </label>
-                        @error('is_active')
+                    <div>
+                        <label class="block text-sm font-medium dark:text-white mb-2">Statut *</label>
+                        <select name="statut"
+                            class="w-full rounded-lg border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-zinc-900 px-3 py-2 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="actif" {{ old('statut', $objectif->statut) === 'actif' ? 'selected' : '' }}>
+                                Actif</option>
+                            <option value="inactif" {{ old('statut', $objectif->statut) === 'inactif' ? 'selected' : '' }}>
+                                Inactif</option>
+                        </select>
+                        @error('statut')
                             <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
                         @enderror
                     </div>

@@ -2,8 +2,8 @@
 
 namespace Database\Factories;
 
+use App\Models\Exercice;
 use App\Models\Objectif;
-use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 class ObjectifFactory extends Factory
@@ -13,7 +13,16 @@ class ObjectifFactory extends Factory
     public function definition(): array
     {
         $statuts = ['actif', 'inactif'];
-        $annee = $this->faker->numberBetween(2025, 2026);
+        $annee = (int) $this->faker->numberBetween(2021, (int) date('Y') + 1);
+
+        $exerciceId = Exercice::query()->firstOrCreate(
+            ['annee' => $annee],
+            [
+                'date_debut' => sprintf('%d-01-01', $annee),
+                'date_fin' => sprintf('%d-12-31', $annee),
+                'statut' => $annee === (int) date('Y') ? 'actif' : ($annee < (int) date('Y') ? 'cloture' : 'brouillon'),
+            ]
+        )->id;
 
         // Liste des objectifs stratégiques réalistes
         $objectifsList = [
@@ -72,6 +81,7 @@ class ObjectifFactory extends Factory
         }
 
         return [
+            'exercice_id' => $exerciceId,
             'code' => $code,
             'libelle' => $libelle,
             'description' => $description,
@@ -106,9 +116,21 @@ class ObjectifFactory extends Factory
      */
     public function pourAnnee(int $annee): static
     {
-        return $this->state(fn(array $attributes) => [
-            'annee' => $annee,
-        ]);
+        return $this->state(function () use ($annee) {
+            $exerciceId = Exercice::query()->firstOrCreate(
+                ['annee' => $annee],
+                [
+                    'date_debut' => sprintf('%d-01-01', $annee),
+                    'date_fin' => sprintf('%d-12-31', $annee),
+                    'statut' => $annee === (int) date('Y') ? 'actif' : ($annee < (int) date('Y') ? 'cloture' : 'brouillon'),
+                ]
+            )->id;
+
+            return [
+                'exercice_id' => $exerciceId,
+                'annee' => $annee,
+            ];
+        });
     }
 
     /**
@@ -136,9 +158,7 @@ class ObjectifFactory extends Factory
      */
     public function anneeEnCours(): static
     {
-        return $this->state(fn(array $attributes) => [
-            'annee' => date('Y'),
-        ]);
+        return $this->pourAnnee((int) date('Y'));
     }
 
     /**
@@ -146,9 +166,7 @@ class ObjectifFactory extends Factory
      */
     public function anneeProchaine(): static
     {
-        return $this->state(fn(array $attributes) => [
-            'annee' => date('Y') + 1,
-        ]);
+        return $this->pourAnnee((int) date('Y') + 1);
     }
 
     /**

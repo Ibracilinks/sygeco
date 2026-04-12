@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Extrant;
 use App\Models\Objectif;
+use App\Support\ActiveExercice;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 
@@ -15,6 +16,11 @@ class ExtrantController extends Controller
     public function index(Request $request)
     {
         $query = Extrant::with('objectif');
+
+        $exerciceId = ActiveExercice::id();
+        if ($exerciceId !== null) {
+            $query->whereHas('objectif', fn ($q) => $q->where('exercice_id', $exerciceId));
+        }
 
         if ($request->filled('objectif_id')) {
             $query->where('objectif_id', $request->objectif_id);
@@ -33,7 +39,11 @@ class ExtrantController extends Controller
 
         $extrants = $query->ordered()->paginate(15)->withQueryString();
 
-        $objectifs = Objectif::where('statut', 'actif')->orderBy('annee', 'desc')->get();
+        $objectifs = Objectif::query()
+            ->where('statut', 'actif')
+            ->when($exerciceId !== null, fn ($q) => $q->where('exercice_id', $exerciceId))
+            ->orderBy('annee', 'desc')
+            ->get();
 
         return view('pages.extrants.index', compact('extrants', 'objectifs'));
     }
@@ -43,7 +53,12 @@ class ExtrantController extends Controller
      */
     public function create(Request $request)
     {
-        $objectifs = Objectif::where('statut', 'actif')->orderBy('annee', 'desc')->get();
+        $exerciceId = ActiveExercice::id();
+        $objectifs = Objectif::query()
+            ->where('statut', 'actif')
+            ->when($exerciceId !== null, fn ($q) => $q->where('exercice_id', $exerciceId))
+            ->orderBy('annee', 'desc')
+            ->get();
         $selectedObjectif = $request->get('objectif_id');
 
         return view('pages.extrants.create', compact('objectifs', 'selectedObjectif'));
@@ -92,7 +107,13 @@ class ExtrantController extends Controller
      */
     public function edit(Extrant $extrant)
     {
-        $objectifs = Objectif::where('statut', 'actif')->orderBy('annee', 'desc')->get();
+        $exerciceId = ActiveExercice::id();
+        $objectifs = Objectif::query()
+            ->where('statut', 'actif')
+            ->when($exerciceId !== null, fn ($q) => $q->where('exercice_id', $exerciceId))
+            ->orderBy('annee', 'desc')
+            ->get();
+
         return view('pages.extrants.edit', compact('extrant', 'objectifs'));
     }
 

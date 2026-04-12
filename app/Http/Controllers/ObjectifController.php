@@ -2,7 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Exercice;
 use App\Models\Objectif;
+use App\Support\ActiveExercice;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 
@@ -13,7 +15,16 @@ class ObjectifController extends Controller
      */
     public function index(Request $request)
     {
-        $query = Objectif::query();
+        $query = Objectif::query()->with('exercice');
+
+        if ($request->has('exercice_id') && $request->exercice_id === '') {
+            $exerciceId = null;
+        } elseif ($request->filled('exercice_id')) {
+            $exerciceId = (int) $request->exercice_id;
+        } else {
+            $exerciceId = ActiveExercice::id();
+        }
+        $query->forExercice($exerciceId);
 
         if ($request->filled('annee')) {
             $query->where('annee', $request->annee);
@@ -33,8 +44,9 @@ class ObjectifController extends Controller
         $objectifs = $query->ordered()->paginate(15)->withQueryString();
 
         $annees = Objectif::select('annee')->distinct()->orderBy('annee', 'desc')->pluck('annee');
+        $exercices = Exercice::query()->ordered()->get();
 
-        return view('pages.objectifs.index', compact('objectifs', 'annees'));
+        return view('pages.objectifs.index', compact('objectifs', 'annees', 'exercices', 'exerciceId'));
     }
 
     /**
@@ -42,7 +54,10 @@ class ObjectifController extends Controller
      */
     public function create()
     {
-        return view('pages.objectifs.create');
+        $exercices = Exercice::query()->ordered()->get();
+        $defaultExerciceId = ActiveExercice::id();
+
+        return view('pages.objectifs.create', compact('exercices', 'defaultExerciceId'));
     }
 
     /**
@@ -51,13 +66,16 @@ class ObjectifController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
+            'exercice_id' => 'required|exists:exercices,id',
             'code' => 'required|string|max:20|unique:objectifs',
             'libelle' => 'required|string|max:500',
             'description' => 'nullable|string',
-            'annee' => 'required|integer|min:2000|max:2100',
             'statut' => ['required', Rule::in(['actif', 'inactif'])],
             'ordre' => 'nullable|integer',
         ]);
+
+        $exercice = Exercice::query()->findOrFail($validated['exercice_id']);
+        $validated['annee'] = $exercice->annee;
 
         $objectif = Objectif::create($validated);
 
@@ -123,7 +141,9 @@ class ObjectifController extends Controller
      */
     public function edit(Objectif $objectif)
     {
-        return view('pages.objectifs.edit', compact('objectif'));
+        $exercices = Exercice::query()->ordered()->get();
+
+        return view('pages.objectifs.edit', compact('objectif', 'exercices'));
     }
 
     /**
@@ -132,13 +152,16 @@ class ObjectifController extends Controller
     public function update(Request $request, Objectif $objectif)
     {
         $validated = $request->validate([
+            'exercice_id' => 'required|exists:exercices,id',
             'code' => ['required', 'string', 'max:20', Rule::unique('objectifs')->ignore($objectif->id)],
             'libelle' => 'required|string|max:500',
             'description' => 'nullable|string',
-            'annee' => 'required|integer|min:2000|max:2100',
             'statut' => ['required', Rule::in(['actif', 'inactif'])],
             'ordre' => 'nullable|integer',
         ]);
+
+        $exercice = Exercice::query()->findOrFail($validated['exercice_id']);
+        $validated['annee'] = $exercice->annee;
 
         $objectif->update($validated);
 

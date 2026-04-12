@@ -13,6 +13,7 @@ class Objectif extends Model
     protected $table = 'objectifs';
 
     protected $fillable = [
+        'exercice_id',
         'code',
         'libelle',
         'description',
@@ -26,6 +27,11 @@ class Objectif extends Model
     ];
 
     // Relations
+    public function exercice()
+    {
+        return $this->belongsTo(Exercice::class);
+    }
+
     public function resultats()
     {
         return $this->hasMany(Resultat::class);
@@ -45,6 +51,15 @@ class Objectif extends Model
     public function scopeByAnnee($query, $annee)
     {
         return $query->where('annee', $annee);
+    }
+
+    public function scopeForExercice($query, ?int $exerciceId)
+    {
+        if ($exerciceId === null) {
+            return $query;
+        }
+
+        return $query->where('exercice_id', $exerciceId);
     }
 
     public function scopeOrdered($query)

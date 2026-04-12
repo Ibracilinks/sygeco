@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Facades\Auth;
 
 class Activite extends Model
 {
@@ -26,12 +27,21 @@ class Activite extends Model
         'statut',
         'saisi_par',
         'date_saisie',
+        'date_soumission',
+        'date_validation',
+        'valide_par',
+        'refuse_le',
+        'refuse_par',
+        'motif_refus',
         'commentaires',
     ];
 
     protected $casts = [
         'cout' => 'decimal:2',
         'date_saisie' => 'date',
+        'date_soumission' => 'datetime',
+        'date_validation' => 'datetime',
+        'refuse_le' => 'datetime',
     ];
 
     // Relations
@@ -64,6 +74,17 @@ class Activite extends Model
     public function scopeByStatut($query, $statut)
     {
         return $query->where('statut', $statut);
+    }
+
+    public function scopeForExercice($query, ?int $exerciceId)
+    {
+        if ($exerciceId === null) {
+            return $query;
+        }
+
+        return $query->whereHas('extrant.objectif', function ($q) use ($exerciceId) {
+            $q->where('exercice_id', $exerciceId);
+        });
     }
 
     public function scopeBrouillon($query)
@@ -105,6 +126,10 @@ class Activite extends Model
 
     public function getStatutLabelAttribute()
     {
+        if ($this->statut === 'brouillon' && $this->motif_refus) {
+            return '❌ Refusé';
+        }
+
         return match ($this->statut) {
             'brouillon' => '📝 Brouillon',
             'soumis' => '⏳ Soumis',
@@ -115,6 +140,10 @@ class Activite extends Model
 
     public function getStatutColorAttribute()
     {
+        if ($this->statut === 'brouillon' && $this->motif_refus) {
+            return 'red';
+        }
+
         return match ($this->statut) {
             'brouillon' => 'gray',
             'soumis' => 'yellow',
@@ -123,27 +152,111 @@ class Activite extends Model
         };
     }
 
-    // Méthodes métier
-    public function soumettre()
+    public function validePar()
     {
-        if ($this->statut === 'brouillon') {
-            $this->update(['statut' => 'soumis']);
-            return true;
-        }
-        return false;
+        return $this->belongsTo(User::class, 'valide_par');
     }
 
-    public function valider()
+    public function refusePar()
     {
-        if ($this->statut === 'soumis') {
-            $this->update(['statut' => 'valide']);
-            return true;
+        return $this->belongsTo(User::class, 'refuse_par');
+    }
+
+    public function validationHistoriques()
+    {
+        return $this->hasMany(ValidationHistorique::class);
+    }
+
+    public function getDernierMotifRefus()
+    {
+        return $this->validationHistoriques()
+            ->where('action', 'refus')
+            ->latest('created_at')
+            ->value('commentaire') ?? $this->motif_refus;
+    }
+
+    public function peutEtreModifie()
+    {
+        return $this->statut === 'brouillon';
+    }
+
+    public function peutEtreSoumis()
+    {
+        return $this->statut === 'brouillon';
+    }
+
+    public function peutEtreValide()
+    {
+        return $this->statut === 'soumis';
+    }
+
+    public function soumettre()
+    {
+        if (! $this->peutEtreSoumis()) {
+            return false;
         }
-        return false;
+
+        $this->update([
+            'statut' => 'soumis',
+            'date_soumission' => now(),
+            'motif_refus' => null,
+            'refuse_le' => null,
+            'refuse_par' => null,
+        ]);
+
+        $this->logHistorique('soumission', 'brouillon', 'soumis');
+
+        return true;
+    }
+
+    public function valider(string $commentaire = null)
+    {
+        if (! $this->peutEtreValide()) {
+            return false;
+        }
+
+        $this->update([
+            'statut' => 'valide',
+            'date_validation' => now(),
+            'valide_par' => Auth::id(),
+        ]);
+
+        $this->logHistorique('validation', 'soumis', 'valide', $commentaire);
+
+        return true;
+    }
+
+    public function refuser(string $motif)
+    {
+        if (! $this->peutEtreValide()) {
+            return false;
+        }
+
+        $this->update([
+            'statut' => 'brouillon',
+            'motif_refus' => $motif,
+            'refuse_le' => now(),
+            'refuse_par' => Auth::id(),
+        ]);
+
+        $this->logHistorique('refus', 'soumis', 'brouillon', $motif);
+
+        return true;
+    }
+
+    protected function logHistorique(string $action, string $ancienStatut, string $nouveauStatut, string $commentaire = null, int $utilisateurId = null)
+    {
+        $this->validationHistoriques()->create([
+            'action' => $action,
+            'utilisateur_id' => $utilisateurId ?? Auth::id(),
+            'commentaire' => $commentaire,
+            'ancien_statut' => $ancienStatut,
+            'nouveau_statut' => $nouveauStatut,
+        ]);
     }
 
     public function estModifiable()
     {
-        return $this->statut === 'brouillon';
+        return $this->peutEtreModifie();
     }
 }
