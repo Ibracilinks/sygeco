@@ -3,7 +3,7 @@
 
         <div class="mb-6">
             <h1 class="text-2xl font-bold dark:text-white">Créer un nouveau département</h1>
-            <p class="text-zinc-500 dark:text-zinc-400">Ajoutez un département et ses informations de contact</p>
+            <p class="text-zinc-500 dark:text-zinc-400">Ajoutez un département et désignez un responsable</p>
         </div>
 
         <div
@@ -42,32 +42,18 @@
                         @enderror
                     </div>
 
-                    <div>
-                        <label class="block text-sm font-medium dark:text-white mb-2">Nom du responsable</label>
-                        <input type="text" name="responsable_nom" value="{{ old('responsable_nom') }}"
-                            class="w-full rounded-lg border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-zinc-900 px-3 py-2 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            placeholder="Nom complet">
-                        @error('responsable_nom')
-                            <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
-                        @enderror
-                    </div>
-
-                    <div>
-                        <label class="block text-sm font-medium dark:text-white mb-2">Email du responsable</label>
-                        <input type="email" name="responsable_email" value="{{ old('responsable_email') }}"
-                            class="w-full rounded-lg border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-zinc-900 px-3 py-2 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            placeholder="email@example.com">
-                        @error('responsable_email')
-                            <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
-                        @enderror
-                    </div>
-
-                    <div>
-                        <label class="block text-sm font-medium dark:text-white mb-2">Téléphone</label>
-                        <input type="text" name="telephone" value="{{ old('telephone') }}"
-                            class="w-full rounded-lg border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-zinc-900 px-3 py-2 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            placeholder="+225 XX XX XX XX">
-                        @error('telephone')
+                    <div class="md:col-span-2">
+                        <label class="block text-sm font-medium dark:text-white mb-2">Responsable</label>
+                        <select name="responsable_id"
+                            class="w-full rounded-lg border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-zinc-900 px-3 py-2 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="">Aucun</option>
+                            @foreach ($users as $user)
+                                <option value="{{ $user->id }}"
+                                    {{ (string) old('responsable_id') === (string) $user->id ? 'selected' : '' }}>
+                                    {{ $user->name }} — {{ $user->email }}</option>
+                            @endforeach
+                        </select>
+                        @error('responsable_id')
                             <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
                         @enderror
                     </div>

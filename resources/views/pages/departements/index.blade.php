@@ -57,9 +57,9 @@
                             <td class="px-6 py-4 font-mono text-sm dark:text-white">{{ $departement->code }}</td>
                             <td class="px-6 py-4 font-medium dark:text-white">{{ $departement->nom }}</td>
                             <td class="px-6 py-4 dark:text-white">
-                                @if ($departement->responsable_nom)
-                                    <div>{{ $departement->responsable_nom }}</div>
-                                    <div class="text-xs text-zinc-500">{{ $departement->responsable_email }}</div>
+                                @if ($departement->responsable)
+                                    <div>{{ $departement->responsable->name }}</div>
+                                    <div class="text-xs text-zinc-500">{{ $departement->responsable->email }}</div>
                                 @else
                                     -
                                 @endif

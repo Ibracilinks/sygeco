@@ -1,4 +1,4 @@
-<x-layouts::app :title="__('Activité : ' . $activite->code)">
+<x-layouts::app :title="__('Activité : ' . $activite->nom_activite)">
     <div class="flex h-full w-full flex-1 flex-col gap-6 rounded-xl overflow-y-auto p-6">
 
         <!-- En-tête avec navigation -->
@@ -22,7 +22,7 @@
                             Ordre {{ $activite->ordre }}
                         </span>
                     </div>
-                    <h1 class="text-2xl font-bold dark:text-white">{{ $activite->libelle }}</h1>
+                    <h1 class="text-2xl font-bold dark:text-white">{{ $activite->nom_activite }}</h1>
                     <p class="text-zinc-500 dark:text-zinc-400 mt-1">Code: {{ $activite->code }}</p>
                 </div>
             </div>
@@ -221,9 +221,9 @@
                         @if ($activite->departement)
                             <div class="text-sm text-zinc-500">Nom</div>
                             <div class="font-medium dark:text-white">{{ $activite->departement->nom }}</div>
-                            @if ($activite->departement->responsable_nom)
+                            @if ($activite->departement->responsable)
                                 <div class="text-sm text-zinc-500 mt-3">Responsable</div>
-                                <div class="dark:text-white">{{ $activite->departement->responsable_nom }}</div>
+                                <div class="dark:text-white">{{ $activite->departement->responsable->name }}</div>
                             @endif
                         @else
                             <p class="text-zinc-500">Non assigné</p>

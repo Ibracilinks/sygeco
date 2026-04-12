@@ -54,15 +54,15 @@
                 <div class="p-6 space-y-4">
                     <div>
                         <div class="text-sm text-zinc-500">Responsable</div>
-                        <div class="dark:text-white">{{ $departement->responsable_nom ?? 'Non défini' }}</div>
+                        <div class="dark:text-white">{{ $departement->responsable?->name ?? 'Non défini' }}</div>
                     </div>
                     <div>
                         <div class="text-sm text-zinc-500">Email</div>
-                        <div class="dark:text-white">{{ $departement->responsable_email ?? 'Non défini' }}</div>
+                        <div class="dark:text-white">{{ $departement->responsable?->email ?? 'Non défini' }}</div>
                     </div>
                     <div>
                         <div class="text-sm text-zinc-500">Téléphone</div>
-                        <div class="dark:text-white">{{ $departement->telephone ?? 'Non défini' }}</div>
+                        <div class="dark:text-white">{{ $departement->responsable?->telephone ?? 'Non défini' }}</div>
                     </div>
                     <div>
                         <div class="text-sm text-zinc-500">Utilisateurs</div>

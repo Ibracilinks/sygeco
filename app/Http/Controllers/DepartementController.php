@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Departement;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 
@@ -12,6 +13,7 @@ class DepartementController extends Controller
     {
         $departements = Departement::ordered()
             ->withCount('users')
+            ->with('responsable')
             ->paginate(15);
 
         return view('pages.departements.index', compact('departements'));
@@ -19,7 +21,9 @@ class DepartementController extends Controller
 
     public function create()
     {
-        return view('pages.departements.create');
+        $users = User::orderBy('name')->get();
+
+        return view('pages.departements.create', compact('users'));
     }
 
     public function store(Request $request)
@@ -28,9 +32,7 @@ class DepartementController extends Controller
             'code' => 'required|string|max:20|unique:departements',
             'nom' => 'required|string|max:200',
             'description' => 'nullable|string',
-            'responsable_nom' => 'nullable|string|max:100',
-            'responsable_email' => 'nullable|email|max:100',
-            'telephone' => 'nullable|string|max:20',
+            'responsable_id' => 'nullable|exists:users,id',
             'is_active' => 'boolean',
             'ordre' => 'nullable|integer',
         ]);
@@ -45,13 +47,15 @@ class DepartementController extends Controller
 
     public function show(Departement $departement)
     {
-        $departement->load('users');
+        $departement->load('users', 'responsable');
         return view('pages.departements.show', compact('departement'));
     }
 
     public function edit(Departement $departement)
     {
-        return view('pages.departements.edit', compact('departement'));
+        $users = User::orderBy('name')->get();
+
+        return view('pages.departements.edit', compact('departement', 'users'));
     }
 
     public function update(Request $request, Departement $departement)
@@ -60,9 +64,7 @@ class DepartementController extends Controller
             'code' => ['required', 'string', 'max:20', Rule::unique('departements')->ignore($departement->id)],
             'nom' => 'required|string|max:200',
             'description' => 'nullable|string',
-            'responsable_nom' => 'nullable|string|max:100',
-            'responsable_email' => 'nullable|email|max:100',
-            'telephone' => 'nullable|string|max:20',
+            'responsable_id' => 'nullable|exists:users,id',
             'is_active' => 'boolean',
             'ordre' => 'nullable|integer',
         ]);

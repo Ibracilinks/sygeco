@@ -118,7 +118,7 @@ class ActiviteController extends Controller
      */
     public function show(Activite $activite)
     {
-        $activite->load(['extrant.objectif', 'departement', 'saisiePar']);
+        $activite->load(['extrant.objectif', 'departement.responsable', 'saisiePar']);
         return view('pages.activites.show', compact('activite'));
     }
 
