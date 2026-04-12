@@ -16,9 +16,7 @@ class Departement extends Model
         'code',
         'nom',
         'description',
-        'responsable_nom',
-        'responsable_email',
-        'telephone',
+        'responsable_id',
         'is_active',
         'ordre'
     ];
@@ -36,6 +34,11 @@ class Departement extends Model
     public function activites()
     {
         return $this->hasMany(Activite::class, 'departement_id');
+    }
+
+    public function responsable()
+    {
+        return $this->belongsTo(User::class, 'responsable_id');
     }
 
     // Scopes

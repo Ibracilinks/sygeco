@@ -26,9 +26,14 @@ class Objectif extends Model
     ];
 
     // Relations
+    public function resultats()
+    {
+        return $this->hasMany(Resultat::class);
+    }
+
     public function extrants()
     {
-        return $this->hasMany(Extrant::class);
+        return $this->hasManyThrough(Extrant::class, Resultat::class);
     }
 
     // Scopes
@@ -69,20 +74,37 @@ class Objectif extends Model
     // Méthodes métier
     public function getBudgetTotalAttribute()
     {
-        return $this->extrants->sum(function ($extrant) {
-            return $extrant->activites->sum('cout');
-        });
+        $total = 0;
+        foreach ($this->resultats as $resultat) {
+            foreach ($resultat->extrants as $extrant) {
+                $total += $extrant->activites->sum('cout');
+            }
+        }
+        return $total;
+    }
+
+    public function getNbResultatsAttribute()
+    {
+        return $this->resultats()->count();
     }
 
     public function getNbExtrantsAttribute()
     {
-        return $this->extrants->count();
+        $total = 0;
+        foreach ($this->resultats as $resultat) {
+            $total += $resultat->extrants()->count();
+        }
+        return $total;
     }
 
     public function getNbActivitesAttribute()
     {
-        return $this->extrants->sum(function ($extrant) {
-            return $extrant->activites->count();
-        });
+        $total = 0;
+        foreach ($this->resultats as $resultat) {
+            foreach ($resultat->extrants as $extrant) {
+                $total += $extrant->activites()->count();
+            }
+        }
+        return $total;
     }
 }

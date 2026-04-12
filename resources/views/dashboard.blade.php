@@ -1,5 +1,10 @@
 <x-layouts::app title="Dashboard BI - DBCGOQ">
-    <div class="flex h-full w-full flex-1 flex-col gap-6 rounded-xl overflow-y-auto p-6" x-data="dashboardData()">
+
+    @push('scripts')
+        <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    @endpush
+
+    <div class="flex h-full w-full flex-1 flex-col gap-6 rounded-xl overflow-y-auto p-6">
 
         <!-- En-tête -->
         <div class="flex justify-between items-center">
@@ -71,18 +76,15 @@
             </div>
         </div>
 
-        <!-- Ligne 3: Bar Chart + Pie Chart (Lazy loaded) -->
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6" x-intersect="loadDetailedCharts()" x-data="{ loaded: false }">
+        <!-- Ligne 3: Bar Chart + Pie Chart -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <!-- Bar Chart: Budget par Objectif -->
             <div class="rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-zinc-800 p-6">
                 <div class="border-b border-neutral-200 dark:border-neutral-700 pb-4 mb-4">
                     <h2 class="text-lg font-semibold dark:text-white">Budget par Objectif</h2>
                     <p class="text-sm text-zinc-500 dark:text-zinc-400">En millions FCFA</p>
                 </div>
-                <div x-show="!loaded" class="flex items-center justify-center h-64">
-                    <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-                </div>
-                <x-charts.bar-chart x-show="loaded" :labels="array_column($budgetParObjectif, 'code')" :datasets="[
+                <x-charts.bar-chart :labels="array_column($budgetParObjectif, 'code')" :datasets="[
                     [
                         'label' => 'Budget (M FCFA)',
                         'data' => array_column($budgetParObjectif, 'budget'),
@@ -98,26 +100,20 @@
                     <h2 class="text-lg font-semibold dark:text-white">Top Extrants</h2>
                     <p class="text-sm text-zinc-500 dark:text-zinc-400">Par nombre d'activités</p>
                 </div>
-                <div x-show="!loaded" class="flex items-center justify-center h-64">
-                    <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600"></div>
-                </div>
-                <x-charts.pie-chart x-show="loaded" :labels="collect($topExtrants)->take(5)->pluck('code')->toArray()" :data="collect($topExtrants)->take(5)->pluck('nb_activites')->toArray()" type="pie"
+                <x-charts.pie-chart :labels="collect($topExtrants)->take(5)->pluck('code')->toArray()" :data="collect($topExtrants)->take(5)->pluck('nb_activites')->toArray()" type="pie"
                     :height="300" />
             </div>
         </div>
 
-        <!-- Ligne 4: Horizontal Bar + Donut (Lazy loaded) -->
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6" x-intersect="loadAdditionalCharts()" x-data="{ loaded: false }">
+        <!-- Ligne 4: Horizontal Bar + Donut -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <!-- Horizontal Bar: Top Activités -->
             <div class="rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-zinc-800 p-6">
                 <div class="border-b border-neutral-200 dark:border-neutral-700 pb-4 mb-4">
                     <h2 class="text-lg font-semibold dark:text-white">Top Activités</h2>
                     <p class="text-sm text-zinc-500 dark:text-zinc-400">Par coût</p>
                 </div>
-                <div x-show="!loaded" class="flex items-center justify-center h-64">
-                    <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
-                </div>
-                <div x-show="loaded" class="space-y-3 max-h-96 overflow-y-auto">
+                <div class="space-y-3 max-h-96 overflow-y-auto">
                     @foreach (array_slice($topActivites, 0, 8) as $item)
                         <div>
                             <div class="flex justify-between text-sm mb-1">
@@ -146,26 +142,20 @@
                     <h2 class="text-lg font-semibold dark:text-white">Distribution Budgétaire</h2>
                     <p class="text-sm text-zinc-500 dark:text-zinc-400">Par tranche de coût</p>
                 </div>
-                <div x-show="!loaded" class="flex items-center justify-center h-64">
-                    <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-yellow-600"></div>
-                </div>
-                <x-charts.pie-chart x-show="loaded" :labels="array_keys($distributionBudgetaire)" :data="array_values($distributionBudgetaire)" type="donut"
+                <x-charts.pie-chart :labels="array_keys($distributionBudgetaire)" :data="array_values($distributionBudgetaire)" type="donut"
                     :height="300" />
             </div>
         </div>
 
-        <!-- Ligne 5: Bar Charts (Lazy loaded) -->
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6" x-intersect="loadFinalCharts()" x-data="{ loaded: false }">
+        <!-- Ligne 5: Bar Charts -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <!-- Bar Chart: Activités par Statut -->
             <div class="rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-zinc-800 p-6">
                 <div class="border-b border-neutral-200 dark:border-neutral-700 pb-4 mb-4">
                     <h2 class="text-lg font-semibold dark:text-white">Activités par Statut</h2>
                     <p class="text-sm text-zinc-500 dark:text-zinc-400">État d'avancement</p>
                 </div>
-                <div x-show="!loaded" class="flex items-center justify-center h-64">
-                    <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
-                </div>
-                <x-charts.bar-chart x-show="loaded" :labels="array_keys($activitesParStatut)" :datasets="[
+                <x-charts.bar-chart :labels="array_keys($activitesParStatut)" :datasets="[
                     [
                         'label' => 'Nombre d\'activités',
                         'data' => array_values($activitesParStatut),
@@ -181,10 +171,7 @@
                     <h2 class="text-lg font-semibold dark:text-white">Activités par Trimestre</h2>
                     <p class="text-sm text-zinc-500 dark:text-zinc-400">Répartition trimestrielle</p>
                 </div>
-                <div x-show="!loaded" class="flex items-center justify-center h-64">
-                    <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-pink-600"></div>
-                </div>
-                <x-charts.bar-chart x-show="loaded" :labels="['T1', 'T2', 'T3', 'T4']" :datasets="[
+                <x-charts.bar-chart :labels="['T1', 'T2', 'T3', 'T4']" :datasets="[
                     [
                         'label' => 'Nombre d\'activités',
                         'data' => $activitesParTrimestre,
@@ -198,57 +185,6 @@
     </div>
 
     <script>
-        function dashboardData() {
-            return {
-                detailedChartsLoaded: false,
-                additionalChartsLoaded: false,
-                finalChartsLoaded: false,
-
-                loadDetailedCharts() {
-                    if (!this.detailedChartsLoaded) {
-                        this.detailedChartsLoaded = true;
-                        // Charts are already rendered server-side, just show them
-                        this.$nextTick(() => {
-                            this.$el.querySelectorAll('[x-show="loaded"]').forEach(el => {
-                                el.style.display = 'block';
-                            });
-                            this.$el.querySelectorAll('[x-show="!loaded"]').forEach(el => {
-                                el.style.display = 'none';
-                            });
-                        });
-                    }
-                },
-
-                loadAdditionalCharts() {
-                    if (!this.additionalChartsLoaded) {
-                        this.additionalChartsLoaded = true;
-                        this.$nextTick(() => {
-                            this.$el.querySelectorAll('[x-show="loaded"]').forEach(el => {
-                                el.style.display = 'block';
-                            });
-                            this.$el.querySelectorAll('[x-show="!loaded"]').forEach(el => {
-                                el.style.display = 'none';
-                            });
-                        });
-                    }
-                },
-
-                loadFinalCharts() {
-                    if (!this.finalChartsLoaded) {
-                        this.finalChartsLoaded = true;
-                        this.$nextTick(() => {
-                            this.$el.querySelectorAll('[x-show="loaded"]').forEach(el => {
-                                el.style.display = 'block';
-                            });
-                            this.$el.querySelectorAll('[x-show="!loaded"]').forEach(el => {
-                                el.style.display = 'none';
-                            });
-                        });
-                    }
-                }
-            }
-        }
-
         // Filtre par année
         var anneeSelect = document.getElementById('annee-select');
         if (anneeSelect) {

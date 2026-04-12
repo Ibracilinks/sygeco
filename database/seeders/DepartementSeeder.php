@@ -3,6 +3,7 @@
 namespace Database\Seeders;
 
 use App\Models\Departement as Department;
+use App\Models\User;
 use Illuminate\Database\Seeder;
 
 class DepartementSeeder extends Seeder
@@ -19,8 +20,11 @@ class DepartementSeeder extends Seeder
             ['code' => 'DIR_QUAL', 'nom' => 'Direction Qualité', 'ordre' => 7],
         ];
 
+        $users = User::get();
         foreach ($departements as $dept) {
-            Department::create($dept);
+            $departement = Department::create($dept);
+            $departement->responsable_id = $users->random()->id;
+            $departement->save();
         }
     }
 }

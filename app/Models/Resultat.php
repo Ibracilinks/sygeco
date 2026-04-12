@@ -46,40 +46,4 @@ class Resultat extends Model
     {
         return $query->orderBy('ordre')->orderBy('code');
     }
-
-    // Accesseurs
-    public function getFullNameAttribute()
-    {
-        return $this->code . ' - ' . $this->libelle;
-    }
-
-    public function getStatutLabelAttribute()
-    {
-        return $this->is_active ? '✅ Actif' : '❌ Inactif';
-    }
-
-    public function getStatutColorAttribute()
-    {
-        return $this->is_active ? 'green' : 'red';
-    }
-
-    // Méthodes métier
-    public function getNbExtrantsAttribute()
-    {
-        return $this->extrants()->count();
-    }
-
-    public function getNbActivitesAttribute()
-    {
-        return $this->extrants->sum(function ($extrant) {
-            return $extrant->activites->count();
-        });
-    }
-
-    public function getBudgetTotalAttribute()
-    {
-        return $this->extrants->sum(function ($extrant) {
-            return $extrant->activites->sum('cout');
-        });
-    }
 }

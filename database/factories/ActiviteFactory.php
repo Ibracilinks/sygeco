@@ -44,7 +44,7 @@ class ActiviteFactory extends Factory
             'saisi_par' => User::factory(),
             'date_saisie' => $this->faker->dateTimeBetween('-6 months', 'now'),
             'commentaires' => $this->faker->optional(0.3)->paragraph(),
-            'created_at' => $this->faker->dateTimeBetween('-1 year', 'now'),
+            'created_at' => $this->faker->dateTimeBetween('-5 year', 'now'),
             'updated_at' => now(),
         ];
     }

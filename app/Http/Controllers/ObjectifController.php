@@ -70,30 +70,49 @@ class ObjectifController extends Controller
      */
     public function show(Objectif $objectif)
     {
-        $objectif->load(['extrants' => function ($query) {
-            $query->withCount('activites');
-            $query->with(['activites' => function ($q) {
-                $q->latest();
-            }]);
-        }]);
+        // Charger toute la hiérarchie : Résultats → Extrants → Activités
+        $objectif->load([
+            'resultats' => function ($query) {
+                $query->orderBy('ordre')->orderBy('code');
+                $query->with([
+                    'extrants' => function ($q) {
+                        $q->orderBy('ordre')->orderBy('code');
+                        $q->with([
+                            'activites' => function ($a) {
+                                $a->orderBy('created_at', 'desc');
+                            }
+                        ]);
+                        $q->withCount('activites');
+                    }
+                ]);
+                $query->withCount('extrants');
+            }
+        ]);
 
-        // Calcul des statistiques
+        // Calcul des statistiques globales
         $budgetTotal = 0;
         $nbActivites = 0;
+        $nbExtrants = 0;
+        $nbResultats = $objectif->resultats->count();
 
-        foreach ($objectif->extrants as $extrant) {
-            $budgetTotal += $extrant->activites->sum('cout');
-            $nbActivites += $extrant->activites->count();
+        foreach ($objectif->resultats as $resultat) {
+            $nbExtrants += $resultat->extrants->count();
+
+            foreach ($resultat->extrants as $extrant) {
+                $budgetTotal += $extrant->activites->sum('cout');
+                $nbActivites += $extrant->activites->count();
+            }
         }
 
         $budgetMoyen = $nbActivites > 0 ? $budgetTotal / $nbActivites : 0;
 
         $stats = [
-            'nb_extrants' => $objectif->extrants->count(),
+            'nb_resultats' => $nbResultats,
+            'nb_extrants' => $nbExtrants,
             'nb_activites' => $nbActivites,
             'budget_total' => $budgetTotal,
             'budget_moyen' => $budgetMoyen,
-            'taux_activites' => $nbActivites > 0 ? 100 : 0, // À adapter selon votre logique
+            'taux_activites' => $nbActivites > 0 ? 100 : 0,
         ];
 
         return view('pages.objectifs.show', compact('objectif', 'stats'));
