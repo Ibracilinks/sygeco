@@ -46,6 +46,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::resource('objectifs', ObjectifController::class);
 
     Route::resource('resultats', ResultatController::class);
+    Route::post('resultats/{resultat}/toggle-status', [ResultatController::class, 'toggleStatus'])->name('resultats.toggle-status');
 
     Route::resource('extrants', ExtrantController::class);
     Route::post('extrants/{extrant}/toggle-status', [ExtrantController::class, 'toggleStatus'])->name('extrants.toggle-status');

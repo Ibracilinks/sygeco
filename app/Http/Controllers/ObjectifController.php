@@ -2,11 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\StoreObjectifRequest;
+use App\Http\Requests\UpdateObjectifRequest;
 use App\Models\Exercice;
 use App\Models\Objectif;
 use App\Support\ActiveExercice;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
-use Illuminate\Validation\Rule;
 
 class ObjectifController extends Controller
 {
@@ -15,38 +17,38 @@ class ObjectifController extends Controller
      */
     public function index(Request $request)
     {
-        $query = Objectif::query()->with('exercice');
+        $filters = [
+            'search' => trim((string) $request->string('search')),
+            'exercice_id' => $request->has('exercice_id') ? (string) $request->string('exercice_id') : (string) ActiveExercice::id(),
+            'annee' => trim((string) $request->string('annee')),
+            'statut' => trim((string) $request->string('statut')),
+            'sort' => (string) $request->string('sort', 'ordre'),
+            'direction' => (string) $request->string('direction', 'asc'),
+        ];
 
-        if ($request->has('exercice_id') && $request->exercice_id === '') {
-            $exerciceId = null;
-        } elseif ($request->filled('exercice_id')) {
-            $exerciceId = (int) $request->exercice_id;
-        } else {
-            $exerciceId = ActiveExercice::id();
-        }
-        $query->forExercice($exerciceId);
+        $query = Objectif::query()
+            ->with('exercice:id,annee,statut')
+            ->withCount(['resultats', 'extrants']);
 
-        if ($request->filled('annee')) {
-            $query->where('annee', $request->annee);
-        }
+        $this->applyFilters($query, $filters);
+        $this->applySort($query, $filters['sort'], $filters['direction']);
 
-        if ($request->filled('statut')) {
-            $query->where('statut', $request->statut);
-        }
+        $objectifs = $query->paginate(15)->withQueryString();
 
-        if ($request->filled('search')) {
-            $query->where(function ($q) use ($request) {
-                $q->where('code', 'like', "%{$request->search}%")
-                    ->orWhere('libelle', 'like', "%{$request->search}%");
-            });
-        }
+        $summaryQuery = Objectif::query();
+        $this->applyFilters($summaryQuery, $filters);
 
-        $objectifs = $query->ordered()->paginate(15)->withQueryString();
+        $summary = [
+            'total' => (clone $summaryQuery)->count('*'),
+            'actifs' => (clone $summaryQuery)->where('statut', 'actif')->count('*'),
+            'inactifs' => (clone $summaryQuery)->where('statut', 'inactif')->count('*'),
+            'avec_resultats' => (clone $summaryQuery)->has('resultats')->count('*'),
+        ];
 
-        $annees = Objectif::select('annee')->distinct()->orderBy('annee', 'desc')->pluck('annee');
-        $exercices = Exercice::query()->ordered()->get();
+        $annees = Objectif::query()->select('annee')->distinct()->orderBy('annee', 'desc')->pluck('annee');
+        $exercices = Exercice::query()->ordered()->get(['id', 'annee', 'statut']);
 
-        return view('pages.objectifs.index', compact('objectifs', 'annees', 'exercices', 'exerciceId'));
+        return view('pages.objectifs.index', compact('objectifs', 'annees', 'exercices', 'summary', 'filters'));
     }
 
     /**
@@ -54,7 +56,7 @@ class ObjectifController extends Controller
      */
     public function create()
     {
-        $exercices = Exercice::query()->ordered()->get();
+        $exercices = Exercice::query()->ordered()->get(['id', 'annee', 'statut']);
         $defaultExerciceId = ActiveExercice::id();
 
         return view('pages.objectifs.create', compact('exercices', 'defaultExerciceId'));
@@ -63,16 +65,9 @@ class ObjectifController extends Controller
     /**
      * Enregistrement
      */
-    public function store(Request $request)
+    public function store(StoreObjectifRequest $request)
     {
-        $validated = $request->validate([
-            'exercice_id' => 'required|exists:exercices,id',
-            'code' => 'required|string|max:20|unique:objectifs',
-            'libelle' => 'required|string|max:500',
-            'description' => 'nullable|string',
-            'statut' => ['required', Rule::in(['actif', 'inactif'])],
-            'ordre' => 'nullable|integer',
-        ]);
+        $validated = $request->validated();
 
         $exercice = Exercice::query()->findOrFail($validated['exercice_id']);
         $validated['annee'] = $exercice->annee;
@@ -141,7 +136,7 @@ class ObjectifController extends Controller
      */
     public function edit(Objectif $objectif)
     {
-        $exercices = Exercice::query()->ordered()->get();
+        $exercices = Exercice::query()->ordered()->get(['id', 'annee', 'statut']);
 
         return view('pages.objectifs.edit', compact('objectif', 'exercices'));
     }
@@ -149,16 +144,9 @@ class ObjectifController extends Controller
     /**
      * Mise à jour
      */
-    public function update(Request $request, Objectif $objectif)
+    public function update(UpdateObjectifRequest $request, Objectif $objectif)
     {
-        $validated = $request->validate([
-            'exercice_id' => 'required|exists:exercices,id',
-            'code' => ['required', 'string', 'max:20', Rule::unique('objectifs')->ignore($objectif->id)],
-            'libelle' => 'required|string|max:500',
-            'description' => 'nullable|string',
-            'statut' => ['required', Rule::in(['actif', 'inactif'])],
-            'ordre' => 'nullable|integer',
-        ]);
+        $validated = $request->validated();
 
         $exercice = Exercice::query()->findOrFail($validated['exercice_id']);
         $validated['annee'] = $exercice->annee;
@@ -198,5 +186,41 @@ class ObjectifController extends Controller
 
         return redirect()->route('objectifs.index')
             ->with('success', "Objectif {$objectif->code} {$message}.");
+    }
+
+    /**
+     * @param array{search: string, exercice_id: string, annee: string, statut: string, sort?: string, direction?: string} $filters
+     */
+    private function applyFilters(Builder $query, array $filters): void
+    {
+        if ($filters['exercice_id'] !== '') {
+            $query->where('exercice_id', (int) $filters['exercice_id']);
+        }
+
+        if ($filters['annee'] !== '') {
+            $query->where('annee', (int) $filters['annee']);
+        }
+
+        if ($filters['statut'] !== '') {
+            $query->where('statut', $filters['statut']);
+        }
+
+        if ($filters['search'] !== '') {
+            $term = '%' . str_replace(' ', '%', $filters['search']) . '%';
+            $query->where(function (Builder $builder) use ($term) {
+                $builder
+                    ->where('code', 'like', $term)
+                    ->orWhere('libelle', 'like', $term);
+            });
+        }
+    }
+
+    private function applySort(Builder $query, string $sort, string $direction): void
+    {
+        $allowedSorts = ['code', 'annee', 'ordre', 'statut', 'created_at'];
+        $sort = in_array($sort, $allowedSorts, true) ? $sort : 'ordre';
+        $direction = in_array($direction, ['asc', 'desc'], true) ? $direction : 'asc';
+
+        $query->orderBy($sort, $direction)->orderBy('code', 'asc');
     }
 }

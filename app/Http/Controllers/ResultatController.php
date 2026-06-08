@@ -2,12 +2,14 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\StoreResultatRequest;
+use App\Http\Requests\UpdateResultatRequest;
 use App\Models\Resultat;
 use App\Models\Objectif;
 use App\Support\ActiveExercice;
 use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
-use Illuminate\Validation\Rule;
 
 class ResultatController extends Controller
 {
@@ -16,37 +18,50 @@ class ResultatController extends Controller
      */
     public function index(Request $request)
     {
-        $query = Resultat::with('objectif');
-
         $exerciceId = ActiveExercice::id();
+
+        $filters = [
+            'search' => trim((string) $request->string('search')),
+            'objectif_id' => trim((string) $request->string('objectif_id')),
+            'is_active' => trim((string) $request->string('is_active')),
+            'sort' => (string) $request->string('sort', 'ordre'),
+            'direction' => (string) $request->string('direction', 'asc'),
+        ];
+
+        $query = Resultat::query()
+            ->with(['objectif:id,code,annee,libelle'])
+            ->withCount('extrants');
+
         if ($exerciceId !== null) {
-            $query->whereHas('objectif', fn ($q) => $q->where('exercice_id', $exerciceId));
+            $query->whereHas('objectif', fn (Builder $builder) => $builder->where('exercice_id', $exerciceId));
         }
 
-        if ($request->filled('objectif_id')) {
-            $query->where('objectif_id', $request->objectif_id);
-        }
+        $this->applyFilters($query, $filters);
+        $this->applySort($query, $filters['sort'], $filters['direction']);
 
-        if ($request->filled('is_active')) {
-            $query->where('is_active', $request->is_active);
-        }
+        $resultats = $query->paginate(15)->withQueryString();
 
-        if ($request->filled('search')) {
-            $query->where(function ($q) use ($request) {
-                $q->where('code', 'like', "%{$request->search}%")
-                    ->orWhere('libelle', 'like', "%{$request->search}%");
-            });
+        $summaryQuery = Resultat::query();
+        if ($exerciceId !== null) {
+            $summaryQuery->whereHas('objectif', fn (Builder $builder) => $builder->where('exercice_id', $exerciceId));
         }
+        $this->applyFilters($summaryQuery, $filters);
 
-        $resultats = $query->ordered()->paginate(15)->withQueryString();
+        $summary = [
+            'total' => (clone $summaryQuery)->count('*'),
+            'actifs' => (clone $summaryQuery)->where('is_active', true)->count('*'),
+            'inactifs' => (clone $summaryQuery)->where('is_active', false)->count('*'),
+            'avec_extrants' => (clone $summaryQuery)->has('extrants')->count('*'),
+        ];
 
         $objectifs = Objectif::query()
             ->where('statut', 'actif')
             ->when($exerciceId !== null, fn ($q) => $q->where('exercice_id', $exerciceId))
             ->orderBy('annee', 'desc')
-            ->get();
+            ->orderBy('code')
+            ->get(['id', 'code', 'annee', 'libelle']);
 
-        return view('pages.resultats.index', compact('resultats', 'objectifs'));
+        return view('pages.resultats.index', compact('resultats', 'objectifs', 'summary', 'filters'));
     }
 
     /**
@@ -68,16 +83,10 @@ class ResultatController extends Controller
     /**
      * Enregistrement
      */
-    public function store(Request $request)
+    public function store(StoreResultatRequest $request)
     {
-        $validated = $request->validate([
-            'objectif_id' => 'required|exists:objectifs,id',
-            'code' => 'required|string|max:20|unique:resultats',
-            'libelle' => 'required|string|max:500',
-            'description' => 'nullable|string',
-            'ordre' => 'nullable|integer',
-            'is_active' => 'boolean',
-        ]);
+        $validated = $request->validated();
+        $validated['is_active'] = (bool) ($validated['is_active'] ?? false);
 
         $resultat = Resultat::create($validated);
 
@@ -193,16 +202,10 @@ class ResultatController extends Controller
     /**
      * Mise à jour
      */
-    public function update(Request $request, Resultat $resultat)
+    public function update(UpdateResultatRequest $request, Resultat $resultat)
     {
-        $validated = $request->validate([
-            'objectif_id' => 'required|exists:objectifs,id',
-            'code' => ['required', 'string', 'max:20', Rule::unique('resultats')->ignore($resultat->id)],
-            'libelle' => 'required|string|max:500',
-            'description' => 'nullable|string',
-            'ordre' => 'nullable|integer',
-            'is_active' => 'boolean',
-        ]);
+        $validated = $request->validated();
+        $validated['is_active'] = (bool) ($validated['is_active'] ?? false);
 
         $resultat->update($validated);
 
@@ -221,7 +224,7 @@ class ResultatController extends Controller
         }
 
         $code = $resultat->code;
-        $resultat->delete();
+        Resultat::query()->whereKey($resultat->id)->delete();
 
         return redirect()->route('resultats.index')
             ->with('success', "Résultat {$code} supprimé.");
@@ -238,5 +241,37 @@ class ResultatController extends Controller
 
         return redirect()->route('resultats.index')
             ->with('success', "Résultat {$resultat->code} {$status}.");
+    }
+
+    /**
+     * @param array{search: string, objectif_id: string, is_active: string, sort?: string, direction?: string} $filters
+     */
+    private function applyFilters(Builder $query, array $filters): void
+    {
+        if ($filters['objectif_id'] !== '') {
+            $query->where('objectif_id', (int) $filters['objectif_id']);
+        }
+
+        if ($filters['is_active'] !== '') {
+            $query->where('is_active', $filters['is_active'] === '1');
+        }
+
+        if ($filters['search'] !== '') {
+            $term = '%' . str_replace(' ', '%', $filters['search']) . '%';
+            $query->where(function (Builder $builder) use ($term) {
+                $builder
+                    ->where('code', 'like', $term)
+                    ->orWhere('libelle', 'like', $term);
+            });
+        }
+    }
+
+    private function applySort(Builder $query, string $sort, string $direction): void
+    {
+        $allowedSorts = ['code', 'ordre', 'created_at', 'is_active'];
+        $sort = in_array($sort, $allowedSorts, true) ? $sort : 'ordre';
+        $direction = in_array($direction, ['asc', 'desc'], true) ? $direction : 'asc';
+
+        $query->orderBy($sort, $direction)->orderBy('code', 'asc');
     }
 }

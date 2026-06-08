@@ -1,170 +1,129 @@
 <x-layouts::app title="Résultats">
-    <div class="flex h-full w-full flex-1 flex-col gap-4 rounded-xl">
-
-        <div class="flex justify-between items-center">
+    <div class="flex h-full w-full flex-1 flex-col gap-5 rounded-xl">
+        <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
             <div>
-                <h1 class="text-2xl font-bold dark:text-white">Résultats Stratégiques</h1>
-                <p class="text-zinc-500 dark:text-zinc-400 mt-1">Gestion des résultats par objectif stratégique</p>
+                <h1 class="text-2xl font-semibold text-slate-900 dark:text-white">Résultats stratégiques</h1>
+                <p class="text-sm text-slate-500 dark:text-slate-400">Suivi des résultats par objectif, statut et niveau de déclinaison en extrants.</p>
             </div>
             @can('create_resultats')
-                <a href="{{ route('resultats.create') }}"
-                    class="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition">
-                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
-                    </svg>
-                    Nouveau Résultat
+                <a href="{{ route('resultats.create') }}" class="inline-flex items-center rounded-lg bg-slate-800 px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-700 dark:bg-slate-200 dark:text-slate-900 dark:hover:bg-white">
+                    Nouveau résultat
                 </a>
             @endcan
         </div>
 
+        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            <div class="rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-900">
+                <p class="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">Total</p>
+                <p class="mt-2 text-3xl font-semibold text-slate-900 dark:text-white">{{ number_format($summary['total'] ?? 0) }}</p>
+            </div>
+            <div class="rounded-xl border border-emerald-200 bg-emerald-50 p-4 dark:border-emerald-900/60 dark:bg-emerald-950/25">
+                <p class="text-xs uppercase tracking-wide text-emerald-700 dark:text-emerald-300">Actifs</p>
+                <p class="mt-2 text-3xl font-semibold text-emerald-800 dark:text-emerald-100">{{ number_format($summary['actifs'] ?? 0) }}</p>
+            </div>
+            <div class="rounded-xl border border-rose-200 bg-rose-50 p-4 dark:border-rose-900/60 dark:bg-rose-950/25">
+                <p class="text-xs uppercase tracking-wide text-rose-700 dark:text-rose-300">Inactifs</p>
+                <p class="mt-2 text-3xl font-semibold text-rose-800 dark:text-rose-100">{{ number_format($summary['inactifs'] ?? 0) }}</p>
+            </div>
+            <div class="rounded-xl border border-sky-200 bg-sky-50 p-4 dark:border-sky-900/60 dark:bg-sky-950/25">
+                <p class="text-xs uppercase tracking-wide text-sky-700 dark:text-sky-300">Avec extrants</p>
+                <p class="mt-2 text-3xl font-semibold text-sky-800 dark:text-sky-100">{{ number_format($summary['avec_extrants'] ?? 0) }}</p>
+            </div>
+        </div>
+
         @if (session('success'))
-            <div class="rounded-lg bg-green-50 dark:bg-green-950 border border-green-200 dark:border-green-800 p-4">
-                <p class="text-sm font-medium text-green-800 dark:text-green-200">{{ session('success') }}</p>
+            <div class="rounded-lg border border-emerald-200 bg-emerald-50 p-4 dark:border-emerald-800 dark:bg-emerald-950/40">
+                <p class="text-sm font-medium text-emerald-800 dark:text-emerald-200">{{ session('success') }}</p>
             </div>
         @endif
 
         @if (session('error'))
-            <div class="rounded-lg bg-red-50 dark:bg-red-950 border border-red-200 dark:border-red-800 p-4">
-                <p class="text-sm font-medium text-red-800 dark:text-red-200">{{ session('error') }}</p>
+            <div class="rounded-lg border border-rose-200 bg-rose-50 p-4 dark:border-rose-800 dark:bg-rose-950/40">
+                <p class="text-sm font-medium text-rose-800 dark:text-rose-200">{{ session('error') }}</p>
             </div>
         @endif
 
-        <!-- Filtres -->
-        <div class="flex flex-wrap gap-4 items-center justify-between">
-            <div class="flex gap-4">
-                <select id="filter-objectif"
-                    onchange="window.location.href=updateQueryStringParameter(window.location.href, 'objectif_id', this.value)"
-                    class="rounded-lg border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-zinc-800 px-4 py-2 text-sm dark:text-white">
-                    <option value="">Tous les objectifs</option>
-                    @foreach ($objectifs as $objectif)
-                        <option value="{{ $objectif->id }}"
-                            {{ request('objectif_id') == $objectif->id ? 'selected' : '' }}>
-                            {{ $objectif->code }} - {{ $objectif->annee }}
-                        </option>
-                    @endforeach
-                </select>
+        <form method="GET" action="{{ route('resultats.index') }}" class="grid grid-cols-1 gap-3 rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-900 md:grid-cols-5">
+            <input type="text" name="search" value="{{ $filters['search'] ?? '' }}" placeholder="Code ou libellé"
+                class="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 focus:border-slate-500 focus:outline-none dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100">
 
-                <select id="filter-statut"
-                    onchange="window.location.href=updateQueryStringParameter(window.location.href, 'is_active', this.value)"
-                    class="rounded-lg border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-zinc-800 px-4 py-2 text-sm dark:text-white">
-                    <option value="">Tous les statuts</option>
-                    <option value="1" {{ request('is_active') == '1' ? 'selected' : '' }}>Actifs</option>
-                    <option value="0" {{ request('is_active') == '0' ? 'selected' : '' }}>Inactifs</option>
-                </select>
+            <select name="objectif_id" class="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 focus:border-slate-500 focus:outline-none dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100">
+                <option value="">Tous objectifs</option>
+                @foreach ($objectifs as $objectif)
+                    <option value="{{ $objectif->id }}" @selected((string) ($filters['objectif_id'] ?? '') === (string) $objectif->id)>
+                        {{ $objectif->code }} - {{ $objectif->annee }}
+                    </option>
+                @endforeach
+            </select>
 
-                <form method="GET" action="{{ route('resultats.index') }}" class="relative">
-                    <input type="text" name="search" value="{{ request('search') }}" placeholder="Rechercher..."
-                        class="rounded-lg border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-zinc-800 px-4 py-2 pr-10 text-sm dark:text-white w-64">
-                    <button type="submit" class="absolute right-2 top-2.5">
-                        <svg class="w-4 h-4 text-zinc-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
-                        </svg>
-                    </button>
-                </form>
+            <select name="is_active" class="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 focus:border-slate-500 focus:outline-none dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100">
+                <option value="">Tous statuts</option>
+                <option value="1" @selected(($filters['is_active'] ?? '') === '1')>Actifs</option>
+                <option value="0" @selected(($filters['is_active'] ?? '') === '0')>Inactifs</option>
+            </select>
+
+            <select name="sort" class="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 focus:border-slate-500 focus:outline-none dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100">
+                <option value="ordre" @selected(($filters['sort'] ?? '') === 'ordre')>Trier par ordre</option>
+                <option value="code" @selected(($filters['sort'] ?? '') === 'code')>Trier par code</option>
+                <option value="created_at" @selected(($filters['sort'] ?? '') === 'created_at')>Trier par création</option>
+            </select>
+
+            <div class="flex gap-2">
+                <select name="direction" class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 focus:border-slate-500 focus:outline-none dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100">
+                    <option value="asc" @selected(($filters['direction'] ?? 'asc') === 'asc')>Croissant</option>
+                    <option value="desc" @selected(($filters['direction'] ?? '') === 'desc')>Décroissant</option>
+                </select>
+                <button type="submit" class="rounded-lg bg-slate-800 px-4 py-2 text-sm font-medium text-white dark:bg-slate-200 dark:text-slate-900">Filtrer</button>
             </div>
-        </div>
+        </form>
 
-        <!-- Tableau -->
-        <div
-            class="overflow-hidden rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-zinc-800">
-            <table class="min-w-full divide-y divide-neutral-200 dark:divide-neutral-700">
-                <thead class="bg-neutral-50 dark:bg-zinc-900">
+        <div class="overflow-hidden rounded-xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900">
+            <table class="min-w-full divide-y divide-slate-200 dark:divide-slate-700">
+                <thead class="bg-slate-50 dark:bg-slate-950">
                     <tr>
-                        <th
-                            class="px-6 py-3 text-left text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase">
-                            Code</th>
-                        <th
-                            class="px-6 py-3 text-left text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase">
-                            Libellé</th>
-                        <th
-                            class="px-6 py-3 text-left text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase">
-                            Objectif</th>
-                        <th
-                            class="px-6 py-3 text-left text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase">
-                            Extrants</th>
-                        <th
-                            class="px-6 py-3 text-left text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase">
-                            Ordre</th>
-                        <th
-                            class="px-6 py-3 text-left text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase">
-                            Statut</th>
-                        <th
-                            class="px-6 py-3 text-left text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase">
-                            Actions</th>
+                        <th class="px-5 py-3 text-left text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">Résultat</th>
+                        <th class="px-5 py-3 text-left text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">Objectif</th>
+                        <th class="px-5 py-3 text-left text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">Extrants</th>
+                        <th class="px-5 py-3 text-left text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">Statut</th>
+                        <th class="px-5 py-3 text-left text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">Actions</th>
                     </tr>
                 </thead>
-                <tbody class="divide-y divide-neutral-200 dark:divide-neutral-700">
-                    @forelse($resultats as $resultat)
-                        <tr>
-                            <td class="px-6 py-4 whitespace-nowrap font-mono text-sm dark:text-white">
-                                {{ $resultat->code }}</td>
-                            <td class="px-6 py-4 dark:text-white">{{ Str::limit($resultat->libelle, 50) }}</td>
-                            <td class="px-6 py-4 dark:text-white">{{ $resultat->objectif->code ?? 'N/A' }}</td>
-                            <td class="px-6 py-4 text-center">
-                                <span
-                                    class="inline-flex items-center px-2 py-1 rounded-full text-xs bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
-                                    {{ $resultat->extrants->count() }}
+                <tbody class="divide-y divide-slate-200 dark:divide-slate-700">
+                    @forelse ($resultats as $resultat)
+                        <tr class="align-top">
+                            <td class="px-5 py-4">
+                                <p class="font-mono text-sm font-semibold text-slate-900 dark:text-white">{{ $resultat->code }}</p>
+                                <p class="mt-1 text-sm text-slate-700 dark:text-slate-200">{{ Str::limit($resultat->libelle, 90) }}</p>
+                                <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">Ordre: {{ $resultat->ordre ?? '-' }}</p>
+                            </td>
+                            <td class="px-5 py-4 text-sm text-slate-700 dark:text-slate-200">
+                                <p class="font-medium">{{ $resultat->objectif?->code ?? '-' }}</p>
+                                <p class="text-xs text-slate-500 dark:text-slate-400">{{ $resultat->objectif?->annee ?? '-' }}</p>
+                            </td>
+                            <td class="px-5 py-4 text-sm text-slate-700 dark:text-slate-200">{{ $resultat->extrants_count }}</td>
+                            <td class="px-5 py-4">
+                                <span class="rounded-full px-2 py-1 text-xs font-semibold {{ $resultat->is_active ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-200' : 'bg-rose-100 text-rose-800 dark:bg-rose-900/40 dark:text-rose-200' }}">
+                                    {{ $resultat->is_active ? 'Actif' : 'Inactif' }}
                                 </span>
                             </td>
-                            <td class="px-6 py-4 whitespace-nowrap dark:text-white">{{ $resultat->ordre }}</td>
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <span
-                                    class="px-2 py-1 text-xs rounded-full {{ $resultat->is_active ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200' }}">
-                                    {{ $resultat->is_active ? '✅ Actif' : '❌ Inactif' }}
-                                </span>
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <div class="flex gap-2">
-                                    <a href="{{ route('resultats.show', $resultat) }}"
-                                        class="text-blue-600 hover:text-blue-800" title="Voir">
-                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z">
-                                            </path>
-                                        </svg>
-                                    </a>
+                            <td class="px-5 py-4">
+                                <div class="flex flex-wrap gap-3 text-sm">
+                                    <a href="{{ route('resultats.show', $resultat) }}" class="font-medium text-sky-700 hover:text-sky-600 dark:text-sky-300">Voir</a>
                                     @can('edit_resultats')
-                                        <a href="{{ route('resultats.edit', $resultat) }}"
-                                            class="text-yellow-600 hover:text-yellow-800" title="Modifier">
-                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                    d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z">
-                                                </path>
-                                            </svg>
-                                        </a>
+                                        <a href="{{ route('resultats.edit', $resultat) }}" class="font-medium text-amber-700 hover:text-amber-600 dark:text-amber-300">Modifier</a>
                                     @endcan
                                     @can('delete_resultats')
-                                        <form action="{{ route('resultats.destroy', $resultat) }}" method="POST"
-                                            class="inline" onsubmit="return confirm('Confirmer la suppression ?')">
+                                        <form action="{{ route('resultats.destroy', $resultat) }}" method="POST" class="inline" onsubmit="return confirm('Confirmer la suppression ?')">
                                             @csrf
                                             @method('DELETE')
-                                            <button type="submit" class="text-red-600 hover:text-red-800"
-                                                title="Supprimer">
-                                                <svg class="w-5 h-5" fill="none" stroke="currentColor"
-                                                    viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                        d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16">
-                                                    </path>
-                                                </svg>
-                                            </button>
+                                            <button type="submit" class="font-medium text-rose-700 hover:text-rose-600 dark:text-rose-300">Supprimer</button>
                                         </form>
                                     @endcan
                                     @can('edit_resultats')
-                                        <form action="{{ route('resultats.toggle-status', $resultat) }}" method="POST"
-                                            class="inline">
+                                        <form action="{{ route('resultats.toggle-status', $resultat) }}" method="POST" class="inline">
                                             @csrf
-                                            <button type="submit"
-                                                class="{{ $resultat->is_active ? 'text-red-500 hover:text-red-700' : 'text-green-500 hover:text-green-700' }}"
-                                                title="{{ $resultat->is_active ? 'Désactiver' : 'Activer' }}">
-                                                <svg class="w-5 h-5" fill="none" stroke="currentColor"
-                                                    viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                        d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636">
-                                                    </path>
-                                                </svg>
+                                            <button type="submit" class="font-medium {{ $resultat->is_active ? 'text-rose-700 hover:text-rose-600 dark:text-rose-300' : 'text-emerald-700 hover:text-emerald-600 dark:text-emerald-300' }}">
+                                                {{ $resultat->is_active ? 'Désactiver' : 'Activer' }}
                                             </button>
                                         </form>
                                     @endcan
@@ -173,35 +132,13 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="7" class="px-6 py-8 text-center text-zinc-500 dark:text-zinc-400">
-                                Aucun résultat trouvé
-                            </td>
+                            <td colspan="5" class="px-5 py-10 text-center text-sm text-slate-500 dark:text-slate-400">Aucun résultat trouvé.</td>
                         </tr>
                     @endforelse
                 </tbody>
             </table>
         </div>
 
-        <div class="mt-4">
-            {{ $resultats->links() }}
-        </div>
+        <div class="mt-2">{{ $resultats->links() }}</div>
     </div>
 </x-layouts::app>
-
-@push('scripts')
-    <script>
-        function updateQueryStringParameter(uri, key, value) {
-            if (!value) {
-                var re = new RegExp("([?&])" + key + "=.*?(&|$)", "i");
-                return uri.replace(re, '$1$2');
-            }
-            var re = new RegExp("([?&])" + key + "=.*?(&|$)", "i");
-            var separator = uri.indexOf('?') !== -1 ? "&" : "?";
-            if (uri.match(re)) {
-                return uri.replace(re, '$1' + key + "=" + value + '$2');
-            } else {
-                return uri + separator + key + "=" + value;
-            }
-        }
-    </script>
-@endpush

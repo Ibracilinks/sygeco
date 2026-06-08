@@ -1,21 +1,30 @@
 <!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" class="dark">
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
 
 <head>
     @include('partials.head')
 </head>
 
-<body class="min-h-screen bg-white dark:bg-zinc-800">
+<body class="app-shell min-h-screen bg-white dark:bg-zinc-950">
     <flux:sidebar sticky collapsible="mobile"
-        class="border-e border-zinc-200 bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900">
-        <flux:sidebar.header>
+        class="app-sidebar border-e border-zinc-200 bg-zinc-50/95 dark:border-zinc-800 dark:bg-zinc-900/95">
+        <flux:sidebar.header class="app-sidebar-header">
             <x-app-logo :sidebar="true" href="{{ route('dashboard') }}" wire:navigate />
             <flux:sidebar.collapse class="lg:hidden" />
         </flux:sidebar.header>
 
-        <flux:sidebar.nav>
+        <div class="app-sidebar-intro hidden lg:block">
+            <p class="app-sidebar-intro-kicker">CANAM</p>
+            <p class="app-sidebar-intro-title">Centre de pilotage</p>
+            <div class="app-sidebar-intro-chip">
+                <span>{{ __('Exercice') }}</span>
+                <span>{{ request()->get('annee', now()->year) }}</span>
+            </div>
+        </div>
+
+        <flux:sidebar.nav class="app-sidebar-nav">
             <!-- Dashboard -->
-            <flux:sidebar.group :heading="__('Navigation')" class="grid">
+            <flux:sidebar.group :heading="__('Navigation')" class="app-sidebar-group grid">
                 <flux:sidebar.item icon="home" :href="route('dashboard')" :current="request()->routeIs('dashboard')"
                     wire:navigate>
                     {{ __('Dashboard') }}
@@ -23,7 +32,7 @@
             </flux:sidebar.group>
 
             <!-- Organisation -->
-            <flux:sidebar.group :heading="__('Organisation')" class="grid">
+            <flux:sidebar.group :heading="__('Organisation')" class="app-sidebar-group grid">
                 <flux:sidebar.item icon="building-office" href="{{ route('departements.index') }}"
                     :current="request()->routeIs('departements.*')">
                     {{ __('Départements') }}
@@ -36,7 +45,7 @@
             </flux:sidebar.group>
 
             <!-- Planification Stratégique -->
-            <flux:sidebar.group :heading="__('Planification Stratégique')" class="grid">
+            <flux:sidebar.group :heading="__('Planification Stratégique')" class="app-sidebar-group grid">
                 @can('view_exercices')
                     <flux:sidebar.item icon="calendar-days" href="{{ route('exercices.index') }}"
                         :current="request()->routeIs('exercices.*')">
@@ -80,11 +89,11 @@
 
         <flux:spacer />
 
-        <x-desktop-user-menu class="hidden lg:block" :name="auth()->user()->name" />
+        <x-desktop-user-menu class="app-sidebar-user hidden border-t border-slate-200/80 pt-3 lg:block dark:border-slate-800" :name="auth()->user()->name" />
     </flux:sidebar>
 
     <!-- Mobile User Menu -->
-    <flux:header class="lg:hidden">
+    <flux:header class="app-topbar border-b border-zinc-200/80 bg-white/95 lg:hidden dark:border-zinc-800 dark:bg-zinc-900/95">
         <flux:sidebar.toggle class="lg:hidden" icon="bars-2" inset="left" />
 
         <flux:spacer />
