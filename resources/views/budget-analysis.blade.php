@@ -5,12 +5,12 @@
         <div class="flex justify-between items-center">
             <div>
                 <h1 class="text-3xl font-bold dark:text-white">Analyse Budgétaire</h1>
-                <p class="text-sm text-zinc-500 dark:text-zinc-400 mt-1">Analyse détaillée des budgets et dépenses</p>
+                <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">Analyse détaillée des budgets et dépenses</p>
             </div>
             <div class="flex gap-3">
                 <div class="relative">
                     <select id="annee-select"
-                        class="rounded-lg border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-zinc-800 px-4 py-2 text-sm dark:text-white">
+                        class="rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-4 py-2 text-sm dark:text-white">
                         <option value="2026" {{ $annee == 2026 ? 'selected' : '' }}>2026</option>
                         <option value="2025" {{ $annee == 2025 ? 'selected' : '' }}>2025</option>
                         <option value="2024" {{ $annee == 2024 ? 'selected' : '' }}>2024</option>
@@ -46,10 +46,10 @@
         <!-- Section 2: Budget vs Réel -->
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <!-- Budget vs Réel par Objectif -->
-            <div class="rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-zinc-800 p-6">
-                <div class="border-b border-neutral-200 dark:border-neutral-700 pb-4 mb-4">
+            <div class="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-6">
+                <div class="border-b border-slate-200 dark:border-slate-700 pb-4 mb-4">
                     <h2 class="text-lg font-semibold dark:text-white">Budget vs Réel par Objectif</h2>
-                    <p class="text-sm text-zinc-500 dark:text-zinc-400">Comparaison budgétaire</p>
+                    <p class="text-sm text-slate-500 dark:text-slate-400">Comparaison budgétaire</p>
                 </div>
                 <x-charts.bar-chart :labels="array_column($budgetVsActual['planned_vs_actual'], 'code')" :datasets="[
                     [
@@ -70,10 +70,10 @@
             </div>
 
             <!-- Évolution Mensuelle des Dépenses -->
-            <div class="rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-zinc-800 p-6">
-                <div class="border-b border-neutral-200 dark:border-neutral-700 pb-4 mb-4">
+            <div class="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-6">
+                <div class="border-b border-slate-200 dark:border-slate-700 pb-4 mb-4">
                     <h2 class="text-lg font-semibold dark:text-white">Évolution Mensuelle des Dépenses</h2>
-                    <p class="text-sm text-zinc-500 dark:text-zinc-400">Budget dépensé par mois</p>
+                    <p class="text-sm text-slate-500 dark:text-slate-400">Budget dépensé par mois</p>
                 </div>
                 <x-charts.line-chart :labels="array_column($budgetVsActual['monthly_spending'], 'mois')" :datasets="[
                     [
@@ -93,10 +93,10 @@
         <!-- Section 3: Analyse par Département -->
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <!-- Dépenses par Département -->
-            <div class="rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-zinc-800 p-6">
-                <div class="border-b border-neutral-200 dark:border-neutral-700 pb-4 mb-4">
+            <div class="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-6">
+                <div class="border-b border-slate-200 dark:border-slate-700 pb-4 mb-4">
                     <h2 class="text-lg font-semibold dark:text-white">Dépenses par Département</h2>
-                    <p class="text-sm text-zinc-500 dark:text-zinc-400">Répartition budgétaire</p>
+                    <p class="text-sm text-slate-500 dark:text-slate-400">Répartition budgétaire</p>
                 </div>
                 <x-charts.bar-chart :labels="array_column($departmentBudgetAnalysis['department_spending'], 'nom')" :datasets="[
                     [
@@ -111,10 +111,10 @@
             </div>
 
             <!-- Efficacité par Département -->
-            <div class="rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-zinc-800 p-6">
-                <div class="border-b border-neutral-200 dark:border-neutral-700 pb-4 mb-4">
+            <div class="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-6">
+                <div class="border-b border-slate-200 dark:border-slate-700 pb-4 mb-4">
                     <h2 class="text-lg font-semibold dark:text-white">Efficacité par Département</h2>
-                    <p class="text-sm text-zinc-500 dark:text-zinc-400">Taux d'efficacité budgétaire</p>
+                    <p class="text-sm text-slate-500 dark:text-slate-400">Taux d'efficacité budgétaire</p>
                 </div>
                 <x-charts.bar-chart :labels="array_column($departmentBudgetAnalysis['department_efficiency'], 'nom')" :datasets="[
                     [
@@ -130,19 +130,19 @@
         <!-- Section 4: Planification Trimestrielle -->
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <!-- Répartition Trimestrielle -->
-            <div class="rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-zinc-800 p-6">
-                <div class="border-b border-neutral-200 dark:border-neutral-700 pb-4 mb-4">
+            <div class="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-6">
+                <div class="border-b border-slate-200 dark:border-slate-700 pb-4 mb-4">
                     <h2 class="text-lg font-semibold dark:text-white">Répartition Trimestrielle</h2>
-                    <p class="text-sm text-zinc-500 dark:text-zinc-400">Activités par trimestre</p>
+                    <p class="text-sm text-slate-500 dark:text-slate-400">Activités par trimestre</p>
                 </div>
                 <x-charts.pie-chart :labels="['Trimestre 1', 'Trimestre 2', 'Trimestre 3', 'Trimestre 4']" :data="$quarterlyBudgetPlanning['quarterly_distribution']" type="pie" :height="300" />
             </div>
 
             <!-- Performance Trimestrielle -->
-            <div class="rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-zinc-800 p-6">
-                <div class="border-b border-neutral-200 dark:border-neutral-700 pb-4 mb-4">
+            <div class="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-6">
+                <div class="border-b border-slate-200 dark:border-slate-700 pb-4 mb-4">
                     <h2 class="text-lg font-semibold dark:text-white">Performance Trimestrielle</h2>
-                    <p class="text-sm text-zinc-500 dark:text-zinc-400">Budget vs Réalisé</p>
+                    <p class="text-sm text-slate-500 dark:text-slate-400">Budget vs Réalisé</p>
                 </div>
                 <x-charts.bar-chart :labels="array_keys($quarterlyBudgetPlanning['quarterly_performance'])" :datasets="[
                     [
@@ -162,10 +162,10 @@
         </div>
 
         <!-- Section 5: Alertes Budgétaires -->
-        <div class="rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-zinc-800 p-6">
-            <div class="border-b border-neutral-200 dark:border-neutral-700 pb-4 mb-4">
+        <div class="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-6">
+            <div class="border-b border-slate-200 dark:border-slate-700 pb-4 mb-4">
                 <h2 class="text-lg font-semibold dark:text-white">Alertes Budgétaires</h2>
-                <p class="text-sm text-zinc-500 dark:text-zinc-400">Dépassements et sous-utilisations</p>
+                <p class="text-sm text-slate-500 dark:text-slate-400">Dépassements et sous-utilisations</p>
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -181,7 +181,7 @@
                                 </span>
                             </div>
                         @empty
-                            <p class="text-sm text-zinc-500">Aucun dépassement détecté</p>
+                            <p class="text-sm text-slate-500">Aucun dépassement détecté</p>
                         @endforelse
                     </div>
                 </div>
@@ -200,7 +200,7 @@
                                 </span>
                             </div>
                         @empty
-                            <p class="text-sm text-zinc-500">Aucune sous-utilisation détectée</p>
+                            <p class="text-sm text-slate-500">Aucune sous-utilisation détectée</p>
                         @endforelse
                     </div>
                 </div>
@@ -218,7 +218,7 @@
                                 </p>
                             </div>
                         @empty
-                            <p class="text-sm text-zinc-500">Aucune activité coûteuse détectée</p>
+                            <p class="text-sm text-slate-500">Aucune activité coûteuse détectée</p>
                         @endforelse
                     </div>
                 </div>
@@ -228,10 +228,10 @@
         <!-- Section 6: Tendances et Prévisions -->
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <!-- Tendances Annuelles -->
-            <div class="rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-zinc-800 p-6">
-                <div class="border-b border-neutral-200 dark:border-neutral-700 pb-4 mb-4">
+            <div class="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-6">
+                <div class="border-b border-slate-200 dark:border-slate-700 pb-4 mb-4">
                     <h2 class="text-lg font-semibold dark:text-white">Tendances Annuelles</h2>
-                    <p class="text-sm text-zinc-500 dark:text-zinc-400">Évolution budgétaire sur 3 ans</p>
+                    <p class="text-sm text-slate-500 dark:text-slate-400">Évolution budgétaire sur 3 ans</p>
                 </div>
                 <x-charts.line-chart :labels="array_column($budgetTrends['yearly_trends'], 'year')" :datasets="[
                     [
@@ -256,10 +256,10 @@
             </div>
 
             <!-- Prévisions Budgétaires -->
-            <div class="rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-zinc-800 p-6">
-                <div class="border-b border-neutral-200 dark:border-neutral-700 pb-4 mb-4">
+            <div class="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-6">
+                <div class="border-b border-slate-200 dark:border-slate-700 pb-4 mb-4">
                     <h2 class="text-lg font-semibold dark:text-white">Prévisions Budgétaires</h2>
-                    <p class="text-sm text-zinc-500 dark:text-zinc-400">Projections pour les prochaines années</p>
+                    <p class="text-sm text-slate-500 dark:text-slate-400">Projections pour les prochaines années</p>
                 </div>
                 <div class="space-y-4">
                     <div class="flex items-center justify-between p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">

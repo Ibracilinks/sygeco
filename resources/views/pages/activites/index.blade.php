@@ -1,237 +1,157 @@
 <x-layouts::app title="Activités">
-    <div class="flex h-full w-full flex-1 flex-col gap-4 rounded-xl">
-
-        <div class="flex justify-between items-center">
+    <div class="flex h-full w-full flex-1 flex-col gap-5 rounded-xl">
+        <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
             <div>
-                <h1 class="text-2xl font-bold dark:text-white">Activités</h1>
-                <p class="text-zinc-500 dark:text-zinc-400 mt-1">Gestion des activités saisies par les départements</p>
+                <h1 class="text-2xl font-semibold text-slate-900 dark:text-white">Activités</h1>
+                <p class="text-sm text-slate-500 dark:text-slate-400">Suivi opérationnel des activités par extrant, département et statut.</p>
             </div>
             @can('create_activites')
-                <a href="{{ route('activites.create') }}"
-                    class="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition">
-                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
-                    </svg>
-                    Nouvelle Activité
+                <a href="{{ route('activites.create') }}" class="inline-flex items-center rounded-lg bg-slate-800 px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-700 dark:bg-slate-200 dark:text-slate-900 dark:hover:bg-white">
+                    Nouvelle activité
                 </a>
             @endcan
         </div>
 
+        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            <div class="rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-900">
+                <p class="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">Total</p>
+                <p class="mt-2 text-3xl font-semibold text-slate-900 dark:text-white">{{ number_format($summary['total'] ?? 0) }}</p>
+            </div>
+            <div class="rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-900">
+                <p class="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">Brouillon</p>
+                <p class="mt-2 text-3xl font-semibold text-slate-900 dark:text-white">{{ number_format($summary['brouillon'] ?? 0) }}</p>
+            </div>
+            <div class="rounded-xl border border-amber-200 bg-amber-50 p-4 dark:border-amber-900/60 dark:bg-amber-950/25">
+                <p class="text-xs uppercase tracking-wide text-amber-700 dark:text-amber-300">Soumis</p>
+                <p class="mt-2 text-3xl font-semibold text-amber-800 dark:text-amber-100">{{ number_format($summary['soumis'] ?? 0) }}</p>
+            </div>
+            <div class="rounded-xl border border-emerald-200 bg-emerald-50 p-4 dark:border-emerald-900/60 dark:bg-emerald-950/25">
+                <p class="text-xs uppercase tracking-wide text-emerald-700 dark:text-emerald-300">Validé</p>
+                <p class="mt-2 text-3xl font-semibold text-emerald-800 dark:text-emerald-100">{{ number_format($summary['valide'] ?? 0) }}</p>
+            </div>
+        </div>
+
         @if (session('success'))
-            <div class="rounded-lg bg-green-50 dark:bg-green-950 border border-green-200 dark:border-green-800 p-4">
-                <p class="text-sm font-medium text-green-800 dark:text-green-200">{{ session('success') }}</p>
+            <div class="rounded-lg border border-emerald-200 bg-emerald-50 p-4 dark:border-emerald-800 dark:bg-emerald-950/40">
+                <p class="text-sm font-medium text-emerald-800 dark:text-emerald-200">{{ session('success') }}</p>
             </div>
         @endif
 
         @if (session('error'))
-            <div class="rounded-lg bg-red-50 dark:bg-red-950 border border-red-200 dark:border-red-800 p-4">
-                <p class="text-sm font-medium text-red-800 dark:text-red-200">{{ session('error') }}</p>
+            <div class="rounded-lg border border-rose-200 bg-rose-50 p-4 dark:border-rose-800 dark:bg-rose-950/40">
+                <p class="text-sm font-medium text-rose-800 dark:text-rose-200">{{ session('error') }}</p>
             </div>
         @endif
 
-        <!-- Filtres -->
-        <div class="flex flex-wrap gap-4 items-center justify-between">
-            <div class="flex flex-wrap gap-4">
-                <select name="extrant_id"
-                    onchange="window.location.href=updateQueryStringParameter(window.location.href, 'extrant_id', this.value)"
-                    class="rounded-lg border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-zinc-800 px-4 py-2 text-sm dark:text-white">
-                    <option value="">Tous les extrants</option>
-                    @foreach ($extrants as $extrant)
-                        <option value="{{ $extrant->id }}"
-                            {{ request('extrant_id') == $extrant->id ? 'selected' : '' }}>
-                            {{ $extrant->code }} - {{ Str::limit($extrant->libelle, 40) }}
-                        </option>
-                    @endforeach
-                </select>
+        <form method="GET" action="{{ route('activites.index') }}" class="grid grid-cols-1 gap-3 rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-900 md:grid-cols-6">
+            <input type="text" name="search" value="{{ $filters['search'] ?? '' }}" placeholder="Nom, indicateur"
+                class="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 focus:border-slate-500 focus:outline-none dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100">
 
-                <select name="departement_id"
-                    onchange="window.location.href=updateQueryStringParameter(window.location.href, 'departement_id', this.value)"
-                    class="rounded-lg border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-zinc-800 px-4 py-2 text-sm dark:text-white">
-                    <option value="">Tous les départements</option>
-                    @foreach ($departements as $departement)
-                        <option value="{{ $departement->id }}"
-                            {{ request('departement_id') == $departement->id ? 'selected' : '' }}>
-                            {{ $departement->nom }}
-                        </option>
-                    @endforeach
-                </select>
-
-                <select name="statut"
-                    onchange="window.location.href=updateQueryStringParameter(window.location.href, 'statut', this.value)"
-                    class="rounded-lg border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-zinc-800 px-4 py-2 text-sm dark:text-white">
-                    <option value="">Tous les statuts</option>
-                    <option value="brouillon" {{ request('statut') == 'brouillon' ? 'selected' : '' }}>Brouillon
+            <select name="extrant_id" class="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 focus:border-slate-500 focus:outline-none dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100">
+                <option value="">Tous extrants</option>
+                @foreach ($extrants as $extrant)
+                    <option value="{{ $extrant->id }}" @selected((string) ($filters['extrant_id'] ?? '') === (string) $extrant->id)>
+                        {{ $extrant->code }}
                     </option>
-                    <option value="soumis" {{ request('statut') == 'soumis' ? 'selected' : '' }}>Soumis</option>
-                    <option value="valide" {{ request('statut') == 'valide' ? 'selected' : '' }}>Validé</option>
-                </select>
+                @endforeach
+            </select>
 
-                <select name="trimestre"
-                    onchange="window.location.href=updateQueryStringParameter(window.location.href, 'trimestre', this.value)"
-                    class="rounded-lg border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-zinc-800 px-4 py-2 text-sm dark:text-white">
-                    <option value="">Tous les trimestres</option>
-                    <option value="1" {{ request('trimestre') == '1' ? 'selected' : '' }}>T1</option>
-                    <option value="2" {{ request('trimestre') == '2' ? 'selected' : '' }}>T2</option>
-                    <option value="3" {{ request('trimestre') == '3' ? 'selected' : '' }}>T3</option>
-                    <option value="4" {{ request('trimestre') == '4' ? 'selected' : '' }}>T4</option>
-                </select>
+            <select name="departement_id" class="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 focus:border-slate-500 focus:outline-none dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100">
+                <option value="">Tous départements</option>
+                @foreach ($departements as $departement)
+                    <option value="{{ $departement->id }}" @selected((string) ($filters['departement_id'] ?? '') === (string) $departement->id)>
+                        {{ $departement->nom }}
+                    </option>
+                @endforeach
+            </select>
 
-                <form method="GET" action="{{ route('activites.index') }}" class="relative">
-                    <input type="text" name="search" value="{{ request('search') }}" placeholder="Rechercher..."
-                        class="rounded-lg border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-zinc-800 px-4 py-2 pr-10 text-sm dark:text-white w-64">
-                    <button type="submit" class="absolute right-2 top-2.5">
-                        <svg class="w-4 h-4 text-zinc-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
-                        </svg>
-                    </button>
-                </form>
+            <select name="statut" class="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 focus:border-slate-500 focus:outline-none dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100">
+                <option value="">Tous statuts</option>
+                @foreach ($statuts as $statut)
+                    <option value="{{ $statut }}" @selected(($filters['statut'] ?? '') === $statut)>{{ ucfirst($statut) }}</option>
+                @endforeach
+            </select>
+
+            <select name="trimestre" class="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 focus:border-slate-500 focus:outline-none dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100">
+                <option value="">Tous trimestres</option>
+                <option value="1" @selected(($filters['trimestre'] ?? '') === '1')>T1</option>
+                <option value="2" @selected(($filters['trimestre'] ?? '') === '2')>T2</option>
+                <option value="3" @selected(($filters['trimestre'] ?? '') === '3')>T3</option>
+                <option value="4" @selected(($filters['trimestre'] ?? '') === '4')>T4</option>
+            </select>
+
+            <div class="flex gap-2">
+                <button type="submit" class="w-full rounded-lg bg-slate-800 px-4 py-2 text-sm font-medium text-white dark:bg-slate-200 dark:text-slate-900">Filtrer</button>
+                <a href="{{ route('activites.index') }}" class="rounded-lg bg-slate-100 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-100 dark:hover:bg-slate-700">Reset</a>
             </div>
-        </div>
+        </form>
 
-        <!-- Tableau -->
-        <div
-            class="overflow-x-auto rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-zinc-800">
-            <table class="min-w-full divide-y divide-neutral-200 dark:divide-neutral-700">
-                <thead class="bg-neutral-50 dark:bg-zinc-900">
+        <div class="overflow-hidden rounded-xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900">
+            <table class="min-w-full divide-y divide-slate-200 dark:divide-slate-700">
+                <thead class="bg-slate-50 dark:bg-slate-950">
                     <tr>
-                        <th
-                            class="px-6 py-3 text-left text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase">
-                            Activité</th>
-                        <th
-                            class="px-6 py-3 text-left text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase">
-                            Extrant</th>
-                        <th
-                            class="px-6 py-3 text-left text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase">
-                            Département</th>
-                        <th
-                            class="px-6 py-3 text-left text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase">
-                            Coût</th>
-                        <th
-                            class="px-6 py-3 text-left text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase">
-                            Trimestres</th>
-                        <th
-                            class="px-6 py-3 text-left text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase">
-                            Statut</th>
-                        <th
-                            class="px-6 py-3 text-left text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase">
-                            Actions</th>
+                        <th class="px-5 py-3 text-left text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">Activité</th>
+                        <th class="px-5 py-3 text-left text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">Extrant</th>
+                        <th class="px-5 py-3 text-left text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">Département</th>
+                        <th class="px-5 py-3 text-left text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">Coût</th>
+                        <th class="px-5 py-3 text-left text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">Statut</th>
+                        <th class="px-5 py-3 text-left text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">Actions</th>
                     </tr>
                 </thead>
-                <tbody class="divide-y divide-neutral-200 dark:divide-neutral-700">
-                    @forelse($activites as $activite)
-                        <tr>
-                            <td class="px-6 py-4">
-                                <div class="font-medium dark:text-white">{{ Str::limit($activite->nom_activite, 50) }}
-                                </div>
-                                <div class="text-xs text-zinc-500">
-                                    {{ Str::limit($activite->indicateur_objectivement_verifiable, 40) }}</div>
+                <tbody class="divide-y divide-slate-200 dark:divide-slate-700">
+                    @forelse ($activites as $activite)
+                        <tr class="align-top">
+                            <td class="px-5 py-4">
+                                <p class="text-sm font-semibold text-slate-900 dark:text-white">{{ Str::limit($activite->nom_activite, 90) }}</p>
+                                <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">{{ Str::limit($activite->indicateur_objectivement_verifiable, 90) }}</p>
+                                <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">Trimestres: {{ $activite->trimestres_selectionnes ?: '-' }}</p>
                             </td>
-                            <td class="px-6 py-4 text-sm dark:text-white">{{ $activite->extrant->code ?? 'N/A' }}</td>
-                            <td class="px-6 py-4 text-sm dark:text-white">{{ $activite->departement->nom ?? 'N/A' }}
-                            </td>
-                            <td class="px-6 py-4 text-sm dark:text-white">
-                                {{ number_format($activite->cout, 0, ',', ' ') }} FCFA</td>
-                            <td class="px-6 py-4 text-sm dark:text-white">{{ $activite->trimestres_selectionnes }}</td>
-                            <td class="px-6 py-4">
-                                <span
-                                    class="px-2 py-1 text-xs rounded-full
-                                    {{ $activite->statut == 'valide'
-                                        ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
-                                        : ($activite->statut == 'soumis'
-                                            ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'
-                                            : ($activite->motif_refus
-                                                ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
-                                                : 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300')) }}">
+                            <td class="px-5 py-4 text-sm text-slate-700 dark:text-slate-200">{{ $activite->extrant->code ?? '-' }}</td>
+                            <td class="px-5 py-4 text-sm text-slate-700 dark:text-slate-200">{{ $activite->departement->nom ?? '-' }}</td>
+                            <td class="px-5 py-4 text-sm text-slate-700 dark:text-slate-200">{{ number_format($activite->cout, 0, ',', ' ') }} FCFA</td>
+                            <td class="px-5 py-4">
+                                <span class="rounded-full px-2 py-1 text-xs font-semibold
+                                {{ $activite->statut == 'valide'
+                                    ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-200'
+                                    : ($activite->statut == 'soumis'
+                                        ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-200'
+                                        : 'bg-slate-100 text-slate-800 dark:bg-slate-700 dark:text-slate-200') }}">
                                     {{ $activite->statut_label }}
                                 </span>
                             </td>
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <div class="flex gap-2">
-                                    <a href="{{ route('activites.show', $activite) }}"
-                                        class="text-blue-600 hover:text-blue-800" title="Voir">
-                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z">
-                                            </path>
-                                        </svg>
-                                    </a>
+                            <td class="px-5 py-4">
+                                <div class="flex flex-wrap gap-3 text-sm">
+                                    <a href="{{ route('activites.show', $activite) }}" class="font-medium text-sky-700 hover:text-sky-600 dark:text-sky-300">Voir</a>
 
                                     @if ($activite->estModifiable())
                                         @can('edit_activites')
-                                            <a href="{{ route('activites.edit', $activite) }}"
-                                                class="text-yellow-600 hover:text-yellow-800" title="Modifier">
-                                                <svg class="w-5 h-5" fill="none" stroke="currentColor"
-                                                    viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                        d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z">
-                                                    </path>
-                                                </svg>
-                                            </a>
+                                            <a href="{{ route('activites.edit', $activite) }}" class="font-medium text-amber-700 hover:text-amber-600 dark:text-amber-300">Modifier</a>
                                         @endcan
-
                                         @can('delete_activites')
-                                            <form action="{{ route('activites.destroy', $activite) }}" method="POST"
-                                                class="inline" onsubmit="return confirm('Confirmer la suppression ?')">
+                                            <form action="{{ route('activites.destroy', $activite) }}" method="POST" class="inline" onsubmit="return confirm('Confirmer la suppression ?')">
                                                 @csrf
                                                 @method('DELETE')
-                                                <button type="submit" class="text-red-600 hover:text-red-800"
-                                                    title="Supprimer">
-                                                    <svg class="w-5 h-5" fill="none" stroke="currentColor"
-                                                        viewBox="0 0 24 24">
-                                                        <path stroke-linecap="round" stroke-linejoin="round"
-                                                            stroke-width="2"
-                                                            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16">
-                                                        </path>
-                                                    </svg>
-                                                </button>
+                                                <button type="submit" class="font-medium text-rose-700 hover:text-rose-600 dark:text-rose-300">Supprimer</button>
                                             </form>
                                         @endcan
                                     @endif
 
                                     @can('submit_activites')
-                                        @if ($activite->statut == 'brouillon')
-                                            <form action="{{ route('activites.soumettre', $activite) }}" method="POST"
-                                                class="inline">
+                                        @if ($activite->statut === 'brouillon')
+                                            <form action="{{ route('activites.soumettre', $activite) }}" method="POST" class="inline">
                                                 @csrf
-                                                <button type="submit" class="text-blue-500 hover:text-blue-700"
-                                                    title="Soumettre">
-                                                    <svg class="w-5 h-5" fill="none" stroke="currentColor"
-                                                        viewBox="0 0 24 24">
-                                                        <path stroke-linecap="round" stroke-linejoin="round"
-                                                            stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path>
-                                                    </svg>
-                                                </button>
+                                                <button type="submit" class="font-medium text-indigo-700 hover:text-indigo-600 dark:text-indigo-300">Soumettre</button>
                                             </form>
                                         @endif
                                     @endcan
 
                                     @can('validate_activites')
-                                        @if ($activite->statut == 'soumis')
-                                            <form action="{{ route('activites.valider', $activite) }}" method="POST"
-                                                class="inline">
+                                        @if ($activite->statut === 'soumis')
+                                            <form action="{{ route('activites.valider', $activite) }}" method="POST" class="inline">
                                                 @csrf
-                                                <button type="submit" class="text-green-500 hover:text-green-700"
-                                                    title="Valider">
-                                                    <svg class="w-5 h-5" fill="none" stroke="currentColor"
-                                                        viewBox="0 0 24 24">
-                                                        <path stroke-linecap="round" stroke-linejoin="round"
-                                                            stroke-width="2" d="M5 13l4 4L19 7"></path>
-                                                    </svg>
-                                                </button>
+                                                <button type="submit" class="font-medium text-emerald-700 hover:text-emerald-600 dark:text-emerald-300">Valider</button>
                                             </form>
-
-                                            <button type="button"
-                                                onclick="openRefusModal({{ $activite->id }}, '{{ $activite->nom_activite }}')"
-                                                class="text-red-500 hover:text-red-700" title="Refuser">
-                                                <svg class="w-5 h-5" fill="none" stroke="currentColor"
-                                                    viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                        d="M6 18L18 6M6 6l12 12"></path>
-                                                </svg>
-                                            </button>
+                                            <button type="button" onclick="openRefusModal({{ $activite->id }}, '{{ addslashes($activite->nom_activite) }}')" class="font-medium text-rose-700 hover:text-rose-600 dark:text-rose-300">Refuser</button>
                                         @endif
                                     @endcan
                                 </div>
@@ -239,96 +159,50 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="7" class="px-6 py-8 text-center text-zinc-500 dark:text-zinc-400">
-                                Aucune activité trouvée
-                            </td>
+                            <td colspan="6" class="px-5 py-10 text-center text-sm text-slate-500 dark:text-slate-400">Aucune activité trouvée.</td>
                         </tr>
                     @endforelse
                 </tbody>
             </table>
         </div>
 
-        <div class="mt-4">
-            {{ $activites->links() }}
-        </div>
+        <div class="mt-2">{{ $activites->links() }}</div>
     </div>
-</x-layouts::app>
 
-<!-- Modal de refus -->
-<div id="refusModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-50">
-    <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white dark:bg-zinc-800">
-        <div class="mt-3">
-            <div class="flex items-center justify-between mb-4">
-                <h3 class="text-lg font-medium text-gray-900 dark:text-white">Refuser l'activité</h3>
-                <button onclick="closeRefusModal()" class="text-gray-400 hover:text-gray-600">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M6 18L18 6M6 6l12 12"></path>
-                    </svg>
-                </button>
+    <div id="refusModal" class="fixed inset-0 z-50 hidden bg-slate-900/50">
+        <div class="mx-auto mt-24 w-full max-w-lg rounded-xl border border-slate-200 bg-white p-6 shadow-lg dark:border-slate-700 dark:bg-slate-900">
+            <div class="mb-4 flex items-center justify-between">
+                <h3 class="text-lg font-semibold text-slate-900 dark:text-white">Refuser l'activité</h3>
+                <button onclick="closeRefusModal()" class="text-slate-500 hover:text-slate-700 dark:text-slate-300 dark:hover:text-slate-100">✕</button>
             </div>
-
-            <div class="mb-4">
-                <p class="text-sm text-gray-600 dark:text-gray-400 mb-2">
-                    Activité: <span id="activiteNom" class="font-medium"></span>
-                </p>
-                <p class="text-sm text-gray-600 dark:text-gray-400">
-                    Cette action renverra l'activité en brouillon avec le motif de refus indiqué.
-                </p>
-            </div>
-
-            <form id="refusForm" method="POST">
+            <p class="mb-3 text-sm text-slate-500 dark:text-slate-400">Activité: <span id="activiteNom" class="font-medium text-slate-900 dark:text-white"></span></p>
+            <form id="refusForm" method="POST" class="space-y-4">
                 @csrf
-                <div class="mb-4">
-                    <label for="motif_refus" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        Motif du refus *
-                    </label>
-                    <textarea id="motif_refus" name="motif_refus" rows="4"
-                        class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 dark:bg-zinc-700 dark:text-white"
-                        placeholder="Veuillez expliquer le motif du refus..." required minlength="10"></textarea>
-                    <p class="text-xs text-gray-500 mt-1">Minimum 10 caractères</p>
+                <div>
+                    <label for="motif_refus" class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-200">Motif du refus *</label>
+                    <textarea id="motif_refus" name="motif_refus" rows="4" required minlength="10"
+                        class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 focus:border-slate-500 focus:outline-none dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"></textarea>
                 </div>
-
                 <div class="flex justify-end gap-3">
-                    <button type="button" onclick="closeRefusModal()"
-                        class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 border border-gray-300 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 dark:bg-zinc-700 dark:text-white dark:border-zinc-600 dark:hover:bg-zinc-600">
-                        Annuler
-                    </button>
-                    <button type="submit"
-                        class="px-4 py-2 text-sm font-medium text-white bg-red-600 border border-transparent rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500">
-                        Refuser l'activité
-                    </button>
+                    <button type="button" onclick="closeRefusModal()" class="rounded-lg bg-slate-200 px-4 py-2 text-sm font-medium text-slate-800 dark:bg-slate-700 dark:text-slate-100">Annuler</button>
+                    <button type="submit" class="rounded-lg bg-rose-600 px-4 py-2 text-sm font-medium text-white hover:bg-rose-500">Refuser</button>
                 </div>
             </form>
         </div>
     </div>
-</div>
 
-@push('scripts')
-    <script>
-        function updateQueryStringParameter(uri, key, value) {
-            if (!value) {
-                var re = new RegExp("([?&])" + key + "=.*?(&|$)", "i");
-                return uri.replace(re, '$1$2');
+    @push('scripts')
+        <script>
+            function openRefusModal(activiteId, activiteNom) {
+                document.getElementById('activiteNom').textContent = activiteNom;
+                document.getElementById('refusForm').action = `/activites/${activiteId}/refuser`;
+                document.getElementById('refusModal').classList.remove('hidden');
             }
-            var re = new RegExp("([?&])" + key + "=.*?(&|$)", "i");
-            var separator = uri.indexOf('?') !== -1 ? "&" : "?";
-            if (uri.match(re)) {
-                return uri.replace(re, '$1' + key + "=" + value + '$2');
-            } else {
-                return uri + separator + key + "=" + value;
+
+            function closeRefusModal() {
+                document.getElementById('refusModal').classList.add('hidden');
+                document.getElementById('motif_refus').value = '';
             }
-        }
-
-        function openRefusModal(activiteId, activiteNom) {
-            document.getElementById('activiteNom').textContent = activiteNom;
-            document.getElementById('refusForm').action = `/activites/${activiteId}/refuser`;
-            document.getElementById('refusModal').classList.remove('hidden');
-        }
-
-        function closeRefusModal() {
-            document.getElementById('refusModal').classList.add('hidden');
-            document.getElementById('motif_refus').value = '';
-        }
-    </script>
-@endpush
+        </script>
+    @endpush
+</x-layouts::app>
