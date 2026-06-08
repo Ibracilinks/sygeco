@@ -83,6 +83,11 @@
                         {{ __('Analyse Budgétaire') }}
                     </flux:sidebar.item>
 
+                    <flux:sidebar.item icon="book-open-text" href="{{ route('journal.index') }}"
+                        :current="request()->routeIs('journal.*')">
+                        {{ __('Journal') }}
+                    </flux:sidebar.item>
+
                     <flux:sidebar.item icon="check-badge" href="{{ route('validations.index') }}"
                         :current="request()->routeIs('validations.*')">
                         {{ __('Validations') }}
@@ -90,11 +95,6 @@
                         @if ($nbEnAttente > 0)
                             <flux:badge class="ml-auto">{{ $nbEnAttente }}</flux:badge>
                         @endif
-                    </flux:sidebar.item>
-
-                    <flux:sidebar.item icon="clipboard-document-list" href="{{ route('indicateurs.index') }}"
-                        :current="request()->routeIs('indicateurs.*')">
-                        {{ __('Indicateurs') }}
                     </flux:sidebar.item>
                 @endif
 

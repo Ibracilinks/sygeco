@@ -7,6 +7,7 @@ use App\Http\Controllers\ExerciceController;
 use App\Http\Controllers\ExtrantController;
 use App\Http\Controllers\ActiviteController;
 use App\Http\Controllers\IndicateurController;
+use App\Http\Controllers\JournalController;
 use App\Http\Controllers\ObjectifController;
 use App\Http\Controllers\ResultatController;
 use App\Http\Controllers\UserController;
@@ -22,6 +23,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::middleware(['role:dbcgoq'])->group(function () {
         Route::get('budget-analysis', [BudgetAnalysisController::class, 'index'])->name('budget.analysis');
+        Route::get('journal', [JournalController::class, 'index'])->name('journal.index');
 
         Route::resource('exercices', ExerciceController::class)->only(['index', 'show']);
         Route::post('exercices/{exercice}/activate', [ExerciceController::class, 'activate'])->name('exercices.activate');

@@ -2,12 +2,13 @@
 
 namespace App\Models;
 
+use App\Concerns\LogsActivityWithDefaults;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class Exercice extends Model
 {
-    use HasFactory;
+    use HasFactory, LogsActivityWithDefaults;
 
     protected $fillable = [
         'annee',
