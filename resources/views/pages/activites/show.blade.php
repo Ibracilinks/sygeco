@@ -11,7 +11,7 @@
                         <a href="{{ route('activites.edit', $activite) }}" class="inline-flex items-center rounded-lg bg-amber-500 px-4 py-2 text-sm font-medium text-white transition hover:bg-amber-400">Modifier</a>
                     @endcan
                 @endif
-                @can('submit_activites')
+                @can('submit', $activite)
                     @if ($activite->statut === 'brouillon')
                         <form action="{{ route('activites.soumettre', $activite) }}" method="POST" class="inline">
                             @csrf

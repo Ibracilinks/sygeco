@@ -136,7 +136,7 @@
                                         @endcan
                                     @endif
 
-                                    @can('submit_activites')
+                                    @can('submit', $activite)
                                         @if ($activite->statut === 'brouillon')
                                             <form action="{{ route('activites.soumettre', $activite) }}" method="POST" class="inline">
                                                 @csrf

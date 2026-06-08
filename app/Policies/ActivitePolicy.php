@@ -59,10 +59,6 @@ class ActivitePolicy
 
     public function submit(User $user, Activite $activite): bool
     {
-        if (! $user->can('submit_activites')) {
-            return false;
-        }
-
         if ($user->hasRole('dbcgoq')) {
             return $activite->peutEtreSoumis();
         }
