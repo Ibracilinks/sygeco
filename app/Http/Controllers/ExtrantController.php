@@ -15,7 +15,9 @@ class ExtrantController extends Controller
      */
     public function index(Request $request)
     {
-        $query = Extrant::with('objectif');
+        $query = Extrant::query()
+            ->with('objectif')
+            ->withCount('activites');
 
         $exerciceId = ActiveExercice::id();
         if ($exerciceId !== null) {
@@ -37,7 +39,17 @@ class ExtrantController extends Controller
             });
         }
 
+        $summaryQuery = clone $query;
+        $summary = [
+            'total' => (clone $summaryQuery)->count(),
+            'actifs' => (clone $summaryQuery)->where('is_active', true)->count(),
+            'inactifs' => (clone $summaryQuery)->where('is_active', false)->count(),
+            'avec_activites' => (clone $summaryQuery)->whereHas('activites')->count(),
+        ];
+
         $extrants = $query->ordered()->paginate(15)->withQueryString();
+
+        $filters = $request->only(['search', 'objectif_id', 'is_active']);
 
         $objectifs = Objectif::query()
             ->where('statut', 'actif')
@@ -45,7 +57,7 @@ class ExtrantController extends Controller
             ->orderBy('annee', 'desc')
             ->get();
 
-        return view('pages.extrants.index', compact('extrants', 'objectifs'));
+        return view('pages.extrants.index', compact('extrants', 'objectifs', 'summary', 'filters'));
     }
 
     /**
@@ -90,6 +102,7 @@ class ExtrantController extends Controller
     public function show(Extrant $extrant)
     {
         $extrant->load(['objectif', 'activites' => function ($query) {
+            $query->with('departement');
             $query->latest()->limit(10);
         }]);
 
@@ -97,9 +110,16 @@ class ExtrantController extends Controller
             'nb_activites' => $extrant->activites()->count(),
             'budget_total' => $extrant->activites()->sum('cout'),
             'budget_moyen' => $extrant->activites()->avg('cout') ?? 0,
+            'nb_departements' => $extrant->activites()->distinct('departement_id')->count('departement_id'),
         ];
 
-        return view('pages.extrants.show', compact('extrant', 'stats'));
+        $activitesParStatut = $extrant->activites()
+            ->selectRaw('statut, COUNT(*) as total')
+            ->groupBy('statut')
+            ->pluck('total', 'statut')
+            ->toArray();
+
+        return view('pages.extrants.show', compact('extrant', 'stats', 'activitesParStatut'));
     }
 
     /**
