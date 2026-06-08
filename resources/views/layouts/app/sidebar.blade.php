@@ -6,6 +6,10 @@
 </head>
 
 <body class="app-shell min-h-screen bg-white dark:bg-zinc-950">
+    @php
+        $currentUser = auth()->user();
+    @endphp
+
     <flux:sidebar sticky collapsible="mobile"
         class="app-sidebar border-e border-zinc-200 bg-zinc-50/95 dark:border-zinc-800 dark:bg-zinc-900/95">
         <flux:sidebar.header class="app-sidebar-header">
@@ -23,6 +27,7 @@
         </div>
 
         <flux:sidebar.nav class="app-sidebar-nav">
+
             <!-- Dashboard -->
             <flux:sidebar.group :heading="__('Navigation')" class="app-sidebar-group grid">
                 <flux:sidebar.item icon="home" :href="route('dashboard')" :current="request()->routeIs('dashboard')"
@@ -32,57 +37,70 @@
             </flux:sidebar.group>
 
             <!-- Organisation -->
-            <flux:sidebar.group :heading="__('Organisation')" class="app-sidebar-group grid">
-                <flux:sidebar.item icon="building-office" href="{{ route('departements.index') }}"
-                    :current="request()->routeIs('departements.*')">
-                    {{ __('Départements') }}
-                </flux:sidebar.item>
+            @if ($currentUser->hasRole('dbcgoq'))
+                <flux:sidebar.group :heading="__('Organisation')" class="app-sidebar-group grid">
+                    <flux:sidebar.item icon="building-office" href="{{ route('departements.index') }}"
+                        :current="request()->routeIs('departements.*')">
+                        {{ __('Départements') }}
+                    </flux:sidebar.item>
 
-                <flux:sidebar.item icon="users" href="{{ route('users.index') }}"
-                    :current="request()->routeIs('users.*')">
-                    {{ __('Utilisateurs') }}
-                </flux:sidebar.item>
-            </flux:sidebar.group>
+                    <flux:sidebar.item icon="users" href="{{ route('users.index') }}"
+                        :current="request()->routeIs('users.*')">
+                        {{ __('Utilisateurs') }}
+                    </flux:sidebar.item>
+                </flux:sidebar.group>
+            @endif
 
             <!-- Planification Stratégique -->
             <flux:sidebar.group :heading="__('Planification Stratégique')" class="app-sidebar-group grid">
-                @can('view_exercices')
+                @if ($currentUser->hasRole('dbcgoq'))
                     <flux:sidebar.item icon="calendar-days" href="{{ route('exercices.index') }}"
                         :current="request()->routeIs('exercices.*')">
                         {{ __('Exercices') }}
                     </flux:sidebar.item>
-                @endcan
-                <flux:sidebar.item icon="chart-pie" href="{{ route('objectifs.index') }}"
-                    :current="request()->routeIs('objectifs.*')">
-                    {{ __('Objectifs') }}
-                </flux:sidebar.item>
+                @endif
 
-                <flux:sidebar.item icon="document-text" href="{{ route('resultats.index') }}"
-                    :current="request()->routeIs('resultats.*')">
-                    {{ __('Résultats') }}
-                </flux:sidebar.item>
+                @if ($currentUser->hasAnyRole(['dbcgoq', 'chef_departement']))
+                    <flux:sidebar.item icon="chart-pie" href="{{ route('objectifs.index') }}"
+                        :current="request()->routeIs('objectifs.*')">
+                        {{ __('Objectifs') }}
+                    </flux:sidebar.item>
 
-                <flux:sidebar.item icon="document-text" href="{{ route('extrants.index') }}"
-                    :current="request()->routeIs('extrants.*')">
-                    {{ __('Extrants') }}
-                </flux:sidebar.item>
+                    <flux:sidebar.item icon="document-text" href="{{ route('resultats.index') }}"
+                        :current="request()->routeIs('resultats.*')">
+                        {{ __('Résultats') }}
+                    </flux:sidebar.item>
+
+                    <flux:sidebar.item icon="document-text" href="{{ route('extrants.index') }}"
+                        :current="request()->routeIs('extrants.*')">
+                        {{ __('Extrants') }}
+                    </flux:sidebar.item>
+                @endif
+
+                @if ($currentUser->hasRole('dbcgoq'))
+                    <flux:sidebar.item icon="chart-pie" href="{{ route('budget.analysis') }}"
+                        :current="request()->routeIs('budget.analysis')">
+                        {{ __('Analyse Budgétaire') }}
+                    </flux:sidebar.item>
+
+                    <flux:sidebar.item icon="check-badge" href="{{ route('validations.index') }}"
+                        :current="request()->routeIs('validations.*')">
+                        {{ __('Validations') }}
+                        @php $nbEnAttente = App\Models\Activite::where('statut', 'soumis')->count(); @endphp
+                        @if ($nbEnAttente > 0)
+                            <flux:badge class="ml-auto">{{ $nbEnAttente }}</flux:badge>
+                        @endif
+                    </flux:sidebar.item>
+
+                    <flux:sidebar.item icon="clipboard-document-list" href="{{ route('indicateurs.index') }}"
+                        :current="request()->routeIs('indicateurs.*')">
+                        {{ __('Indicateurs') }}
+                    </flux:sidebar.item>
+                @endif
 
                 <flux:sidebar.item icon="clipboard-document-list" href="{{ route('activites.index') }}"
                     :current="request()->routeIs('activites.*')">
                     {{ __('Activités') }}
-                </flux:sidebar.item>
-
-                <flux:sidebar.item icon="chart-pie" href="{{ route('budget.analysis') }}"
-                    :current="request()->routeIs('budget.analysis')">
-                    {{ __('Analyse Budgétaire') }}
-                </flux:sidebar.item>
-                <flux:sidebar.item icon="check-badge" href="{{ route('validations.index') }}"
-                    :current="request()->routeIs('validations.*')">
-                    {{ __('Validations') }}
-                    @php $nbEnAttente = App\Models\Activite::where('statut', 'soumis')->count(); @endphp
-                    @if ($nbEnAttente > 0)
-                        <flux:badge class="ml-auto">{{ $nbEnAttente }}</flux:badge>
-                    @endif
                 </flux:sidebar.item>
             </flux:sidebar.group>
         </flux:sidebar.nav>

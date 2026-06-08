@@ -9,12 +9,12 @@ class ExercicePolicy
 {
     public function viewAny(User $user): bool
     {
-        return $user->can('view_exercices');
+        return $user->can('view_exercices') || $user->can('manage_exercices');
     }
 
     public function view(User $user, Exercice $exercice): bool
     {
-        return $user->can('view_exercices');
+        return $user->can('view_exercices') || $user->can('manage_exercices');
     }
 
     public function create(User $user): bool

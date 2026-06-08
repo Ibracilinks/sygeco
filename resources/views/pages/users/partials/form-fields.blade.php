@@ -26,7 +26,7 @@
             name="email"
             value="{{ old('email', $user?->email) }}"
             class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-800 focus:border-slate-500 focus:outline-none dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
-            placeholder="email@canam.ci"
+            placeholder="email@canam.ml"
         >
         @error('email')
             <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
@@ -99,7 +99,7 @@
             name="telephone"
             value="{{ old('telephone', $user?->telephone) }}"
             class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-800 focus:border-slate-500 focus:outline-none dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
-            placeholder="+225 XX XX XX XX"
+            placeholder="+223 XX XX XX XX"
         >
         @error('telephone')
             <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>

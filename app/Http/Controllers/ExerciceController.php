@@ -6,10 +6,13 @@ use App\Http\Requests\StoreExerciceRequest;
 use App\Http\Requests\UpdateExerciceRequest;
 use App\Models\Exercice;
 use App\Support\ActiveExercice;
+use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\Request;
 
 class ExerciceController extends Controller
 {
+    use AuthorizesRequests;
+
     public function __construct()
     {
         $this->authorizeResource(Exercice::class, 'exercice');

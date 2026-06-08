@@ -8,7 +8,7 @@ use App\Models\Extrant;
 use App\Notifications\ActiviteRefusee;
 use App\Notifications\ActiviteValidee;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Facades\Auth;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class ValidationController extends Controller
@@ -21,15 +21,19 @@ class ValidationController extends Controller
             ->paginate(20)
             ->withQueryString();
 
-        $departements = Departement::active()->ordered()->get();
+        $departements = $this->availableDepartements();
         $extrants = Extrant::with('objectif')->actif()->ordered()->get();
-        $compteur = $this->buildQuery($request)->count();
+        $compteur = $this->buildQuery($request)->get()->count();
 
         return view('pages.validations.index', compact('activites', 'departements', 'extrants', 'compteur'));
     }
 
     public function show(Activite $activite)
     {
+        if (! $this->canValidate($activite)) {
+            abort(403);
+        }
+
         if ($activite->statut !== 'soumis') {
             return redirect()->route('validations.index')
                 ->with('error', 'Cette activité n\'est pas en attente de validation.');
@@ -45,6 +49,10 @@ class ValidationController extends Controller
         $request->validate([
             'commentaire' => 'nullable|string|max:1000',
         ]);
+
+        if (! $this->canValidate($activite)) {
+            abort(403);
+        }
 
         if (! $activite->peutEtreValide()) {
             return back()->with('error', 'Cette activité ne peut pas être validée.');
@@ -67,6 +75,10 @@ class ValidationController extends Controller
             'notifier_utilisateur' => 'sometimes|accepted',
         ]);
 
+        if (! $this->canValidate($activite)) {
+            abort(403);
+        }
+
         if (! $activite->peutEtreValide()) {
             return back()->with('error', 'Cette activité ne peut pas être refusée.');
         }
@@ -88,7 +100,13 @@ class ValidationController extends Controller
             'activite_ids.*' => 'integer|exists:activites,id',
         ]);
 
-        $activites = Activite::soumis()->whereIn('id', $validated['activite_ids'])->get();
+        $activites = Activite::query()->soumis()->whereKey($validated['activite_ids'])->get()
+            ->filter(fn (Activite $activite) => $this->canValidate($activite));
+
+        if ($activites->isEmpty()) {
+            return redirect()->route('validations.index')
+                ->with('error', 'Aucune activité sélectionnée ne peut être validée par votre profil.');
+        }
 
         foreach ($activites as $activite) {
             $activite->valider();
@@ -152,6 +170,10 @@ class ValidationController extends Controller
     {
         $query = Activite::query()->soumis();
 
+        if (Auth::user()?->hasRole('chef_departement') && Auth::user()?->departement_id) {
+            $query->where('departement_id', Auth::user()->departement_id);
+        }
+
         if ($request->filled('departement_id')) {
             $query->where('departement_id', $request->departement_id);
         }
@@ -165,13 +187,41 @@ class ValidationController extends Controller
         }
 
         if ($request->filled('date_from')) {
-            $query->whereDate('date_soumission', '>=', $request->date_from);
+            $query->where('date_soumission', '>=', $request->date_from);
         }
 
         if ($request->filled('date_to')) {
-            $query->whereDate('date_soumission', '<=', $request->date_to);
+            $query->where('date_soumission', '<=', $request->date_to);
         }
 
         return $query;
+    }
+
+    private function availableDepartements()
+    {
+        $query = Departement::active()->ordered();
+
+        if (Auth::user()?->hasRole('chef_departement') && Auth::user()?->departement_id) {
+            $query->whereKey(Auth::user()->departement_id);
+        }
+
+        return $query->get();
+    }
+
+    private function canValidate(Activite $activite): bool
+    {
+        $user = Auth::user();
+
+        if (! $user) {
+            return false;
+        }
+
+        if ($user->hasRole('dbcgoq')) {
+            return true;
+        }
+
+        return $user->hasRole('chef_departement')
+            && $user->departement_id !== null
+            && (int) $user->departement_id === (int) $activite->departement_id;
     }
 }

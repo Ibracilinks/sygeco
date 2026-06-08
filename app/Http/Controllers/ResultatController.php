@@ -10,6 +10,7 @@ use App\Support\ActiveExercice;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class ResultatController extends Controller
 {
@@ -19,6 +20,7 @@ class ResultatController extends Controller
     public function index(Request $request)
     {
         $exerciceId = ActiveExercice::id();
+        $user = Auth::user();
 
         $filters = [
             'search' => trim((string) $request->string('search')),
@@ -36,6 +38,10 @@ class ResultatController extends Controller
             $query->whereHas('objectif', fn (Builder $builder) => $builder->where('exercice_id', $exerciceId));
         }
 
+        if ($this->isChefDepartement($user)) {
+            $this->applyDepartmentScopeToResultatQuery($query, (int) $user->departement_id);
+        }
+
         $this->applyFilters($query, $filters);
         $this->applySort($query, $filters['sort'], $filters['direction']);
 
@@ -44,6 +50,9 @@ class ResultatController extends Controller
         $summaryQuery = Resultat::query();
         if ($exerciceId !== null) {
             $summaryQuery->whereHas('objectif', fn (Builder $builder) => $builder->where('exercice_id', $exerciceId));
+        }
+        if ($this->isChefDepartement($user)) {
+            $this->applyDepartmentScopeToResultatQuery($summaryQuery, (int) $user->departement_id);
         }
         $this->applyFilters($summaryQuery, $filters);
 
@@ -57,6 +66,7 @@ class ResultatController extends Controller
         $objectifs = Objectif::query()
             ->where('statut', 'actif')
             ->when($exerciceId !== null, fn ($q) => $q->where('exercice_id', $exerciceId))
+            ->when($this->isChefDepartement($user), fn ($q) => $q->whereHas('resultats.extrants.activites', fn (Builder $builder) => $builder->where('departement_id', $user->departement_id)))
             ->orderBy('annee', 'desc')
             ->orderBy('code')
             ->get(['id', 'code', 'annee', 'libelle']);
@@ -99,7 +109,28 @@ class ResultatController extends Controller
      */
     public function show(Resultat $resultat)
     {
-        $resultat->load(['objectif', 'extrants.activites.departement']);
+        $user = Auth::user();
+
+        if ($this->isChefDepartement($user) && ! $this->resultatHasDepartmentActivities($resultat, (int) $user->departement_id)) {
+            abort(403);
+        }
+
+        $resultat->load([
+            'objectif',
+            'extrants' => function ($query) use ($user) {
+                if ($this->isChefDepartement($user) && $user?->departement_id) {
+                    $query->whereHas('activites', fn (Builder $builder) => $builder->where('departement_id', $user->departement_id));
+                }
+
+                $query->with(['activites' => function ($activiteQuery) use ($user) {
+                    if ($this->isChefDepartement($user) && $user?->departement_id) {
+                        $activiteQuery->where('departement_id', $user->departement_id);
+                    }
+
+                    $activiteQuery->with('departement');
+                }]);
+            },
+        ]);
 
         $activites = $resultat->extrants->flatMap->activites;
         $budgetTotal = $activites->sum('cout');
@@ -273,5 +304,22 @@ class ResultatController extends Controller
         $direction = in_array($direction, ['asc', 'desc'], true) ? $direction : 'asc';
 
         $query->orderBy($sort, $direction)->orderBy('code', 'asc');
+    }
+
+    private function isChefDepartement($user): bool
+    {
+        return $user?->hasRole('chef_departement') && $user?->departement_id !== null;
+    }
+
+    private function resultatHasDepartmentActivities(Resultat $resultat, int $departementId): bool
+    {
+        return $resultat->extrants()
+            ->whereHas('activites', fn (Builder $query) => $query->where('departement_id', $departementId))
+            ->exists();
+    }
+
+    private function applyDepartmentScopeToResultatQuery(Builder $query, int $departementId): void
+    {
+        $query->whereHas('extrants.activites', fn (Builder $builder) => $builder->where('departement_id', $departementId));
     }
 }
