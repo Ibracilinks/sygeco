@@ -6,7 +6,6 @@ use App\Http\Controllers\DepartementController;
 use App\Http\Controllers\ExerciceController;
 use App\Http\Controllers\ExtrantController;
 use App\Http\Controllers\ActiviteController;
-use App\Http\Controllers\IndicateurController;
 use App\Http\Controllers\JournalController;
 use App\Http\Controllers\ObjectifController;
 use App\Http\Controllers\ResultatController;
@@ -37,11 +36,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
         Route::resource('extrants', ExtrantController::class)->except(['index', 'show']);
         Route::post('extrants/{extrant}/toggle-status', [ExtrantController::class, 'toggleStatus'])->name('extrants.toggle-status');
-
-        Route::resource('indicateurs', IndicateurController::class);
-        Route::post('indicateurs/{indicateur}/toggle-status', [IndicateurController::class, 'toggleStatus'])->name('indicateurs.toggle-status');
-        Route::get('indicateurs/{indicateur}/saisie-valeurs', [IndicateurController::class, 'saisieValeurs'])->name('indicateurs.saisie-valeurs');
-        Route::post('indicateurs/{indicateur}/store-valeurs', [IndicateurController::class, 'storeValeurs'])->name('indicateurs.store-valeurs');
 
         Route::resource('departements', DepartementController::class)->except(['index', 'show']);
         Route::resource('users', UserController::class)->except(['index', 'show']);
