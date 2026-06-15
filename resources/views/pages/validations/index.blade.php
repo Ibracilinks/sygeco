@@ -89,10 +89,12 @@
                             <td class="px-5 py-4 text-sm text-slate-700 dark:text-slate-200">{{ optional($activite->date_soumission)->format('d/m/Y H:i') ?? '-' }}</td>
                             <td class="px-5 py-4 text-sm text-slate-700 dark:text-slate-200">{{ number_format($activite->cout, 0, ',', ' ') }} FCFA</td>
                             <td class="px-5 py-4">
-                                <div class="flex flex-wrap gap-2 text-sm">
-                                    <a href="{{ route('validations.show', $activite) }}" class="font-medium text-sky-700 hover:text-sky-600 dark:text-sky-300">Voir</a>
-                                    <button type="button" onclick="openValiderModal({{ $activite->id }}, '{{ addslashes($activite->nom_activite) }}', {{ json_encode($activite->validationHistoriques->take(3)->map(function ($item) {return ['action' => $item->action, 'commentaire' => $item->commentaire, 'utilisateur' => optional($item->utilisateur)->name, 'created_at' => optional($item->created_at)->format('d/m/Y H:i')];})) }})" class="font-medium text-emerald-700 hover:text-emerald-600 dark:text-emerald-300">Valider</button>
-                                    <button type="button" onclick="openRefuserModal({{ $activite->id }}, '{{ addslashes($activite->nom_activite) }}', {{ json_encode($activite->validationHistoriques->take(3)->map(function ($item) {return ['action' => $item->action, 'commentaire' => $item->commentaire, 'utilisateur' => optional($item->utilisateur)->name, 'created_at' => optional($item->created_at)->format('d/m/Y H:i')];})) }})" class="font-medium text-rose-700 hover:text-rose-600 dark:text-rose-300">A Traiter</button>
+                                <div class="flex flex-wrap items-center gap-1">
+                                    <x-actions.view :href="route('validations.show', $activite)" />
+                                    <x-action variant="validate" icon="check" type="button" label="Valider"
+                                        onclick="openValiderModal({{ $activite->id }}, '{{ addslashes($activite->nom_activite) }}', {{ json_encode($activite->validationHistoriques->take(3)->map(function ($item) {return ['action' => $item->action, 'commentaire' => $item->commentaire, 'utilisateur' => optional($item->utilisateur)->name, 'created_at' => optional($item->created_at)->format('d/m/Y H:i')];})) }})" />
+                                    <x-action variant="refuse" icon="x-mark" type="button" label="A Traiter"
+                                        onclick="openRefuserModal({{ $activite->id }}, '{{ addslashes($activite->nom_activite) }}', {{ json_encode($activite->validationHistoriques->take(3)->map(function ($item) {return ['action' => $item->action, 'commentaire' => $item->commentaire, 'utilisateur' => optional($item->utilisateur)->name, 'created_at' => optional($item->created_at)->format('d/m/Y H:i')];})) }})" />
                                 </div>
                             </td>
                         </tr>

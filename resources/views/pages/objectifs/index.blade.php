@@ -116,25 +116,20 @@
                                 </span>
                             </td>
                             <td class="px-5 py-4">
-                                <div class="flex flex-wrap gap-3 text-sm">
-                                    <a href="{{ route('objectifs.show', $objectif) }}" class="font-medium text-sky-700 hover:text-sky-600 dark:text-sky-300">Voir</a>
+                                <div class="flex flex-wrap items-center gap-1">
+                                    <x-actions.view :href="route('objectifs.show', $objectif)" />
                                     @can('edit_objectifs')
-                                        <a href="{{ route('objectifs.edit', $objectif) }}" class="font-medium text-amber-700 hover:text-amber-600 dark:text-amber-300">Modifier</a>
+                                        <x-actions.edit :href="route('objectifs.edit', $objectif)" />
                                     @endcan
                                     @can('delete_objectifs')
-                                        <form action="{{ route('objectifs.destroy', $objectif) }}" method="POST" class="inline" onsubmit="return confirm('Confirmer la suppression de cet objectif ?')">
-                                            @csrf
-                                            @method('DELETE')
-                                            <button type="submit" class="font-medium text-rose-700 hover:text-rose-600 dark:text-rose-300">Supprimer</button>
-                                        </form>
+                                        <x-actions.delete :action="route('objectifs.destroy', $objectif)" confirm="Confirmer la suppression de cet objectif ?" />
                                     @endcan
                                     @can('edit_objectifs')
-                                        <form action="{{ route('objectifs.toggle-statut', $objectif) }}" method="POST" class="inline">
-                                            @csrf
-                                            <button type="submit" class="font-medium {{ $objectif->statut === 'actif' ? 'text-rose-700 hover:text-rose-600 dark:text-rose-300' : 'text-emerald-700 hover:text-emerald-600 dark:text-emerald-300' }}">
-                                                {{ $objectif->statut === 'actif' ? 'Désactiver' : 'Activer' }}
-                                            </button>
-                                        </form>
+                                        @if ($objectif->statut === 'actif')
+                                            <x-actions.deactivate :action="route('objectifs.toggle-statut', $objectif)" />
+                                        @else
+                                            <x-actions.activate :action="route('objectifs.toggle-statut', $objectif)" />
+                                        @endif
                                     @endcan
                                 </div>
                             </td>

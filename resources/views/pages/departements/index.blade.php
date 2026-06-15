@@ -117,20 +117,13 @@
                                 @endif
                             </td>
                             <td class="px-5 py-4">
-                                <div class="flex flex-wrap gap-3 text-sm">
-                                    <a href="{{ route('departements.show', $departement) }}"
-                                        class="font-medium text-sky-700 hover:text-sky-600 dark:text-sky-300">Voir</a>
+                                <div class="flex flex-wrap items-center gap-1">
+                                    <x-actions.view :href="route('departements.show', $departement)" />
                                     @can('edit_departements')
-                                        <a href="{{ route('departements.edit', $departement) }}"
-                                            class="font-medium text-amber-700 hover:text-amber-600 dark:text-amber-300">Modifier</a>
+                                        <x-actions.edit :href="route('departements.edit', $departement)" />
                                     @endcan
                                     @can('delete_departements')
-                                        <form action="{{ route('departements.destroy', $departement) }}" method="POST"
-                                            class="inline" onsubmit="return confirm('Confirmer la suppression ?')">
-                                            @csrf
-                                            @method('DELETE')
-                                            <button type="submit" class="font-medium text-red-700 hover:text-red-600 dark:text-red-300">Supprimer</button>
-                                        </form>
+                                        <x-actions.delete :action="route('departements.destroy', $departement)" confirm="Confirmer la suppression ?" />
                                     @endcan
                                 </div>
                             </td>

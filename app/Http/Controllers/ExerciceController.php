@@ -4,7 +4,10 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\StoreExerciceRequest;
 use App\Http\Requests\UpdateExerciceRequest;
+use App\Models\Activite;
 use App\Models\Exercice;
+use App\Models\Objectif;
+use App\Models\Resultat;
 use App\Support\ActiveExercice;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\Request;
@@ -26,9 +29,16 @@ class ExerciceController extends Controller
             $query->where('statut', $request->statut);
         }
 
-        $exercices = $query->paginate(15)->withQueryString();
+        $exercices = $query->withCount('objectifs')->paginate(15)->withQueryString();
 
-        return view('pages.exercices.index', compact('exercices'));
+        $summary = [
+            'total' => Exercice::count(),
+            'actif' => Exercice::where('statut', 'actif')->count(),
+            'cloture' => Exercice::where('statut', 'cloture')->count(),
+            'brouillon' => Exercice::where('statut', 'brouillon')->count(),
+        ];
+
+        return view('pages.exercices.index', compact('exercices', 'summary'));
     }
 
     public function create()
@@ -51,12 +61,157 @@ class ExerciceController extends Controller
     {
         $exercice->loadCount('objectifs');
 
-        return view('pages.exercices.show', compact('exercice'));
+        $objectifs = Objectif::where('exercice_id', $exercice->id)
+            ->withCount(['resultats', 'extrants'])
+            ->orderBy('ordre')
+            ->orderBy('code')
+            ->get();
+
+        $stats = [
+            'nb_objectifs' => $exercice->objectifs_count,
+            'nb_resultats' => (int) $objectifs->sum('resultats_count'),
+            'nb_extrants' => (int) $objectifs->sum('extrants_count'),
+            'nb_activites' => Activite::forExercice($exercice->id)->count(),
+            'budget_total' => (float) Activite::forExercice($exercice->id)->sum('cout'),
+            'activites_par_statut' => [
+                'brouillon' => Activite::forExercice($exercice->id)->where('statut', 'brouillon')->count(),
+                'soumis' => Activite::forExercice($exercice->id)->where('statut', 'soumis')->count(),
+                'valide' => Activite::forExercice($exercice->id)->where('statut', 'valide')->count(),
+            ],
+        ];
+
+        $relances = $exercice->relances()->orderByDesc('palier')->get();
+
+        $charts = $this->buildExerciceCharts($exercice, $objectifs, $stats);
+
+        $isActiveContext = ActiveExercice::id() === (int) $exercice->id;
+
+        return view('pages.exercices.show', compact('exercice', 'objectifs', 'stats', 'relances', 'charts', 'isActiveContext'));
+    }
+
+    /**
+     * Construit l'ensemble des séries graphiques (objectifs, résultats, extrants, activités) d'un exercice.
+     */
+    protected function buildExerciceCharts(Exercice $exercice, $objectifs, array $stats): array
+    {
+        $activites = Activite::forExercice($exercice->id)
+            ->with('extrant:id,code,objectif_id,resultat_id')
+            ->get(['id', 'cout', 'statut', 'trimestre_1', 'trimestre_2', 'trimestre_3', 'trimestre_4', 'extrant_id']);
+
+        $objectifCodes = $objectifs->pluck('code', 'id');
+
+        $resultats = Resultat::whereIn('objectif_id', $objectifs->pluck('id'))
+            ->withCount('extrants')
+            ->orderBy('ordre')
+            ->orderBy('code')
+            ->get();
+        $resultatCodes = $resultats->pluck('code', 'id');
+
+        // Budget (M FCFA) par objectif
+        $budgetParObjectif = $activites->groupBy(fn ($a) => $a->extrant?->objectif_id)
+            ->map(fn ($g) => round($g->sum('cout') / 1_000_000, 2));
+
+        // Budget (M FCFA) par résultat stratégique
+        $budgetParResultat = $activites->groupBy(fn ($a) => $a->extrant?->resultat_id)
+            ->map(fn ($g) => round($g->sum('cout') / 1_000_000, 2));
+
+        // Nombre d'activités par extrant (top 10)
+        $actParExtrant = $activites->groupBy(fn ($a) => $a->extrant?->code ?? '—')
+            ->map->count()
+            ->sortDesc()
+            ->take(10);
+
+        // Planification trimestrielle
+        $trimestres = [
+            'T1' => $activites->where('trimestre_1', 'oui')->count(),
+            'T2' => $activites->where('trimestre_2', 'oui')->count(),
+            'T3' => $activites->where('trimestre_3', 'oui')->count(),
+            'T4' => $activites->where('trimestre_4', 'oui')->count(),
+        ];
+
+        // Distribution budgétaire par tranche de coût
+        $tranches = ['< 5M' => 0, '5–20M' => 0, '20–50M' => 0, '> 50M' => 0];
+        foreach ($activites as $a) {
+            $m = (float) $a->cout / 1_000_000;
+            match (true) {
+                $m < 5 => $tranches['< 5M']++,
+                $m < 20 => $tranches['5–20M']++,
+                $m < 50 => $tranches['20–50M']++,
+                default => $tranches['> 50M']++,
+            };
+        }
+
+        return [
+            'structure' => [
+                'labels' => ['Objectifs', 'Résultats', 'Extrants', 'Activités'],
+                'values' => [$stats['nb_objectifs'], $stats['nb_resultats'], $stats['nb_extrants'], $stats['nb_activites']],
+            ],
+            'budget_par_objectif' => [
+                'labels' => $budgetParObjectif->keys()->map(fn ($id) => $objectifCodes[$id] ?? '—')->values()->all(),
+                'values' => $budgetParObjectif->values()->all(),
+            ],
+            'budget_par_resultat' => [
+                'labels' => $budgetParResultat->keys()->map(fn ($id) => $resultatCodes[$id] ?? '—')->values()->all(),
+                'values' => $budgetParResultat->values()->all(),
+            ],
+            'extrants_par_resultat' => [
+                'labels' => $resultats->pluck('code')->all(),
+                'values' => $resultats->pluck('extrants_count')->all(),
+            ],
+            'activites_par_extrant' => [
+                'labels' => $actParExtrant->keys()->all(),
+                'values' => $actParExtrant->values()->all(),
+            ],
+            'activites_statut' => [
+                'labels' => ['Brouillon', 'Soumis', 'Validé'],
+                'values' => array_values($stats['activites_par_statut']),
+            ],
+            'activites_trimestre' => [
+                'labels' => array_keys($trimestres),
+                'values' => array_values($trimestres),
+            ],
+            'distribution_budgetaire' => [
+                'labels' => array_keys($tranches),
+                'values' => array_values($tranches),
+            ],
+        ];
     }
 
     public function edit(Exercice $exercice)
     {
         return view('pages.exercices.edit', compact('exercice'));
+    }
+
+    /**
+     * Exporte le PTA de l'exercice (Objectif → Résultat → Extrant → Activités)
+     * au format tableau, ouvrable dans Excel / LibreOffice.
+     */
+    public function export(Exercice $exercice)
+    {
+        $this->authorize('view', $exercice);
+
+        $objectifs = Objectif::where('exercice_id', $exercice->id)
+            ->orderBy('ordre')
+            ->orderBy('code')
+            ->with(['resultats' => function ($q) {
+                $q->orderBy('ordre')->orderBy('code')
+                    ->with(['extrants' => function ($e) {
+                        $e->orderBy('ordre')->orderBy('code')
+                            ->with(['activites' => function ($a) {
+                                $a->with('departement:id,code,nom')->orderBy('id');
+                            }]);
+                    }]);
+            }])
+            ->get();
+
+        $html = view('pages.exercices.export', compact('exercice', 'objectifs'))->render();
+
+        $filename = 'PTA_exercice_' . $exercice->annee . '_' . now()->format('Ymd') . '.xls';
+
+        return response($html, 200, [
+            'Content-Type' => 'application/vnd.ms-excel; charset=UTF-8',
+            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+        ]);
     }
 
     public function update(UpdateExerciceRequest $request, Exercice $exercice)

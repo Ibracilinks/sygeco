@@ -57,7 +57,7 @@
                                         <p class="mt-1 text-sm text-slate-700 dark:text-slate-200">{{ Str::limit($resultat->libelle, 100) }}</p>
                                         <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">Extrants: {{ $resultat->extrants->count() }}</p>
                                     </div>
-                                    <a href="{{ route('resultats.show', $resultat) }}" class="text-sm font-medium text-sky-700 hover:text-sky-600 dark:text-sky-300">Voir</a>
+                                    <x-actions.view :href="route('resultats.show', $resultat)" />
                                 </div>
                             </div>
                         @endforeach

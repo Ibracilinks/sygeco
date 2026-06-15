@@ -30,6 +30,7 @@ class DatabaseSeeder extends Seeder
             ResultatSeeder::class,
             ExtrantSeeder::class,
             ActiviteSeeder::class,
+            Pta2025Seeder::class,
             // IndicateurSeeder::class,
             // IndicateurValeurSeeder::class,
         ]);

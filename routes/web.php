@@ -26,6 +26,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
         Route::resource('exercices', ExerciceController::class)->only(['index', 'show']);
         Route::post('exercices/{exercice}/activate', [ExerciceController::class, 'activate'])->name('exercices.activate');
+        Route::get('exercices/{exercice}/export', [ExerciceController::class, 'export'])->name('exercices.export');
         Route::resource('exercices', ExerciceController::class)->except(['index', 'show']);
 
         Route::post('objectifs/{objectif}/toggle-statut', [ObjectifController::class, 'toggleStatut'])->name('objectifs.toggle-statut');

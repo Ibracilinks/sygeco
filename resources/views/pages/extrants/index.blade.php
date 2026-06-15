@@ -97,25 +97,20 @@
                                 </span>
                             </td>
                             <td class="px-5 py-4">
-                                <div class="flex flex-wrap gap-3 text-sm">
-                                    <a href="{{ route('extrants.show', $extrant) }}" class="font-medium text-sky-700 hover:text-sky-600 dark:text-sky-300">Voir</a>
+                                <div class="flex flex-wrap items-center gap-1">
+                                    <x-actions.view :href="route('extrants.show', $extrant)" />
                                     @can('edit_extrants')
-                                        <a href="{{ route('extrants.edit', $extrant) }}" class="font-medium text-amber-700 hover:text-amber-600 dark:text-amber-300">Modifier</a>
+                                        <x-actions.edit :href="route('extrants.edit', $extrant)" />
                                     @endcan
                                     @can('delete_extrants')
-                                        <form action="{{ route('extrants.destroy', $extrant) }}" method="POST" class="inline" onsubmit="return confirm('Confirmer la suppression ?')">
-                                            @csrf
-                                            @method('DELETE')
-                                            <button type="submit" class="font-medium text-rose-700 hover:text-rose-600 dark:text-rose-300">Supprimer</button>
-                                        </form>
+                                        <x-actions.delete :action="route('extrants.destroy', $extrant)" confirm="Confirmer la suppression ?" />
                                     @endcan
                                     @can('edit_extrants')
-                                        <form action="{{ route('extrants.toggle-status', $extrant) }}" method="POST" class="inline">
-                                            @csrf
-                                            <button type="submit" class="font-medium {{ $extrant->is_active ? 'text-rose-700 hover:text-rose-600 dark:text-rose-300' : 'text-emerald-700 hover:text-emerald-600 dark:text-emerald-300' }}">
-                                                {{ $extrant->is_active ? 'Désactiver' : 'Activer' }}
-                                            </button>
-                                        </form>
+                                        @if ($extrant->is_active)
+                                            <x-actions.deactivate :action="route('extrants.toggle-status', $extrant)" />
+                                        @else
+                                            <x-actions.activate :action="route('extrants.toggle-status', $extrant)" />
+                                        @endif
                                     @endcan
                                 </div>
                             </td>

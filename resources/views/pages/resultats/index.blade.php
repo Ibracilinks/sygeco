@@ -107,25 +107,20 @@
                                 </span>
                             </td>
                             <td class="px-5 py-4">
-                                <div class="flex flex-wrap gap-3 text-sm">
-                                    <a href="{{ route('resultats.show', $resultat) }}" class="font-medium text-sky-700 hover:text-sky-600 dark:text-sky-300">Voir</a>
+                                <div class="flex flex-wrap items-center gap-1">
+                                    <x-actions.view :href="route('resultats.show', $resultat)" />
                                     @can('edit_resultats')
-                                        <a href="{{ route('resultats.edit', $resultat) }}" class="font-medium text-amber-700 hover:text-amber-600 dark:text-amber-300">Modifier</a>
+                                        <x-actions.edit :href="route('resultats.edit', $resultat)" />
                                     @endcan
                                     @can('delete_resultats')
-                                        <form action="{{ route('resultats.destroy', $resultat) }}" method="POST" class="inline" onsubmit="return confirm('Confirmer la suppression ?')">
-                                            @csrf
-                                            @method('DELETE')
-                                            <button type="submit" class="font-medium text-rose-700 hover:text-rose-600 dark:text-rose-300">Supprimer</button>
-                                        </form>
+                                        <x-actions.delete :action="route('resultats.destroy', $resultat)" confirm="Confirmer la suppression ?" />
                                     @endcan
                                     @can('edit_resultats')
-                                        <form action="{{ route('resultats.toggle-status', $resultat) }}" method="POST" class="inline">
-                                            @csrf
-                                            <button type="submit" class="font-medium {{ $resultat->is_active ? 'text-rose-700 hover:text-rose-600 dark:text-rose-300' : 'text-emerald-700 hover:text-emerald-600 dark:text-emerald-300' }}">
-                                                {{ $resultat->is_active ? 'Désactiver' : 'Activer' }}
-                                            </button>
-                                        </form>
+                                        @if ($resultat->is_active)
+                                            <x-actions.deactivate :action="route('resultats.toggle-status', $resultat)" />
+                                        @else
+                                            <x-actions.activate :action="route('resultats.toggle-status', $resultat)" />
+                                        @endif
                                     @endcan
                                 </div>
                             </td>

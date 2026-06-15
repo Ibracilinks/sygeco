@@ -120,38 +120,29 @@
                                 </span>
                             </td>
                             <td class="px-5 py-4">
-                                <div class="flex flex-wrap gap-3 text-sm">
-                                    <a href="{{ route('activites.show', $activite) }}" class="font-medium text-sky-700 hover:text-sky-600 dark:text-sky-300">Voir</a>
+                                <div class="flex flex-wrap items-center gap-1">
+                                    <x-actions.view :href="route('activites.show', $activite)" />
 
                                     @if ($activite->estModifiable())
                                         @can('edit_activites')
-                                            <a href="{{ route('activites.edit', $activite) }}" class="font-medium text-amber-700 hover:text-amber-600 dark:text-amber-300">Modifier</a>
+                                            <x-actions.edit :href="route('activites.edit', $activite)" />
                                         @endcan
                                         @can('delete_activites')
-                                            <form action="{{ route('activites.destroy', $activite) }}" method="POST" class="inline" onsubmit="return confirm('Confirmer la suppression ?')">
-                                                @csrf
-                                                @method('DELETE')
-                                                <button type="submit" class="font-medium text-rose-700 hover:text-rose-600 dark:text-rose-300">Supprimer</button>
-                                            </form>
+                                            <x-actions.delete :action="route('activites.destroy', $activite)" confirm="Confirmer la suppression ?" />
                                         @endcan
                                     @endif
 
                                     @can('submit', $activite)
                                         @if ($activite->statut === 'brouillon')
-                                            <form action="{{ route('activites.soumettre', $activite) }}" method="POST" class="inline">
-                                                @csrf
-                                                <button type="submit" class="font-medium text-indigo-700 hover:text-indigo-600 dark:text-indigo-300">Soumettre</button>
-                                            </form>
+                                            <x-actions.submit :action="route('activites.soumettre', $activite)" />
                                         @endif
                                     @endcan
 
                                     @can('validate_activites')
                                         @if ($activite->statut === 'soumis')
-                                            <form action="{{ route('activites.valider', $activite) }}" method="POST" class="inline">
-                                                @csrf
-                                                <button type="submit" class="font-medium text-emerald-700 hover:text-emerald-600 dark:text-emerald-300">Valider</button>
-                                            </form>
-                                            <button type="button" onclick="openRefusModal({{ $activite->id }}, '{{ addslashes($activite->nom_activite) }}')" class="font-medium text-rose-700 hover:text-rose-600 dark:text-rose-300">Refuser</button>
+                                            <x-actions.validate :action="route('activites.valider', $activite)" />
+                                            <x-action variant="refuse" icon="x-mark" type="button" label="Refuser"
+                                                onclick="openRefusModal({{ $activite->id }}, '{{ addslashes($activite->nom_activite) }}')" />
                                         @endif
                                     @endcan
                                 </div>

@@ -59,7 +59,7 @@
                                         <p class="text-sm font-semibold text-slate-900 dark:text-white">{{ Str::limit($activite->nom_activite, 100) }}</p>
                                         <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">Département: {{ $activite->departement->nom ?? '-' }}</p>
                                     </div>
-                                    <a href="{{ route('activites.show', $activite) }}" class="text-sm font-medium text-sky-700 hover:text-sky-600 dark:text-sky-300">Voir</a>
+                                    <x-actions.view :href="route('activites.show', $activite)" />
                                 </div>
                                 <div class="mt-3 grid grid-cols-1 gap-2 text-xs text-slate-500 dark:text-slate-400 sm:grid-cols-3">
                                     <span>Statut: {{ $activite->statut_label }}</span>
