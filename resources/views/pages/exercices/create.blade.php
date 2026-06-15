@@ -32,6 +32,26 @@
                         @enderror
                     </div>
                 </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium dark:text-white mb-1">Ouverture de la saisie</label>
+                        <input type="date" name="date_ouverture_saisie" value="{{ old('date_ouverture_saisie') }}"
+                            class="w-full rounded-lg border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-zinc-900 px-3 py-2 dark:text-white">
+                        <p class="mt-1 text-xs text-neutral-500">Date d'ouverture de la saisie des activités.</p>
+                        @error('date_ouverture_saisie')
+                            <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                        @enderror
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium dark:text-white mb-1">Date limite de saisie</label>
+                        <input type="date" name="date_limite_saisie" value="{{ old('date_limite_saisie') }}"
+                            class="w-full rounded-lg border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-zinc-900 px-3 py-2 dark:text-white">
+                        <p class="mt-1 text-xs text-neutral-500">Déclenche les relances J-15, J-10, J-7, J-5, J-3, J-2, J-1, J.</p>
+                        @error('date_limite_saisie')
+                            <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                        @enderror
+                    </div>
+                </div>
                 <div>
                     <label class="block text-sm font-medium dark:text-white mb-1">Statut *</label>
                     <select name="statut"

@@ -1,112 +1,50 @@
-<x-layouts::app title="Validation d'activité">
-    <div class="flex h-full w-full flex-1 flex-col gap-6 rounded-xl p-6">
-
-        <div class="flex flex-wrap items-center justify-between gap-4">
+<x-layouts::app title="Validation activité">
+    <div class="flex h-full w-full flex-1 flex-col gap-5 rounded-xl">
+        <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
             <div>
-                <h1 class="text-2xl font-bold dark:text-white">Validation de l'activité</h1>
-                <p class="text-zinc-500 dark:text-zinc-400 mt-1">{{ Str::limit($activite->nom_activite, 80) }}</p>
+                <h1 class="text-2xl font-semibold text-slate-900 dark:text-white">Validation de l'activité</h1>
+                <p class="text-sm text-slate-500 dark:text-slate-400">ACT-{{ $activite->id }} • {{ Str::limit($activite->nom_activite, 90) }}</p>
             </div>
-            <div class="flex flex-wrap gap-3">
-                <a href="{{ route('validations.index') }}"
-                    class="inline-flex items-center gap-2 rounded-lg border border-neutral-300 bg-white dark:bg-zinc-800 px-4 py-2 text-sm font-medium text-gray-700 dark:text-white hover:bg-gray-50 dark:hover:bg-zinc-700 transition">
-                    Retour à la liste
-                </a>
-                <button type="button"
-                    onclick="openValiderModal({{ $activite->id }}, '{{ addslashes($activite->nom_activite) }}', {{ json_encode($activite->validationHistoriques->sortByDesc('created_at')->take(5)->map(function ($item) {return ['action' => $item->action, 'commentaire' => $item->commentaire, 'utilisateur' => optional($item->utilisateur)->name, 'created_at' => optional($item->created_at)->format('d/m/Y H:i')];})) }})")"
-                    class="inline-flex items-center gap-2 rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700 transition">
-                    Valider
-                </button>
-                <button type="button"
-                    onclick="openRefuserModal({{ $activite->id }}, '{{ addslashes($activite->nom_activite) }}', {{ json_encode($activite->validationHistoriques->sortByDesc('created_at')->take(5)->map(function ($item) {return ['action' => $item->action, 'commentaire' => $item->commentaire, 'utilisateur' => optional($item->utilisateur)->name, 'created_at' => optional($item->created_at)->format('d/m/Y H:i')];})) }})")"
-                    class="inline-flex items-center gap-2 rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 transition">
-                    Refuser
-                </button>
+            <div class="flex flex-wrap gap-2">
+                <a href="{{ route('validations.index') }}" class="inline-flex items-center rounded-lg bg-slate-200 px-4 py-2 text-sm font-medium text-slate-800 transition hover:bg-slate-300 dark:bg-slate-700 dark:text-slate-100 dark:hover:bg-slate-600">Retour</a>
+                <button type="button" onclick="openValiderModal({{ $activite->id }}, '{{ addslashes($activite->nom_activite) }}', {{ json_encode($activite->validationHistoriques->sortByDesc('created_at')->take(5)->map(function ($item) {return ['action' => $item->action, 'commentaire' => $item->commentaire, 'utilisateur' => optional($item->utilisateur)->name, 'created_at' => optional($item->created_at)->format('d/m/Y H:i')];})) }})" class="inline-flex items-center rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-500">Valider</button>
+                <button type="button" onclick="openRefuserModal({{ $activite->id }}, '{{ addslashes($activite->nom_activite) }}', {{ json_encode($activite->validationHistoriques->sortByDesc('created_at')->take(5)->map(function ($item) {return ['action' => $item->action, 'commentaire' => $item->commentaire, 'utilisateur' => optional($item->utilisateur)->name, 'created_at' => optional($item->created_at)->format('d/m/Y H:i')];})) }})" class="inline-flex items-center rounded-lg bg-rose-600 px-4 py-2 text-sm font-medium text-white hover:bg-rose-500">Refuser</button>
             </div>
         </div>
 
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div
-                class="lg:col-span-2 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-zinc-800 p-6">
-                <div class="mb-4">
-                    <h2 class="text-lg font-semibold dark:text-white">Détails de l'activité</h2>
-                </div>
-
-                <dl class="grid grid-cols-1 gap-4 text-sm text-zinc-600 dark:text-zinc-300">
-                    <div>
-                        <dt class="font-medium text-zinc-800 dark:text-white">Code activité</dt>
-                        <dd>ACT-{{ $activite->id }}</dd>
-                    </div>
-                    <div>
-                        <dt class="font-medium text-zinc-800 dark:text-white">Nom</dt>
-                        <dd>{{ $activite->nom_activite }}</dd>
-                    </div>
-                    <div>
-                        <dt class="font-medium text-zinc-800 dark:text-white">Département</dt>
-                        <dd>{{ $activite->departement->nom ?? 'N/A' }}</dd>
-                    </div>
-                    <div>
-                        <dt class="font-medium text-zinc-800 dark:text-white">Extrant</dt>
-                        <dd>{{ $activite->extrant->code ?? 'N/A' }} -
-                            {{ Str::limit($activite->extrant->libelle ?? 'N/A', 60) }}</dd>
-                    </div>
-                    <div>
-                        <dt class="font-medium text-zinc-800 dark:text-white">Date de soumission</dt>
-                        <dd>{{ optional($activite->date_soumission)->format('d/m/Y H:i') ?? 'N/A' }}</dd>
-                    </div>
-                    <div>
-                        <dt class="font-medium text-zinc-800 dark:text-white">Coût</dt>
-                        <dd>{{ number_format($activite->cout, 0, ',', ' ') }} FCFA</dd>
-                    </div>
-                    <div>
-                        <dt class="font-medium text-zinc-800 dark:text-white">Trimestres</dt>
-                        <dd>{{ $activite->trimestres_selectionnes }}</dd>
-                    </div>
-                    <div>
-                        <dt class="font-medium text-zinc-800 dark:text-white">Indicateur</dt>
-                        <dd>{{ $activite->indicateur_objectivement_verifiable }}</dd>
-                    </div>
-                    <div>
-                        <dt class="font-medium text-zinc-800 dark:text-white">Moyen de vérification</dt>
-                        <dd>{{ $activite->moyen_verification }}</dd>
-                    </div>
-                    <div>
-                        <dt class="font-medium text-zinc-800 dark:text-white">Commentaires</dt>
-                        <dd>{{ $activite->commentaires ?? 'Aucun commentaire' }}</dd>
-                    </div>
+        <div class="grid grid-cols-1 gap-5 xl:grid-cols-3">
+            <div class="rounded-xl border border-slate-200 bg-white p-6 dark:border-slate-700 dark:bg-slate-900 xl:col-span-2">
+                <h2 class="text-lg font-semibold text-slate-900 dark:text-white">Détails de l'activité</h2>
+                <dl class="mt-4 grid grid-cols-1 gap-4 text-sm md:grid-cols-2">
+                    <div><dt class="text-slate-500 dark:text-slate-400">Nom</dt><dd class="font-medium text-slate-900 dark:text-white">{{ $activite->nom_activite }}</dd></div>
+                    <div><dt class="text-slate-500 dark:text-slate-400">Coût</dt><dd class="font-medium text-slate-900 dark:text-white">{{ number_format($activite->cout, 0, ',', ' ') }} FCFA</dd></div>
+                    <div><dt class="text-slate-500 dark:text-slate-400">Département</dt><dd class="font-medium text-slate-900 dark:text-white">{{ $activite->departement->nom ?? '-' }}</dd></div>
+                    <div><dt class="text-slate-500 dark:text-slate-400">Extrant</dt><dd class="font-medium text-slate-900 dark:text-white">{{ $activite->extrant->code ?? '-' }}</dd></div>
+                    <div><dt class="text-slate-500 dark:text-slate-400">Date de soumission</dt><dd class="font-medium text-slate-900 dark:text-white">{{ optional($activite->date_soumission)->format('d/m/Y H:i') ?? '-' }}</dd></div>
+                    <div><dt class="text-slate-500 dark:text-slate-400">Saisi par</dt><dd class="font-medium text-slate-900 dark:text-white">{{ $activite->saisiePar->name ?? '-' }}</dd></div>
+                    <div class="md:col-span-2"><dt class="text-slate-500 dark:text-slate-400">Indicateur</dt><dd class="font-medium text-slate-900 dark:text-white">{{ $activite->indicateur_objectivement_verifiable }}</dd></div>
+                    <div class="md:col-span-2"><dt class="text-slate-500 dark:text-slate-400">Moyen de vérification</dt><dd class="font-medium text-slate-900 dark:text-white">{{ $activite->moyen_verification }}</dd></div>
+                    <div class="md:col-span-2"><dt class="text-slate-500 dark:text-slate-400">Commentaires</dt><dd class="font-medium text-slate-900 dark:text-white">{{ $activite->commentaires ?: 'Aucun commentaire' }}</dd></div>
                 </dl>
             </div>
 
-            <div class="space-y-4">
-                <div class="rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-zinc-800 p-6">
-                    <h2 class="text-lg font-semibold dark:text-white mb-4">Contributeur</h2>
-                    <div class="text-sm text-zinc-500 dark:text-zinc-300">Utilisateur</div>
-                    <div class="font-medium dark:text-white">{{ $activite->saisiePar->name ?? 'N/A' }}</div>
-                    <div class="text-sm text-zinc-500 dark:text-zinc-300 mt-4">Email</div>
-                    <div class="dark:text-white">{{ $activite->saisiePar->email ?? 'N/A' }}</div>
-                </div>
-
-                <div class="rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-zinc-800 p-6">
-                    <h2 class="text-lg font-semibold dark:text-white mb-4">Historique de validation</h2>
-                    @if ($activite->validationHistoriques->isEmpty())
-                        <p class="text-sm text-zinc-500 dark:text-zinc-400">Aucune action enregistrée.</p>
-                    @else
-                        <div class="space-y-3">
-                            @foreach ($activite->validationHistoriques->sortByDesc('created_at') as $historique)
-                                <div class="rounded-lg bg-neutral-50 dark:bg-zinc-900 p-3">
-                                    <div class="text-xs text-zinc-500 dark:text-zinc-400">
-                                        {{ optional($historique->created_at)->format('d/m/Y H:i') }} -
-                                        {{ optional($historique->utilisateur)->name ?? 'Système' }}</div>
-                                    <div class="text-sm font-medium dark:text-white">{{ ucfirst($historique->action) }}
-                                        → {{ ucfirst($historique->nouveau_statut) }}</div>
-                                    @if ($historique->commentaire)
-                                        <div class="text-sm text-zinc-500 dark:text-zinc-400 mt-1">Motif / commentaire :
-                                            {{ $historique->commentaire }}</div>
-                                    @endif
-                                </div>
-                            @endforeach
-                        </div>
-                    @endif
-                </div>
+            <div class="rounded-xl border border-slate-200 bg-white p-6 dark:border-slate-700 dark:bg-slate-900">
+                <h2 class="text-lg font-semibold text-slate-900 dark:text-white">Historique de validation</h2>
+                @if ($activite->validationHistoriques->isEmpty())
+                    <p class="mt-4 text-sm text-slate-500 dark:text-slate-400">Aucun historique disponible.</p>
+                @else
+                    <div class="mt-4 space-y-3">
+                        @foreach ($activite->validationHistoriques->sortByDesc('created_at') as $historique)
+                            <div class="rounded-lg bg-slate-50 p-3 dark:bg-slate-950/60">
+                                <p class="text-xs text-slate-500 dark:text-slate-400">{{ optional($historique->created_at)->format('d/m/Y H:i') }}</p>
+                                <p class="text-sm font-medium text-slate-900 dark:text-white">{{ ucfirst($historique->action) }} • {{ $historique->utilisateur->name ?? 'Système' }}</p>
+                                @if ($historique->commentaire)
+                                    <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">{{ $historique->commentaire }}</p>
+                                @endif
+                            </div>
+                        @endforeach
+                    </div>
+                @endif
             </div>
         </div>
 
@@ -131,16 +69,15 @@
 
         function buildHistoryHtml(history) {
             if (!history || history.length === 0) {
-                return '<div class="text-sm text-zinc-500">Aucun historique disponible.</div>';
+                return '<div class="text-sm text-slate-500">Aucun historique disponible.</div>';
             }
 
-            return history.map(function(entry) {
-                return '<div class="rounded-lg bg-neutral-50 dark:bg-zinc-900 p-3 mb-2">' +
-                    '<div class="text-xs text-zinc-500">' + entry.created_at + ' - ' + (entry.utilisateur ||
-                    'N/A') + '</div>' +
-                    '<div class="text-sm font-medium dark:text-white">' + entry.action.toUpperCase() + ' → ' + entry
-                    .commentaire + '</div>' +
-                    '</div>';
+            return history.map((entry) => {
+                return '<div class="rounded-lg bg-slate-50 p-3 dark:bg-slate-950/60 mb-2">' +
+                    '<div class="text-xs text-slate-500">' + entry.created_at + ' • ' + (entry.utilisateur || 'N/A') + '</div>' +
+                    '<div class="text-sm font-medium text-slate-900 dark:text-white">' + entry.action.toUpperCase() + '</div>' +
+                    '<div class="text-xs text-slate-500 mt-1">' + (entry.commentaire || 'Pas de commentaire') + '</div>' +
+                '</div>';
             }).join('');
         }
 

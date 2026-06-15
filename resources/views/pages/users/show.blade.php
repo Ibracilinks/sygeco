@@ -1,70 +1,87 @@
 <x-layouts::app title="Détails utilisateur">
-    <div class="flex h-full w-full flex-1 flex-col gap-4 rounded-xl">
-
-        <div class="flex justify-between items-center mb-6">
+    <div class="flex h-full w-full flex-1 flex-col gap-5 rounded-xl">
+        <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
             <div>
-                <h1 class="text-2xl font-bold dark:text-white">{{ $user->name }}</h1>
-                <p class="text-zinc-500 dark:text-zinc-400">{{ $user->email }}</p>
+                <h1 class="text-2xl font-semibold text-slate-900 dark:text-white">{{ $user->name }}</h1>
+                <p class="text-sm text-slate-500 dark:text-slate-400">{{ $user->email }}</p>
             </div>
-            <div class="flex gap-2">
-                <a href="{{ route('users.edit', $user) }}"
-                    class="inline-flex items-center px-4 py-2 bg-yellow-600 hover:bg-yellow-700 text-white rounded-lg transition">
-                    Modifier
-                </a>
-                <a href="{{ route('users.index') }}"
-                    class="inline-flex items-center px-4 py-2 bg-gray-500 hover:bg-gray-600 text-white rounded-lg transition">
-                    Retour
-                </a>
+            <div class="flex flex-wrap gap-2">
+                @can('edit_users')
+                    <a href="{{ route('users.edit', $user) }}" class="inline-flex items-center rounded-lg bg-amber-500 px-4 py-2 text-sm font-medium text-white transition hover:bg-amber-400">Modifier</a>
+                @endcan
+                <a href="{{ route('users.index') }}" class="inline-flex items-center rounded-lg bg-slate-200 px-4 py-2 text-sm font-medium text-slate-800 transition hover:bg-slate-300 dark:bg-slate-700 dark:text-slate-100 dark:hover:bg-slate-600">Retour</a>
             </div>
         </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div
-                class="overflow-hidden rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-zinc-800">
-                <div class="border-b border-neutral-200 dark:border-neutral-700 px-6 py-4">
-                    <h2 class="text-lg font-semibold dark:text-white">Informations</h2>
-                </div>
-                <div class="p-6 space-y-4">
-                    <div>
-                        <div class="text-sm text-zinc-500">Département</div>
-                        <div class="dark:text-white">
-                            @if ($user->departement)
-                                <a href="{{ route('departements.show', $user->departement) }}"
-                                    class="text-blue-600 hover:underline">{{ $user->departement->nom }}</a>
-                            @else
-                                <span class="text-zinc-500">Aucun</span>
-                            @endif
-                        </div>
-                    </div>
-                    <div>
-                        <div class="text-sm text-zinc-500">Poste</div>
-                        <div class="dark:text-white">{{ $user->poste ?? 'Non défini' }}</div>
-                    </div>
-                    <div>
-                        <div class="text-sm text-zinc-500">Téléphone</div>
-                        <div class="dark:text-white">{{ $user->telephone ?? 'Non défini' }}</div>
-                    </div>
-                </div>
+        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            <div class="rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-900">
+                <p class="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">Département</p>
+                <p class="mt-2 text-lg font-semibold text-slate-900 dark:text-white">{{ $user->departement?->nom ?? 'Aucun' }}</p>
             </div>
+            <div class="rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-900">
+                <p class="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">Poste</p>
+                <p class="mt-2 text-lg font-semibold text-slate-900 dark:text-white">{{ $user->poste ?: 'Non défini' }}</p>
+            </div>
+            <div class="rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-900">
+                <p class="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">Téléphone</p>
+                <p class="mt-2 text-lg font-semibold text-slate-900 dark:text-white">{{ $user->telephone ?: '-' }}</p>
+            </div>
+            <div class="rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-900">
+                <p class="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">Nombre de rôles</p>
+                <p class="mt-2 text-3xl font-semibold text-slate-900 dark:text-white">{{ $user->roles_count }}</p>
+            </div>
+        </div>
 
-            <div
-                class="overflow-hidden rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-zinc-800">
-                <div class="border-b border-neutral-200 dark:border-neutral-700 px-6 py-4">
-                    <h2 class="text-lg font-semibold dark:text-white">Rôles</h2>
-                </div>
-                <div class="p-6 space-y-4">
-                    @if ($user->roles->count() > 0)
+        <div class="grid grid-cols-1 gap-5 xl:grid-cols-3">
+            <div class="rounded-xl border border-slate-200 bg-white p-6 dark:border-slate-700 dark:bg-slate-900 xl:col-span-2">
+                <h2 class="text-lg font-semibold text-slate-900 dark:text-white">Rôles attribués</h2>
+                <div class="mt-4">
+                    @if ($user->roles->isEmpty())
+                        <p class="text-sm text-slate-500 dark:text-slate-400">Aucun rôle attribué.</p>
+                    @else
                         <div class="flex flex-wrap gap-2">
                             @foreach ($user->roles as $role)
-                                <span
-                                    class="inline-flex items-center rounded-full bg-blue-100 px-3 py-1 text-sm font-medium text-blue-800 dark:bg-blue-900 dark:text-blue-200">{{ $role->name }}</span>
+                                <span class="rounded-full bg-sky-100 px-3 py-1 text-sm font-semibold text-sky-800 dark:bg-sky-900/40 dark:text-sky-200">{{ $role->name }}</span>
                             @endforeach
                         </div>
-                    @else
-                        <div class="text-zinc-500 dark:text-zinc-400">Aucun rôle attribué</div>
                     @endif
                 </div>
             </div>
+
+            <div class="rounded-xl border border-slate-200 bg-white p-6 dark:border-slate-700 dark:bg-slate-900">
+                <h2 class="text-lg font-semibold text-slate-900 dark:text-white">Métadonnées</h2>
+                <dl class="mt-4 space-y-3 text-sm">
+                    <div>
+                        <dt class="text-slate-500 dark:text-slate-400">Créé le</dt>
+                        <dd class="font-medium text-slate-900 dark:text-white">{{ optional($user->created_at)->format('d/m/Y H:i') ?: '-' }}</dd>
+                    </div>
+                    <div>
+                        <dt class="text-slate-500 dark:text-slate-400">Dernière mise à jour</dt>
+                        <dd class="font-medium text-slate-900 dark:text-white">{{ optional($user->updated_at)->format('d/m/Y H:i') ?: '-' }}</dd>
+                    </div>
+                    <div>
+                        <dt class="text-slate-500 dark:text-slate-400">Statut email</dt>
+                        <dd class="font-medium {{ $user->email_verified_at ? 'text-emerald-700 dark:text-emerald-300' : 'text-amber-700 dark:text-amber-300' }}">
+                            {{ $user->email_verified_at ? 'Vérifié' : 'Non vérifié' }}
+                        </dd>
+                    </div>
+                </dl>
+            </div>
         </div>
+
+        @if ($departementPeers->isNotEmpty())
+            <div class="rounded-xl border border-slate-200 bg-white p-6 dark:border-slate-700 dark:bg-slate-900">
+                <h2 class="text-lg font-semibold text-slate-900 dark:text-white">Collègues du même département</h2>
+                <div class="mt-4 grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
+                    @foreach ($departementPeers as $peer)
+                        <div class="rounded-lg border border-slate-200 bg-slate-50 p-3 dark:border-slate-700 dark:bg-slate-950/60">
+                            <p class="font-medium text-slate-900 dark:text-white">{{ $peer->name }}</p>
+                            <p class="text-xs text-slate-500 dark:text-slate-400">{{ $peer->email }}</p>
+                            <p class="mt-1 text-xs text-slate-600 dark:text-slate-300">{{ $peer->poste ?: 'Poste non défini' }}</p>
+                        </div>
+                    @endforeach
+                </div>
+            </div>
+        @endif
     </div>
 </x-layouts::app>

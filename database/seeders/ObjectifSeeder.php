@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Models\Exercice;
 use App\Models\Objectif;
 use Illuminate\Database\Seeder;
 
@@ -9,51 +10,27 @@ class ObjectifSeeder extends Seeder
 {
     public function run(): void
     {
-        Objectif::factory()
-            ->count(50)
-            ->actif()
-            ->anneeEnCours()
-            ->create();
+        $annee = 2024;
 
-        Objectif::factory()
-            ->count(30)
-            ->actif()
-            ->anneeProchaine()
-            ->create();
+        $exercice = Exercice::where('annee', $annee)->first();
 
-        Objectif::factory()
-            ->count(20)
-            ->inactif()
-            ->create();
+        if (! $exercice) {
+            $this->command->error("Aucun exercice {$annee} trouvé. Veuillez d'abord exécuter ExerciceSeeder.");
 
-        Objectif::factory()
-            ->count(50)
-            ->actif()
-            ->pourAnnee(2024)
-            ->create();
+            return;
+        }
 
-        Objectif::factory()
-            ->count(50)
-            ->actif()
-            ->pourAnnee(2023)
-            ->create();
+        $objectif = Objectif::updateOrCreate(
+            ['exercice_id' => $exercice->id, 'code' => 'OG'],
+            [
+                'libelle' => 'Objectif global',
+                'description' => "Développer un système de financement permettant une meilleure mobilisation et utilisation des ressources financières pour la santé, une meilleure accessibilité aux services de santé, une gestion transparente et qui incite les prestataires et les utilisateurs à être plus efficients",
+                'annee' => $annee,
+                'statut' => 'actif',
+                'ordre' => 1,
+            ]
+        );
 
-        Objectif::factory()
-            ->count(50)
-            ->actif()
-            ->pourAnnee(2022)
-            ->create();
-
-        Objectif::factory()
-            ->count(50)
-            ->actif()
-            ->pourAnnee(2022)
-            ->create();
-
-        Objectif::factory()
-            ->count(50)
-            ->actif()
-            ->pourAnnee(2021)
-            ->create();
+        $this->command->info("✅ Objectif {$objectif->code} créé pour l'exercice {$annee}");
     }
 }

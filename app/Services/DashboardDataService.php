@@ -2,10 +2,7 @@
 
 namespace App\Services;
 
-use App\Models\Activite;
 use App\Models\Departement;
-use App\Models\Extrant;
-use App\Models\Objectif;
 use App\Support\ActiveExercice;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Cache;
@@ -402,5 +399,108 @@ class DashboardDataService
             ])
             ->values()
             ->all();
+    }
+
+    /**
+     * Assemble a normalized payload for the main dashboard UI.
+     *
+     * @return array<string, mixed>
+     */
+    public function getDashboardPayload(): array
+    {
+        $stats = $this->getStats();
+        $budgetParObjectif = collect($this->getBudgetParObjectif());
+        $topExtrants = collect($this->getTopExtrants());
+        $topActivites = collect($this->getTopActivites());
+        $evolutionMensuelle = collect($this->getEvolutionMensuelle());
+        $distributionBudgetaire = $this->getDistributionBudgetaire();
+        $activitesParStatut = $this->getActivitesParStatut();
+        $activitesParTrimestre = $this->getActivitesParTrimestre();
+        $soumissionParDepartement = collect($this->getSoumissionParDepartement());
+        $departementsEnRetard = collect($this->getDepartementsEnRetard());
+        $budgetParDepartement = collect($this->getBudgetParDepartement());
+
+        $maxActiviteCout = (float) max(1, (float) $topActivites->max('cout'));
+        $yearOptions = range((int) Carbon::now()->year, (int) Carbon::now()->year - 4);
+        $totalActivitesStatut = array_sum($activitesParStatut);
+
+        return [
+            'filters' => [
+                'selected_year' => (int) $this->annee,
+                'year_options' => $yearOptions,
+            ],
+            'kpis' => [
+                'objectifs' => (int) ($stats['total_objectifs'] ?? 0),
+                'extrants' => (int) ($stats['total_extrants'] ?? 0),
+                'activites' => (int) ($stats['total_activites'] ?? 0),
+                'budget_total' => (float) ($stats['budget_total'] ?? 0),
+                'taux_realisation' => (float) ($stats['taux_realisation'] ?? 0),
+                'en_attente' => (int) (($activitesParStatut['Soumis'] ?? 0) + ($activitesParStatut['Brouillon'] ?? 0)),
+                'budget_moyen_mensuel' => (float) $this->getBudgetMoyenMensuel(),
+            ],
+            'insights' => [
+                'soumission_moyenne' => round((float) $soumissionParDepartement->avg('pct'), 1),
+                'departements_en_retard' => $departementsEnRetard->count(),
+                'activites_total_statut' => $totalActivitesStatut,
+            ],
+            'charts' => [
+                'evolution' => [
+                    'labels' => $evolutionMensuelle->pluck('mois')->values()->all(),
+                    'activites' => $evolutionMensuelle->pluck('nb_activites')->values()->all(),
+                    'budget_millions' => $evolutionMensuelle
+                        ->map(fn ($row) => round(((float) ($row['budget'] ?? 0)) / 1000000, 1))
+                        ->values()
+                        ->all(),
+                ],
+                'budget_par_objectif' => [
+                    'labels' => $budgetParObjectif->pluck('code')->values()->all(),
+                    'values' => $budgetParObjectif->pluck('budget')->values()->all(),
+                ],
+                'top_extrants' => [
+                    'labels' => $topExtrants->take(6)->pluck('code')->values()->all(),
+                    'values' => $topExtrants->take(6)->pluck('nb_activites')->values()->all(),
+                ],
+                'distribution_budgetaire' => [
+                    'labels' => array_keys($distributionBudgetaire),
+                    'values' => array_values($distributionBudgetaire),
+                ],
+                'activites_statut' => [
+                    'labels' => array_keys($activitesParStatut),
+                    'values' => array_values($activitesParStatut),
+                ],
+                'activites_trimestre' => [
+                    'labels' => ['T1', 'T2', 'T3', 'T4'],
+                    'values' => $activitesParTrimestre,
+                ],
+            ],
+            'tables' => [
+                'top_activites' => $topActivites
+                    ->map(function ($activite) use ($maxActiviteCout) {
+                        $cout = (float) ($activite['cout'] ?? 0);
+
+                        return [
+                            'code' => (string) ($activite['code'] ?? ''),
+                            'nom_activite' => (string) ($activite['nom_activite'] ?? ''),
+                            'cout' => $cout,
+                            'cout_millions' => round($cout / 1000000, 1),
+                            'ratio' => round(($cout / $maxActiviteCout) * 100, 1),
+                        ];
+                    })
+                    ->take(8)
+                    ->values()
+                    ->all(),
+                'soumission_departements' => $soumissionParDepartement->values()->all(),
+                'departements_en_retard' => $departementsEnRetard->values()->all(),
+                'budget_departements' => $budgetParDepartement
+                    ->map(fn ($row) => [
+                        'nom' => (string) ($row['nom'] ?? ''),
+                        'budget' => (float) ($row['budget'] ?? 0),
+                        'budget_millions' => round(((float) ($row['budget'] ?? 0)) / 1000000, 1),
+                    ])
+                    ->take(8)
+                    ->values()
+                    ->all(),
+            ],
+        ];
     }
 }

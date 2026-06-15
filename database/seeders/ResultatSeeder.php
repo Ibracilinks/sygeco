@@ -2,40 +2,44 @@
 
 namespace Database\Seeders;
 
-use App\Models\Resultat;
 use App\Models\Objectif;
+use App\Models\Resultat;
 use Illuminate\Database\Seeder;
 
 class ResultatSeeder extends Seeder
 {
     public function run(): void
     {
-        $objectifs = Objectif::all();
+        $objectif = Objectif::where('code', 'OG')->first();
 
-        if ($objectifs->isEmpty()) {
-            $this->command->error('Aucun objectif trouvé. Veuillez d\'abord exécuter ObjectifSeeder.');
+        if (! $objectif) {
+            $this->command->error("Aucun objectif 'OG' trouvé. Veuillez d'abord exécuter ObjectifSeeder.");
+
             return;
         }
 
-        $compteur = 0;
+        $resultats = [
+            'RS.I' => 'Des ressources financières plus importantes sont mobilisées et allouées en tenant compte des disparités',
+            'RS.II' => 'La gestion financière du secteur est améliorée',
+            'RS.III' => 'La couverture des populations par les systèmes de protection sociale a augmenté',
+            'RS.IV' => "Les organisations de l'économie sociale et solidaire sont plus performantes",
+        ];
 
-        foreach ($objectifs as $objectif) {
-            // Générer entre 5 et 10 résultats par objectif
-            $nbResultats = rand(5, 10);
+        $ordre = 0;
 
-            for ($i = 0; $i < $nbResultats; $i++) {
-                Resultat::factory()
-                    ->forObjectif($objectif)
-                    ->actif()
-                    ->create([
-                        'ordre' => $i + 1,
-                    ]);
-                $compteur++;
-            }
+        foreach ($resultats as $code => $libelle) {
+            $ordre++;
 
-            $this->command->info("✅ {$nbResultats} résultats créés pour l'objectif {$objectif->code}");
+            Resultat::updateOrCreate(
+                ['objectif_id' => $objectif->id, 'code' => $code],
+                [
+                    'libelle' => $libelle,
+                    'ordre' => $ordre,
+                    'is_active' => true,
+                ]
+            );
         }
 
-        $this->command->info("\n🎉 Total: {$compteur} résultats créés pour " . $objectifs->count() . " objectifs");
+        $this->command->info('✅ ' . count($resultats) . " résultats créés pour l'objectif {$objectif->code}");
     }
 }

@@ -5,7 +5,9 @@ namespace App\Http\Controllers;
 use App\Models\Extrant;
 use App\Models\Objectif;
 use App\Support\ActiveExercice;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rule;
 
 class ExtrantController extends Controller
@@ -15,11 +17,18 @@ class ExtrantController extends Controller
      */
     public function index(Request $request)
     {
-        $query = Extrant::with('objectif');
+        $user = Auth::user();
+        $query = Extrant::query()
+            ->with('objectif')
+            ->withCount('activites');
 
         $exerciceId = ActiveExercice::id();
         if ($exerciceId !== null) {
             $query->whereHas('objectif', fn ($q) => $q->where('exercice_id', $exerciceId));
+        }
+
+        if ($this->isChefDepartement($user)) {
+            $this->applyDepartmentScopeToExtrantQuery($query, (int) $user->departement_id);
         }
 
         if ($request->filled('objectif_id')) {
@@ -37,15 +46,26 @@ class ExtrantController extends Controller
             });
         }
 
+        $summaryQuery = clone $query;
+        $summary = [
+            'total' => (clone $summaryQuery)->count(),
+            'actifs' => (clone $summaryQuery)->where('is_active', true)->count(),
+            'inactifs' => (clone $summaryQuery)->where('is_active', false)->count(),
+            'avec_activites' => (clone $summaryQuery)->whereHas('activites')->count(),
+        ];
+
         $extrants = $query->ordered()->paginate(15)->withQueryString();
+
+        $filters = $request->only(['search', 'objectif_id', 'is_active']);
 
         $objectifs = Objectif::query()
             ->where('statut', 'actif')
             ->when($exerciceId !== null, fn ($q) => $q->where('exercice_id', $exerciceId))
+            ->when($this->isChefDepartement($user), fn ($q) => $q->whereHas('extrants.activites', fn (Builder $builder) => $builder->where('departement_id', $user->departement_id)))
             ->orderBy('annee', 'desc')
             ->get();
 
-        return view('pages.extrants.index', compact('extrants', 'objectifs'));
+        return view('pages.extrants.index', compact('extrants', 'objectifs', 'summary', 'filters'));
     }
 
     /**
@@ -89,7 +109,18 @@ class ExtrantController extends Controller
      */
     public function show(Extrant $extrant)
     {
-        $extrant->load(['objectif', 'activites' => function ($query) {
+        $user = Auth::user();
+
+        if ($this->isChefDepartement($user) && ! $this->extrantHasDepartmentActivities($extrant, (int) $user->departement_id)) {
+            abort(403);
+        }
+
+        $extrant->load(['objectif', 'activites' => function ($query) use ($user) {
+            if ($this->isChefDepartement($user) && $user?->departement_id) {
+                $query->where('departement_id', $user->departement_id);
+            }
+
+            $query->with('departement');
             $query->latest()->limit(10);
         }]);
 
@@ -97,9 +128,16 @@ class ExtrantController extends Controller
             'nb_activites' => $extrant->activites()->count(),
             'budget_total' => $extrant->activites()->sum('cout'),
             'budget_moyen' => $extrant->activites()->avg('cout') ?? 0,
+            'nb_departements' => $extrant->activites()->distinct('departement_id')->count('departement_id'),
         ];
 
-        return view('pages.extrants.show', compact('extrant', 'stats'));
+        $activitesParStatut = $extrant->activites()
+            ->selectRaw('statut, COUNT(*) as total')
+            ->groupBy('statut')
+            ->pluck('total', 'statut')
+            ->toArray();
+
+        return view('pages.extrants.show', compact('extrant', 'stats', 'activitesParStatut'));
     }
 
     /**
@@ -148,7 +186,7 @@ class ExtrantController extends Controller
         }
 
         $code = $extrant->code;
-        $extrant->delete();
+        Extrant::query()->whereKey($extrant->id)->delete();
 
         return redirect()->route('extrants.index')
             ->with('success', "Extrant {$code} supprimé.");
@@ -165,5 +203,22 @@ class ExtrantController extends Controller
 
         return redirect()->route('extrants.index')
             ->with('success', "Extrant {$extrant->code} {$status}.");
+    }
+
+    private function isChefDepartement($user): bool
+    {
+        return $user?->hasRole('chef_departement') && $user?->departement_id !== null;
+    }
+
+    private function extrantHasDepartmentActivities(Extrant $extrant, int $departementId): bool
+    {
+        return $extrant->activites()
+            ->where('departement_id', $departementId)
+            ->exists();
+    }
+
+    private function applyDepartmentScopeToExtrantQuery(Builder $query, int $departementId): void
+    {
+        $query->whereHas('activites', fn (Builder $builder) => $builder->where('departement_id', $departementId));
     }
 }

@@ -2,13 +2,14 @@
 
 namespace App\Models;
 
+use App\Concerns\LogsActivityWithDefaults;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Extrant extends Model
 {
-    use HasFactory, SoftDeletes;
+    use HasFactory, LogsActivityWithDefaults, SoftDeletes;
 
     protected $fillable = [
         'objectif_id',

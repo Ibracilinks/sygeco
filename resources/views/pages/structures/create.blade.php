@@ -84,7 +84,7 @@
                         <label class="block text-sm font-medium dark:text-white mb-2">Téléphone</label>
                         <input type="text" name="telephone" value="{{ old('telephone') }}"
                             class="w-full rounded-lg border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-zinc-900 px-3 py-2 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            placeholder="+225 XX XX XX XX">
+                            placeholder="+223 XX XX XX XX">
                         @error('telephone')
                             <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
                         @enderror

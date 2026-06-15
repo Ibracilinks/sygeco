@@ -2,11 +2,15 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\StoreObjectifRequest;
+use App\Http\Requests\UpdateObjectifRequest;
 use App\Models\Exercice;
 use App\Models\Objectif;
 use App\Support\ActiveExercice;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Http\Request;
-use Illuminate\Validation\Rule;
+use Illuminate\Support\Facades\Auth;
 
 class ObjectifController extends Controller
 {
@@ -15,38 +19,48 @@ class ObjectifController extends Controller
      */
     public function index(Request $request)
     {
-        $query = Objectif::query()->with('exercice');
+        $user = Auth::user();
+        $filters = [
+            'search' => trim((string) $request->string('search')),
+            'exercice_id' => $request->has('exercice_id') ? (string) $request->string('exercice_id') : (string) ActiveExercice::id(),
+            'annee' => trim((string) $request->string('annee')),
+            'statut' => trim((string) $request->string('statut')),
+            'sort' => (string) $request->string('sort', 'ordre'),
+            'direction' => (string) $request->string('direction', 'asc'),
+        ];
 
-        if ($request->has('exercice_id') && $request->exercice_id === '') {
-            $exerciceId = null;
-        } elseif ($request->filled('exercice_id')) {
-            $exerciceId = (int) $request->exercice_id;
-        } else {
-            $exerciceId = ActiveExercice::id();
-        }
-        $query->forExercice($exerciceId);
+        $query = Objectif::query()
+            ->with('exercice:id,annee,statut')
+            ->withCount(['resultats', 'extrants']);
 
-        if ($request->filled('annee')) {
-            $query->where('annee', $request->annee);
-        }
-
-        if ($request->filled('statut')) {
-            $query->where('statut', $request->statut);
-        }
-
-        if ($request->filled('search')) {
-            $query->where(function ($q) use ($request) {
-                $q->where('code', 'like', "%{$request->search}%")
-                    ->orWhere('libelle', 'like', "%{$request->search}%");
-            });
+        if ($this->isChefDepartement($user)) {
+            $this->applyDepartmentScopeToObjectifQuery($query, (int) $user->departement_id);
         }
 
-        $objectifs = $query->ordered()->paginate(15)->withQueryString();
+        $this->applyFilters($query, $filters);
+        $this->applySort($query, $filters['sort'], $filters['direction']);
 
-        $annees = Objectif::select('annee')->distinct()->orderBy('annee', 'desc')->pluck('annee');
-        $exercices = Exercice::query()->ordered()->get();
+        $objectifs = $query->paginate(15)->withQueryString();
 
-        return view('pages.objectifs.index', compact('objectifs', 'annees', 'exercices', 'exerciceId'));
+        $summaryQuery = Objectif::query();
+        if ($this->isChefDepartement($user)) {
+            $this->applyDepartmentScopeToObjectifQuery($summaryQuery, (int) $user->departement_id);
+        }
+        $this->applyFilters($summaryQuery, $filters);
+
+        $summary = [
+            'total' => (clone $summaryQuery)->count('*'),
+            'actifs' => (clone $summaryQuery)->where('statut', 'actif')->count('*'),
+            'inactifs' => (clone $summaryQuery)->where('statut', 'inactif')->count('*'),
+            'avec_resultats' => (clone $summaryQuery)->has('resultats')->count('*'),
+        ];
+
+        $annees = Objectif::query()
+            ->when($this->isChefDepartement($user), fn ($q) => $this->applyDepartmentScopeToObjectifQuery($q, (int) $user->departement_id))
+            ->select('annee')->distinct()->orderBy('annee', 'desc')->pluck('annee');
+        $exercices = Exercice::query()->ordered()->get(['id', 'annee', 'statut']);
+
+        return view('pages.objectifs.index', compact('objectifs', 'annees', 'exercices', 'summary', 'filters'));
     }
 
     /**
@@ -54,7 +68,7 @@ class ObjectifController extends Controller
      */
     public function create()
     {
-        $exercices = Exercice::query()->ordered()->get();
+        $exercices = Exercice::query()->ordered()->get(['id', 'annee', 'statut']);
         $defaultExerciceId = ActiveExercice::id();
 
         return view('pages.objectifs.create', compact('exercices', 'defaultExerciceId'));
@@ -63,16 +77,9 @@ class ObjectifController extends Controller
     /**
      * Enregistrement
      */
-    public function store(Request $request)
+    public function store(StoreObjectifRequest $request)
     {
-        $validated = $request->validate([
-            'exercice_id' => 'required|exists:exercices,id',
-            'code' => 'required|string|max:20|unique:objectifs',
-            'libelle' => 'required|string|max:500',
-            'description' => 'nullable|string',
-            'statut' => ['required', Rule::in(['actif', 'inactif'])],
-            'ordre' => 'nullable|integer',
-        ]);
+        $validated = $request->validated();
 
         $exercice = Exercice::query()->findOrFail($validated['exercice_id']);
         $validated['annee'] = $exercice->annee;
@@ -88,22 +95,39 @@ class ObjectifController extends Controller
      */
     public function show(Objectif $objectif)
     {
+        $user = Auth::user();
+
+        if ($this->isChefDepartement($user) && ! $this->objectifHasDepartmentActivities($objectif, (int) $user->departement_id)) {
+            abort(403);
+        }
+
         // Charger toute la hiérarchie : Résultats → Extrants → Activités
         $objectif->load([
-            'resultats' => function ($query) {
+            'resultats' => function ($query) use ($user) {
+                $this->applyDepartmentScopeToResultatQuery($query, $user?->departement_id);
                 $query->orderBy('ordre')->orderBy('code');
                 $query->with([
-                    'extrants' => function ($q) {
+                    'extrants' => function ($q) use ($user) {
+                        $this->applyDepartmentScopeToExtrantQuery($q, $user?->departement_id);
                         $q->orderBy('ordre')->orderBy('code');
                         $q->with([
-                            'activites' => function ($a) {
+                            'activites' => function ($a) use ($user) {
+                                if ($this->isChefDepartement($user) && $user?->departement_id) {
+                                    $a->where('departement_id', $user->departement_id);
+                                }
                                 $a->orderBy('created_at', 'desc');
                             }
                         ]);
-                        $q->withCount('activites');
+                        $q->withCount(['activites' => function ($a) use ($user) {
+                            if ($this->isChefDepartement($user) && $user?->departement_id) {
+                                $a->where('departement_id', $user->departement_id);
+                            }
+                        }]);
                     }
                 ]);
-                $query->withCount('extrants');
+                $query->withCount(['extrants' => function ($q) use ($user) {
+                    $this->applyDepartmentScopeToExtrantQuery($q, $user?->departement_id);
+                }]);
             }
         ]);
 
@@ -141,7 +165,7 @@ class ObjectifController extends Controller
      */
     public function edit(Objectif $objectif)
     {
-        $exercices = Exercice::query()->ordered()->get();
+        $exercices = Exercice::query()->ordered()->get(['id', 'annee', 'statut']);
 
         return view('pages.objectifs.edit', compact('objectif', 'exercices'));
     }
@@ -149,16 +173,9 @@ class ObjectifController extends Controller
     /**
      * Mise à jour
      */
-    public function update(Request $request, Objectif $objectif)
+    public function update(UpdateObjectifRequest $request, Objectif $objectif)
     {
-        $validated = $request->validate([
-            'exercice_id' => 'required|exists:exercices,id',
-            'code' => ['required', 'string', 'max:20', Rule::unique('objectifs')->ignore($objectif->id)],
-            'libelle' => 'required|string|max:500',
-            'description' => 'nullable|string',
-            'statut' => ['required', Rule::in(['actif', 'inactif'])],
-            'ordre' => 'nullable|integer',
-        ]);
+        $validated = $request->validated();
 
         $exercice = Exercice::query()->findOrFail($validated['exercice_id']);
         $validated['annee'] = $exercice->annee;
@@ -180,7 +197,7 @@ class ObjectifController extends Controller
         }
 
         $code = $objectif->code;
-        $objectif->delete();
+        Objectif::query()->whereKey($objectif->id)->delete();
 
         return redirect()->route('objectifs.index')
             ->with('success', "Objectif {$code} supprimé.");
@@ -198,5 +215,76 @@ class ObjectifController extends Controller
 
         return redirect()->route('objectifs.index')
             ->with('success', "Objectif {$objectif->code} {$message}.");
+    }
+
+    /**
+     * @param array{search: string, exercice_id: string, annee: string, statut: string, sort?: string, direction?: string} $filters
+     */
+    private function applyFilters(Builder $query, array $filters): void
+    {
+        if ($filters['exercice_id'] !== '') {
+            $query->where('exercice_id', (int) $filters['exercice_id']);
+        }
+
+        if ($filters['annee'] !== '') {
+            $query->where('annee', (int) $filters['annee']);
+        }
+
+        if ($filters['statut'] !== '') {
+            $query->where('statut', $filters['statut']);
+        }
+
+        if ($filters['search'] !== '') {
+            $term = '%' . str_replace(' ', '%', $filters['search']) . '%';
+            $query->where(function (Builder $builder) use ($term) {
+                $builder
+                    ->where('code', 'like', $term)
+                    ->orWhere('libelle', 'like', $term);
+            });
+        }
+    }
+
+    private function applySort(Builder $query, string $sort, string $direction): void
+    {
+        $allowedSorts = ['code', 'annee', 'ordre', 'statut', 'created_at'];
+        $sort = in_array($sort, $allowedSorts, true) ? $sort : 'ordre';
+        $direction = in_array($direction, ['asc', 'desc'], true) ? $direction : 'asc';
+
+        $query->orderBy($sort, $direction)->orderBy('code', 'asc');
+    }
+
+    private function isChefDepartement($user): bool
+    {
+        return $user?->hasRole('chef_departement') && $user?->departement_id !== null;
+    }
+
+    private function objectifHasDepartmentActivities(Objectif $objectif, int $departementId): bool
+    {
+        return $objectif->resultats()
+            ->whereHas('extrants.activites', fn (Builder $query) => $query->where('departement_id', $departementId))
+            ->exists();
+    }
+
+    private function applyDepartmentScopeToObjectifQuery(Builder $query, int $departementId): void
+    {
+        $query->whereHas('resultats.extrants.activites', fn (Builder $builder) => $builder->where('departement_id', $departementId));
+    }
+
+    private function applyDepartmentScopeToResultatQuery(Builder|Relation $query, ?int $departementId): void
+    {
+        if ($departementId === null) {
+            return;
+        }
+
+        $query->whereHas('extrants.activites', fn (Builder $builder) => $builder->where('departement_id', $departementId));
+    }
+
+    private function applyDepartmentScopeToExtrantQuery(Builder|Relation $query, ?int $departementId): void
+    {
+        if ($departementId === null) {
+            return;
+        }
+
+        $query->whereHas('activites', fn (Builder $builder) => $builder->where('departement_id', $departementId));
     }
 }

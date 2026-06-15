@@ -1,16 +1,74 @@
 <x-layouts::app title="Utilisateurs">
-    <div class="flex h-full w-full flex-1 flex-col gap-4 rounded-xl">
+    <div class="flex h-full w-full flex-1 flex-col gap-5 rounded-xl">
 
-        <div class="flex justify-between items-center">
-            <h1 class="text-2xl font-bold dark:text-white">Utilisateurs</h1>
-            <a href="{{ route('users.create') }}"
-                class="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition">
-                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
-                </svg>
-                Nouvel utilisateur
-            </a>
+        <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+            <div>
+                <h1 class="text-2xl font-semibold text-slate-900 dark:text-white">Utilisateurs</h1>
+                <p class="text-sm text-slate-500 dark:text-slate-400">Gestion des comptes, rattachements départementaux et rôles applicatifs.</p>
+            </div>
+            @can('create_users')
+                <a href="{{ route('users.create') }}"
+                    class="inline-flex items-center rounded-lg bg-slate-800 px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-700 dark:bg-slate-200 dark:text-slate-900 dark:hover:bg-white">
+                    Nouvel utilisateur
+                </a>
+            @endcan
         </div>
+
+        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            <div class="rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-900">
+                <p class="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">Total</p>
+                <p class="mt-2 text-3xl font-semibold text-slate-900 dark:text-white">{{ number_format($summary['total'] ?? 0) }}</p>
+            </div>
+            <div class="rounded-xl border border-emerald-200 bg-emerald-50 p-4 dark:border-emerald-900/70 dark:bg-emerald-950/30">
+                <p class="text-xs uppercase tracking-wide text-emerald-700 dark:text-emerald-300">Comptes vérifiés</p>
+                <p class="mt-2 text-3xl font-semibold text-emerald-800 dark:text-emerald-100">{{ number_format($summary['verifies'] ?? 0) }}</p>
+            </div>
+            <div class="rounded-xl border border-amber-200 bg-amber-50 p-4 dark:border-amber-900/70 dark:bg-amber-950/30">
+                <p class="text-xs uppercase tracking-wide text-amber-700 dark:text-amber-300">Sans département</p>
+                <p class="mt-2 text-3xl font-semibold text-amber-800 dark:text-amber-100">{{ number_format($summary['sans_departement'] ?? 0) }}</p>
+            </div>
+            <div class="rounded-xl border border-sky-200 bg-sky-50 p-4 dark:border-sky-900/70 dark:bg-sky-950/30">
+                <p class="text-xs uppercase tracking-wide text-sky-700 dark:text-sky-300">Avec rôles</p>
+                <p class="mt-2 text-3xl font-semibold text-sky-800 dark:text-sky-100">{{ number_format($summary['avec_roles'] ?? 0) }}</p>
+            </div>
+        </div>
+
+        <form method="GET" action="{{ route('users.index') }}" class="grid grid-cols-1 gap-3 rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-900 md:grid-cols-5">
+            <input
+                type="text"
+                name="search"
+                value="{{ $filters['search'] ?? '' }}"
+                placeholder="Rechercher nom, email, poste, téléphone"
+                class="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 focus:border-slate-500 focus:outline-none dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
+            >
+            <select name="departement_id" class="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 focus:border-slate-500 focus:outline-none dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100">
+                <option value="">Tous départements</option>
+                @foreach ($departements as $departement)
+                    <option value="{{ $departement->id }}" @selected((string) ($filters['departement_id'] ?? '') === (string) $departement->id)>
+                        {{ $departement->nom }}
+                    </option>
+                @endforeach
+            </select>
+            <select name="role" class="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 focus:border-slate-500 focus:outline-none dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100">
+                <option value="">Tous rôles</option>
+                @foreach ($availableRoles as $roleName)
+                    <option value="{{ $roleName }}" @selected(($filters['role'] ?? '') === $roleName)>{{ $roleName }}</option>
+                @endforeach
+            </select>
+            <select name="sort" class="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 focus:border-slate-500 focus:outline-none dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100">
+                <option value="name" @selected(($filters['sort'] ?? 'name') === 'name')>Trier par nom</option>
+                <option value="email" @selected(($filters['sort'] ?? '') === 'email')>Trier par email</option>
+                <option value="roles_count" @selected(($filters['sort'] ?? '') === 'roles_count')>Trier par nombre de rôles</option>
+                <option value="created_at" @selected(($filters['sort'] ?? '') === 'created_at')>Trier par création</option>
+            </select>
+            <div class="flex gap-2">
+                <select name="direction" class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 focus:border-slate-500 focus:outline-none dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100">
+                    <option value="asc" @selected(($filters['direction'] ?? 'asc') === 'asc')>Croissant</option>
+                    <option value="desc" @selected(($filters['direction'] ?? '') === 'desc')>Décroissant</option>
+                </select>
+                <button type="submit" class="rounded-lg bg-slate-800 px-4 py-2 text-sm font-medium text-white dark:bg-slate-200 dark:text-slate-900">Filtrer</button>
+            </div>
+        </form>
 
         @if (session('success'))
             <div class="rounded-lg bg-green-50 dark:bg-green-950 border border-green-200 dark:border-green-800 p-4">
@@ -24,86 +82,74 @@
             </div>
         @endif
 
-        <div
-            class="overflow-hidden rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-zinc-800">
-            <table class="min-w-full divide-y divide-neutral-200 dark:divide-neutral-700">
-                <thead class="bg-neutral-50 dark:bg-zinc-900">
+        <div class="overflow-hidden rounded-xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900">
+            <table class="min-w-full divide-y divide-slate-200 dark:divide-slate-700">
+                <thead class="bg-slate-50 dark:bg-slate-950">
                     <tr>
-                        <th
-                            class="px-6 py-3 text-left text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase">
-                            Nom</th>
-                        <th
-                            class="px-6 py-3 text-left text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase">
-                            Email</th>
-                        <th
-                            class="px-6 py-3 text-left text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase">
-                            Département</th>
-                        <th
-                            class="px-6 py-3 text-left text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase">
-                            Poste</th>
-                        <th
-                            class="px-6 py-3 text-left text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase">
-                            Téléphone</th>
-                        <th
-                            class="px-6 py-3 text-left text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase">
-                            Rôles</th>
-                        <th
-                            class="px-6 py-3 text-left text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase">
-                            Actions</th>
+                        <th class="px-5 py-3 text-left text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">Identité</th>
+                        <th class="px-5 py-3 text-left text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">Organisation</th>
+                        <th class="px-5 py-3 text-left text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">Contact</th>
+                        <th class="px-5 py-3 text-left text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">Rôles</th>
+                        <th class="px-5 py-3 text-left text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">Actions</th>
                     </tr>
                 </thead>
-                <tbody class="divide-y divide-neutral-200 dark:divide-neutral-700">
-                    @foreach ($users as $user)
-                        <tr>
-                            <td class="px-6 py-4 font-medium dark:text-white">{{ $user->name }}</td>
-                            <td class="px-6 py-4 dark:text-white">{{ $user->email }}</td>
-                            <td class="px-6 py-4 dark:text-white">{{ $user->departement->nom ?? '-' }}</td>
-                            <td class="px-6 py-4 dark:text-white">{{ $user->poste ?? '-' }}</td>
-                            <td class="px-6 py-4 dark:text-white">{{ $user->telephone ?? '-' }}</td>
-                            <td class="px-6 py-4 dark:text-white">{{ $user->roles->pluck('name')->join(', ') ?: '-' }}
+                <tbody class="divide-y divide-slate-200 dark:divide-slate-700">
+                    @forelse ($users as $user)
+                        <tr class="align-top">
+                            <td class="px-5 py-4">
+                                <div class="font-semibold text-slate-900 dark:text-white">{{ $user->name }}</div>
+                                <div class="text-sm text-slate-600 dark:text-slate-300">{{ $user->email }}</div>
+                                <div class="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                                    {{ $user->email_verified_at ? 'Email vérifié' : 'Email non vérifié' }}
+                                </div>
                             </td>
-                            <td class="px-6 py-4">
-                                <div class="flex gap-2">
-                                    <a href="{{ route('users.show', $user) }}"
-                                        class="text-blue-600 hover:text-blue-800">
-                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z">
-                                            </path>
-                                        </svg>
-                                    </a>
-                                    <a href="{{ route('users.edit', $user) }}"
-                                        class="text-yellow-600 hover:text-yellow-800">
-                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z">
-                                            </path>
-                                        </svg>
-                                    </a>
-                                    <form action="{{ route('users.destroy', $user) }}" method="POST" class="inline"
-                                        onsubmit="return confirm('Confirmer la suppression ?')">
-                                        @csrf
-                                        @method('DELETE')
-                                        <button type="submit" class="text-red-600 hover:text-red-800">
-                                            <svg class="w-5 h-5" fill="none" stroke="currentColor"
-                                                viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                    d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16">
-                                                </path>
-                                            </svg>
-                                        </button>
-                                    </form>
+                            <td class="px-5 py-4 text-sm text-slate-700 dark:text-slate-200">
+                                <div>{{ $user->departement?->nom ?? 'Aucun département' }}</div>
+                                <div class="text-xs text-slate-500 dark:text-slate-400">{{ $user->poste ?: 'Poste non défini' }}</div>
+                            </td>
+                            <td class="px-5 py-4 text-sm text-slate-700 dark:text-slate-200">
+                                <div>{{ $user->telephone ?: '-' }}</div>
+                                <div class="text-xs text-slate-500 dark:text-slate-400">Créé le {{ optional($user->created_at)->format('d/m/Y') }}</div>
+                            </td>
+                            <td class="px-5 py-4">
+                                @if ($user->roles->isEmpty())
+                                    <span class="text-xs text-slate-500 dark:text-slate-400">Aucun rôle</span>
+                                @else
+                                    <div class="flex flex-wrap gap-1.5">
+                                        @foreach ($user->roles as $role)
+                                            <span class="rounded-full bg-sky-100 px-2 py-0.5 text-xs font-semibold text-sky-800 dark:bg-sky-900/40 dark:text-sky-200">{{ $role->name }}</span>
+                                        @endforeach
+                                    </div>
+                                @endif
+                            </td>
+                            <td class="px-5 py-4">
+                                <div class="flex flex-wrap gap-3 text-sm">
+                                    <a href="{{ route('users.show', $user) }}" class="font-medium text-sky-700 hover:text-sky-600 dark:text-sky-300">Voir</a>
+                                    @can('edit_users')
+                                        <a href="{{ route('users.edit', $user) }}" class="font-medium text-amber-700 hover:text-amber-600 dark:text-amber-300">Modifier</a>
+                                    @endcan
+                                    @can('delete_users')
+                                        <form action="{{ route('users.destroy', $user) }}" method="POST" class="inline" onsubmit="return confirm('Confirmer la suppression ?')">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit" class="font-medium text-red-700 hover:text-red-600 dark:text-red-300">Supprimer</button>
+                                        </form>
+                                    @endcan
                                 </div>
                             </td>
                         </tr>
-                    @endforeach
+                    @empty
+                        <tr>
+                            <td colspan="5" class="px-5 py-10 text-center text-sm text-slate-500 dark:text-slate-400">
+                                Aucun utilisateur trouvé avec les filtres actuels.
+                            </td>
+                        </tr>
+                    @endforelse
                 </tbody>
             </table>
         </div>
 
-        <div class="mt-4">
+        <div class="mt-2">
             {{ $users->links() }}
         </div>
     </div>

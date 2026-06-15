@@ -60,6 +60,14 @@ class ActiviteController extends Controller
             $query->where('departement_id', Auth::user()->departement_id);
         }
 
+        $summaryQuery = clone $query;
+        $summary = [
+            'total' => (clone $summaryQuery)->count(),
+            'brouillon' => (clone $summaryQuery)->where('statut', 'brouillon')->count(),
+            'soumis' => (clone $summaryQuery)->where('statut', 'soumis')->count(),
+            'valide' => (clone $summaryQuery)->where('statut', 'valide')->count(),
+        ];
+
         $activites = $query->orderBy('date_saisie', 'desc')->paginate(15)->withQueryString();
 
         $extrants = Extrant::query()
@@ -70,8 +78,9 @@ class ActiviteController extends Controller
             ->get();
         $departements = Departement::active()->ordered()->get();
         $statuts = ['brouillon', 'soumis', 'valide'];
+        $filters = $request->only(['search', 'extrant_id', 'departement_id', 'statut', 'trimestre']);
 
-        return view('pages.activites.index', compact('activites', 'extrants', 'departements', 'statuts'));
+        return view('pages.activites.index', compact('activites', 'extrants', 'departements', 'statuts', 'summary', 'filters'));
     }
 
     /**
