@@ -14,6 +14,9 @@ class Exercice extends Model
         'annee',
         'date_debut',
         'date_fin',
+        'date_ouverture_saisie',
+        'date_limite_saisie',
+        'ouverture_notifiee_le',
         'statut',
     ];
 
@@ -23,12 +26,32 @@ class Exercice extends Model
             'annee' => 'integer',
             'date_debut' => 'date',
             'date_fin' => 'date',
+            'date_ouverture_saisie' => 'date',
+            'date_limite_saisie' => 'date',
+            'ouverture_notifiee_le' => 'datetime',
         ];
     }
 
     public function objectifs()
     {
         return $this->hasMany(Objectif::class);
+    }
+
+    public function relances()
+    {
+        return $this->hasMany(ExerciceRelance::class);
+    }
+
+    /**
+     * Nombre de jours restant avant la date limite de saisie (négatif si dépassée).
+     */
+    public function joursAvantLimite(): ?int
+    {
+        if (! $this->date_limite_saisie) {
+            return null;
+        }
+
+        return (int) now()->startOfDay()->diffInDays($this->date_limite_saisie->copy()->startOfDay(), false);
     }
 
     public function scopeActif($query)

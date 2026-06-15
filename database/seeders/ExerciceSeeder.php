@@ -9,13 +9,13 @@ class ExerciceSeeder extends Seeder
 {
     public function run(): void
     {
-        $y = (int) date('Y');
+        $annee = 2024;
 
         Exercice::query()->firstOrCreate(
-            ['annee' => $y],
+            ['annee' => $annee],
             [
-                'date_debut' => sprintf('%d-01-01', $y),
-                'date_fin' => sprintf('%d-12-31', $y),
+                'date_debut' => sprintf('%d-01-01', $annee),
+                'date_fin' => sprintf('%d-12-31', $annee),
                 'statut' => 'actif',
             ]
         );

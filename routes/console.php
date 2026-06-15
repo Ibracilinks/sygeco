@@ -8,4 +8,5 @@ Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
 })->purpose('Display an inspiring quote');
 
-Schedule::command('activites:relance-soumission')->dailyAt('09:00');
+// Ouverture de la saisie + relances par paliers (J-15, J-10, J-7, J-5, J-3, J-2, J-1, J) à tous les comptes.
+Schedule::command('activites:notifier-saisie')->dailyAt('08:00');
