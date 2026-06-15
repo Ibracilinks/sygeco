@@ -26,6 +26,12 @@ return new class extends Migration
             $table->enum('statut', ['brouillon', 'soumis', 'valide'])->default('brouillon');
             $table->foreignId('saisi_par')->constrained('users');
             $table->timestamp('date_saisie');
+            $table->timestamp('date_soumission')->nullable();
+            $table->timestamp('date_validation')->nullable();
+            $table->foreignId('valide_par')->nullable()->constrained('users');
+            $table->timestamp('refuse_le')->nullable();
+            $table->foreignId('refuse_par')->nullable()->constrained('users');
+            $table->text('motif_refus')->nullable();
             $table->text('commentaires')->nullable();
             $table->timestamps();
             $table->softDeletes();

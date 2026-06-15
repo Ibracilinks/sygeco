@@ -10,6 +10,7 @@ return new class extends Migration
     {
         Schema::create('objectifs', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('exercice_id')->nullable()->constrained('exercices')->nullOnDelete();
             $table->string('code', 20)->unique();
             $table->string('libelle', 500);
             $table->text('description')->nullable();

@@ -23,7 +23,7 @@ class DepartementSeeder extends Seeder
         $users = User::get();
         foreach ($departements as $dept) {
             $departement = Department::create($dept);
-            $departement->responsable_id = $users->random()->id;
+            // $departement->responsable_id = $users->random()->id;
             $departement->save();
         }
     }

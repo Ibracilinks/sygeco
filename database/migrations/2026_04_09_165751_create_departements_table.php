@@ -13,6 +13,7 @@ return new class extends Migration
             $table->string('code', 20)->unique();
             $table->string('nom', 200);
             $table->text('description')->nullable();
+            $table->foreignId('responsable_id')->nullable()->constrained('users')->nullOnDelete();
             $table->string('responsable_nom', 100)->nullable();
             $table->string('responsable_email', 100)->nullable();
             $table->string('telephone', 20)->nullable();

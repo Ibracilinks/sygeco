@@ -80,6 +80,10 @@
                         <dt class="text-slate-500 dark:text-slate-400">Résultats actifs</dt>
                         <dd class="font-medium text-slate-900 dark:text-white">{{ $objectif->resultats->where('is_active', true)->count() }}</dd>
                     </div>
+                    <div>
+                        <dt class="text-slate-500 dark:text-slate-400">Description</dt>
+                        <dd class="font-medium text-slate-900 dark:text-white">{{ $objectif->description }}</dd>
+                    </div>
                 </dl>
             </div>
         </div>
