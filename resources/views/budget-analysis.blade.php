@@ -17,8 +17,8 @@
                         <option value="2023" {{ $annee == 2023 ? 'selected' : '' }}>2023</option>
                     </select>
                 </div>
-                <button onclick="window.print()"
-                    class="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition text-sm">
+                <button onclick="window.exportBudgetAnalysisPDF(this)"
+                    class="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition text-sm disabled:opacity-60">
                     <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                             d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path>
@@ -51,6 +51,7 @@
                     <h2 class="text-lg font-semibold dark:text-white">Budget vs Réel par Objectif</h2>
                     <p class="text-sm text-slate-500 dark:text-slate-400">Comparaison budgétaire</p>
                 </div>
+                <div id="chart-budget-objectif">
                 <x-charts.bar-chart :labels="array_column($budgetVsActual['planned_vs_actual'], 'code')" :datasets="[
                     [
                         'label' => 'Budget Planifié (M FCFA)',
@@ -67,6 +68,7 @@
                         'borderRadius' => 8,
                     ],
                 ]" :height="300" />
+                </div>
             </div>
 
             <!-- Évolution Mensuelle des Dépenses -->
@@ -75,6 +77,7 @@
                     <h2 class="text-lg font-semibold dark:text-white">Évolution Mensuelle des Dépenses</h2>
                     <p class="text-sm text-slate-500 dark:text-slate-400">Budget dépensé par mois</p>
                 </div>
+                <div id="chart-evolution-mensuelle">
                 <x-charts.line-chart :labels="array_column($budgetVsActual['monthly_spending'], 'mois')" :datasets="[
                     [
                         'label' => 'Dépenses (M FCFA)',
@@ -87,6 +90,7 @@
                         'fill' => true,
                     ],
                 ]" :height="300" />
+                </div>
             </div>
         </div>
 
@@ -98,6 +102,7 @@
                     <h2 class="text-lg font-semibold dark:text-white">Dépenses par Département</h2>
                     <p class="text-sm text-slate-500 dark:text-slate-400">Répartition budgétaire</p>
                 </div>
+                <div id="chart-depenses-departement">
                 <x-charts.bar-chart :labels="array_column($departmentBudgetAnalysis['department_spending'], 'nom')" :datasets="[
                     [
                         'label' => 'Budget Dépensé (M FCFA)',
@@ -108,6 +113,7 @@
                         'borderRadius' => 8,
                     ],
                 ]" :height="300" />
+                </div>
             </div>
 
             <!-- Efficacité par Département -->
@@ -116,6 +122,7 @@
                     <h2 class="text-lg font-semibold dark:text-white">Efficacité par Département</h2>
                     <p class="text-sm text-slate-500 dark:text-slate-400">Taux d'efficacité budgétaire</p>
                 </div>
+                <div id="chart-efficacite-departement">
                 <x-charts.bar-chart :labels="array_column($departmentBudgetAnalysis['department_efficiency'], 'nom')" :datasets="[
                     [
                         'label' => 'Efficacité (%)',
@@ -124,6 +131,7 @@
                         'borderRadius' => 8,
                     ],
                 ]" :height="300" />
+                </div>
             </div>
         </div>
 
@@ -135,7 +143,9 @@
                     <h2 class="text-lg font-semibold dark:text-white">Répartition Trimestrielle</h2>
                     <p class="text-sm text-slate-500 dark:text-slate-400">Activités par trimestre</p>
                 </div>
+                <div id="chart-repartition-trimestre">
                 <x-charts.pie-chart :labels="['Trimestre 1', 'Trimestre 2', 'Trimestre 3', 'Trimestre 4']" :data="$quarterlyBudgetPlanning['quarterly_distribution']" type="pie" :height="300" />
+                </div>
             </div>
 
             <!-- Performance Trimestrielle -->
@@ -144,6 +154,7 @@
                     <h2 class="text-lg font-semibold dark:text-white">Performance Trimestrielle</h2>
                     <p class="text-sm text-slate-500 dark:text-slate-400">Budget vs Réalisé</p>
                 </div>
+                <div id="chart-performance-trimestre">
                 <x-charts.bar-chart :labels="array_keys($quarterlyBudgetPlanning['quarterly_performance'])" :datasets="[
                     [
                         'label' => 'Budget Planifié',
@@ -158,6 +169,7 @@
                         'borderRadius' => 8,
                     ],
                 ]" :height="300" />
+                </div>
             </div>
         </div>
 
@@ -233,6 +245,7 @@
                     <h2 class="text-lg font-semibold dark:text-white">Tendances Annuelles</h2>
                     <p class="text-sm text-slate-500 dark:text-slate-400">Évolution budgétaire sur 3 ans</p>
                 </div>
+                <div id="chart-tendances-annuelles">
                 <x-charts.line-chart :labels="array_column($budgetTrends['yearly_trends'], 'year')" :datasets="[
                     [
                         'label' => 'Budget (M FCFA)',
@@ -253,6 +266,7 @@
                         'tension' => 0.4,
                     ],
                 ]" :height="300" />
+                </div>
             </div>
 
             <!-- Prévisions Budgétaires -->
@@ -296,6 +310,53 @@
         </div>
 
     </div>
+
+    @php
+        $overBudget = array_values($budgetAlerts['over_budget_departments']);
+        $underUtilized = array_values($budgetAlerts['under_utilized_budgets']);
+        $highCost = array_slice(array_values($budgetAlerts['high_cost_activities']), 0, 5);
+
+        $reportData = [
+            'title' => 'Analyse Budgétaire',
+            'annee' => (int) $annee,
+            'kpis' => [
+                ['label' => 'Budget Total', 'value' => number_format($budgetOverview['total_budget'] / 1000000, 1, ',', ' ') . ' M FCFA'],
+                ['label' => 'Coût Moyen par Activité', 'value' => number_format($budgetOverview['average_cost_per_activity'], 0, ',', ' ') . ' FCFA'],
+                ['label' => "Taux d'Utilisation", 'value' => number_format($budgetOverview['budget_utilization_rate'], 1, ',', ' ') . ' %'],
+                ['label' => 'Efficacité Dépenses', 'value' => number_format($budgetVsActual['spending_efficiency'], 1, ',', ' ') . ' %'],
+            ],
+            'charts' => [
+                ['containerId' => 'chart-budget-objectif', 'title' => 'Budget vs Réel par Objectif'],
+                ['containerId' => 'chart-evolution-mensuelle', 'title' => 'Évolution Mensuelle des Dépenses'],
+                ['containerId' => 'chart-depenses-departement', 'title' => 'Dépenses par Département'],
+                ['containerId' => 'chart-efficacite-departement', 'title' => 'Efficacité par Département'],
+                ['containerId' => 'chart-repartition-trimestre', 'title' => 'Répartition Trimestrielle'],
+                ['containerId' => 'chart-performance-trimestre', 'title' => 'Performance Trimestrielle'],
+                ['containerId' => 'chart-tendances-annuelles', 'title' => 'Tendances Annuelles'],
+            ],
+            'alerts' => [
+                'over_budget' => array_map(fn ($d) => [
+                    'label' => $d['nom'],
+                    'value' => number_format(abs($d['variance']) / 1000000, 1, ',', ' ') . ' M FCFA',
+                ], $overBudget),
+                'under_utilized' => array_map(fn ($d) => [
+                    'label' => $d['nom'],
+                    'value' => number_format($d['variance'] / 1000000, 1, ',', ' ') . ' M FCFA',
+                ], $underUtilized),
+                'high_cost' => array_map(fn ($a) => [
+                    'label' => $a['nom_activite'],
+                    'value' => number_format($a['cout'] / 1000000, 1, ',', ' ') . ' M FCFA',
+                ], $highCost),
+            ],
+            'forecast' => [
+                ['label' => 'Taux de Croissance', 'value' => '+' . number_format($budgetTrends['growth_rate'], 1, ',', ' ') . ' %'],
+                ['label' => 'Projection Année ' . ($annee + 1), 'value' => number_format($budgetTrends['forecast'][$annee + 1] / 1000000, 1, ',', ' ') . ' M FCFA'],
+                ['label' => 'Projection Année ' . ($annee + 2), 'value' => number_format($budgetTrends['forecast'][$annee + 2] / 1000000, 1, ',', ' ') . ' M FCFA'],
+            ],
+        ];
+    @endphp
+
+    <script type="application/json" id="budget-report-data">{!! json_encode($reportData, JSON_UNESCAPED_UNICODE) !!}</script>
 
     <script>
         // Filtre par année

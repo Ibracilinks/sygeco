@@ -33,7 +33,7 @@
             </div>
         @endif
 
-        <form method="GET" action="{{ route('validations.index') }}" class="grid grid-cols-1 gap-3 rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-900 md:grid-cols-6">
+        <form id="filterForm" method="GET" action="{{ route('validations.index') }}" class="grid grid-cols-1 gap-3 rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-900 md:grid-cols-6">
             <select name="departement_id" class="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 focus:border-slate-500 focus:outline-none dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100">
                 <option value="">Tous départements</option>
                 @foreach ($departements as $departement)
@@ -61,7 +61,7 @@
 
             <div class="flex gap-2">
                 <button type="submit" class="w-full rounded-lg bg-slate-800 px-4 py-2 text-sm font-medium text-white dark:bg-slate-200 dark:text-slate-900">Filtrer</button>
-                <a href="{{ route('validations.index') }}" class="rounded-lg bg-slate-100 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-100 dark:hover:bg-slate-700">Reset</a>
+                <a href="{{ route('validations.index') }}" wire:navigate class="rounded-lg bg-slate-100 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-100 dark:hover:bg-slate-700">Reset</a>
             </div>
         </form>
 
@@ -111,7 +111,7 @@
                             <td class="px-5 py-4 text-sm text-slate-700 dark:text-slate-200">{{ number_format($activite->cout, 0, ',', ' ') }} FCFA</td>
                             <td class="px-5 py-4">
                                 <div class="flex flex-wrap items-center gap-1">
-                                    <x-actions.view :href="route('validations.show', $activite)" />
+                                    <x-actions.view :href="route('validations.show', $activite)" wire:navigate />
                                     <x-action variant="validate" icon="check" type="button" label="Valider"
                                         onclick="openValiderModal({{ $activite->id }}, '{{ addslashes($activite->nom_activite) }}', {{ json_encode($activite->validationHistoriques->take(3)->map(function ($item) {return ['action' => $item->action, 'commentaire' => $item->commentaire, 'utilisateur' => optional($item->utilisateur)->name, 'created_at' => optional($item->created_at)->format('d/m/Y H:i')];})) }})" />
                                     <x-action variant="refuse" icon="x-mark" type="button" label="A Traiter"
@@ -130,7 +130,7 @@
             </table>
         </div>
 
-        <div class="mt-2">{{ $activites->links() }}</div>
+        <div id="paginationWrap" class="mt-2">{{ $activites->links() }}</div>
 
         @include('pages.validations.partials.modal-valider')
         @include('pages.validations.partials.modal-refuser')
@@ -331,5 +331,40 @@
             document.getElementById('fusionFields').innerHTML = html;
             document.getElementById('arbFusionnerModal').classList.remove('hidden');
         }
+
+        // ----- Navigation SPA (wire:navigate) : filtres & pagination sans rechargement complet -----
+        (function () {
+            if (typeof Livewire === 'undefined' || typeof Livewire.navigate !== 'function') {
+                return;
+            }
+
+            const filterForm = document.getElementById('filterForm');
+            if (filterForm) {
+                filterForm.addEventListener('submit', function (event) {
+                    event.preventDefault();
+                    const params = new URLSearchParams(new FormData(filterForm));
+                    // URL propre : on retire les paramètres vides
+                    Array.from(params.keys()).forEach((key) => {
+                        if (!params.get(key)) {
+                            params.delete(key);
+                        }
+                    });
+                    const query = params.toString();
+                    Livewire.navigate(filterForm.action + (query ? '?' + query : ''));
+                });
+            }
+
+            const paginationWrap = document.getElementById('paginationWrap');
+            if (paginationWrap) {
+                paginationWrap.addEventListener('click', function (event) {
+                    const link = event.target.closest('a[href]');
+                    if (!link || !paginationWrap.contains(link)) {
+                        return;
+                    }
+                    event.preventDefault();
+                    Livewire.navigate(link.href);
+                });
+            }
+        })();
     </script>
 </x-layouts::app>
