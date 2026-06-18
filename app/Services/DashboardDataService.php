@@ -53,11 +53,11 @@ class DashboardDataService
                     COUNT(DISTINCT extrants.id) as total_extrants,
                     COUNT(activites.id) as total_activites,
                     SUM(activites.cout) as budget_total,
-                    SUM(CASE WHEN activites.statut = "valide" THEN 1 ELSE 0 END) as activites_validees
+                    SUM(CASE WHEN activites.statut_execution = "realise" THEN 1 ELSE 0 END) as activites_realisees
                 ')
                 ->first();
 
-            $tauxRealisation = $stats->total_activites > 0 ? round(($stats->activites_validees / $stats->total_activites) * 100, 1) : 0;
+            $tauxRealisation = $stats->total_activites > 0 ? round(($stats->activites_realisees / $stats->total_activites) * 100, 1) : 0;
 
             return [
                 'total_objectifs' => (int) $stats->total_objectifs,
