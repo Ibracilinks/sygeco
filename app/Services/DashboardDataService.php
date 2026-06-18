@@ -500,6 +500,7 @@ class DashboardDataService
                         $cout = (float) ($activite['cout'] ?? 0);
 
                         return [
+                            'id' => $activite['id'] ?? null,
                             'code' => (string) ($activite['code'] ?? ''),
                             'nom_activite' => (string) ($activite['nom_activite'] ?? ''),
                             'cout' => $cout,

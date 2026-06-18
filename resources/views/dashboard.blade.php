@@ -20,7 +20,7 @@
                             <option value="{{ $option }}" @selected($option === $filters['selected_year'])>{{ $option }}</option>
                         @endforeach
                     </select>
-                    <button onclick="window.print()" class="inline-flex items-center rounded-lg bg-slate-800 px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-700 dark:bg-slate-200 dark:text-slate-900 dark:hover:bg-white">
+                    <button onclick="window.exportReportPDF(this, 'dashboard-report-data')" class="inline-flex items-center rounded-lg bg-slate-800 px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-700 disabled:opacity-60 dark:bg-slate-200 dark:text-slate-900 dark:hover:bg-white">
                         Exporter PDF
                     </button>
                 </div>
@@ -58,6 +58,7 @@
                     <h2 class="text-lg font-semibold text-slate-900 dark:text-white">Evolution mensuelle</h2>
                     <p class="text-sm text-slate-500 dark:text-slate-400">Volume des activites creees et dynamique budgetaire</p>
                 </div>
+                <div id="dash-chart-evolution">
                 <x-charts.line-chart :labels="$charts['evolution']['labels']" :datasets="[
                     [
                         'label' => 'Activites',
@@ -76,6 +77,7 @@
                         'fill' => false,
                     ],
                 ]" :height="300" />
+                </div>
             </article>
 
             <article class="rounded-xl border border-slate-200 bg-white p-6 dark:border-slate-700 dark:bg-slate-900">
@@ -93,6 +95,7 @@
                     <h2 class="text-lg font-semibold text-slate-900 dark:text-white">Budget par objectif</h2>
                     <p class="text-sm text-slate-500 dark:text-slate-400">Montants en millions FCFA</p>
                 </div>
+                <div id="dash-chart-budget-objectif">
                 <x-charts.bar-chart :labels="$charts['budget_par_objectif']['labels']" :datasets="[
                     [
                         'label' => 'Budget (M FCFA)',
@@ -101,6 +104,7 @@
                         'borderRadius' => 8,
                     ],
                 ]" :height="300" />
+                </div>
             </article>
 
             <article class="rounded-xl border border-slate-200 bg-white p-6 dark:border-slate-700 dark:bg-slate-900">
@@ -108,7 +112,9 @@
                     <h2 class="text-lg font-semibold text-slate-900 dark:text-white">Top extrants</h2>
                     <p class="text-sm text-slate-500 dark:text-slate-400">Distribution des activites par extrant</p>
                 </div>
+                <div id="dash-chart-top-extrants">
                 <x-charts.pie-chart :labels="$charts['top_extrants']['labels']" :data="$charts['top_extrants']['values']" type="pie" :height="300" />
+                </div>
             </article>
         </section>
 
@@ -142,7 +148,9 @@
                     <h2 class="text-lg font-semibold text-slate-900 dark:text-white">Distribution budgetaire</h2>
                     <p class="text-sm text-slate-500 dark:text-slate-400">Nombre d'activites par tranche de cout</p>
                 </div>
+                <div id="dash-chart-distribution">
                 <x-charts.pie-chart :labels="$charts['distribution_budgetaire']['labels']" :data="$charts['distribution_budgetaire']['values']" type="donut" :height="300" />
+                </div>
             </article>
         </section>
 
@@ -152,6 +160,7 @@
                     <h2 class="text-lg font-semibold text-slate-900 dark:text-white">Activites par statut</h2>
                     <p class="text-sm text-slate-500 dark:text-slate-400">Distribution de l'etat d'avancement</p>
                 </div>
+                <div id="dash-chart-statut">
                 <x-charts.bar-chart :labels="$charts['activites_statut']['labels']" :datasets="[
                     [
                         'label' => 'Activites',
@@ -160,6 +169,7 @@
                         'borderRadius' => 8,
                     ],
                 ]" :height="300" />
+                </div>
             </article>
 
             <article class="rounded-xl border border-slate-200 bg-white p-6 dark:border-slate-700 dark:bg-slate-900">
@@ -167,6 +177,7 @@
                     <h2 class="text-lg font-semibold text-slate-900 dark:text-white">Activites par trimestre</h2>
                     <p class="text-sm text-slate-500 dark:text-slate-400">Planification trimestrielle declaree</p>
                 </div>
+                <div id="dash-chart-trimestre">
                 <x-charts.bar-chart :labels="$charts['activites_trimestre']['labels']" :datasets="[
                     [
                         'label' => 'Activites',
@@ -175,6 +186,7 @@
                         'borderRadius' => 8,
                     ],
                 ]" :height="300" />
+                </div>
             </article>
         </section>
 
@@ -217,6 +229,60 @@
             </article>
         </section>
     </div>
+
+    @php
+        $dashboardReport = [
+            'title' => 'Tableau de bord',
+            'subtitle' => 'Pilotage stratégique — Exercice ' . $filters['selected_year'],
+            'filename' => 'tableau-de-bord-' . $filters['selected_year'],
+            'footer' => 'CANAM',
+            'kpis' => [
+                ['label' => 'Objectifs', 'value' => number_format($kpis['objectifs'], 0, ',', ' ')],
+                ['label' => 'Extrants', 'value' => number_format($kpis['extrants'], 0, ',', ' ')],
+                ['label' => 'Activités', 'value' => number_format($kpis['activites'], 0, ',', ' ')],
+                ['label' => 'Budget total', 'value' => number_format($kpis['budget_total'] / 1000000, 1, ',', ' ') . ' M FCFA'],
+                ['label' => 'Taux de réalisation', 'value' => number_format($kpis['taux_realisation'], 1, ',', ' ') . ' %'],
+                ['label' => 'Backlog (en attente)', 'value' => number_format($kpis['en_attente'], 0, ',', ' ')],
+                ['label' => 'Soumission moyenne', 'value' => number_format($insights['soumission_moyenne'], 1, ',', ' ') . ' %'],
+            ],
+            'charts' => [
+                ['containerId' => 'dash-chart-evolution', 'title' => 'Évolution mensuelle'],
+                ['containerId' => 'dash-chart-budget-objectif', 'title' => 'Budget par objectif'],
+                ['containerId' => 'dash-chart-top-extrants', 'title' => 'Top extrants'],
+                ['containerId' => 'dash-chart-distribution', 'title' => 'Distribution budgétaire'],
+                ['containerId' => 'dash-chart-statut', 'title' => 'Activités par statut'],
+                ['containerId' => 'dash-chart-trimestre', 'title' => 'Activités par trimestre'],
+            ],
+            'tables' => [
+                [
+                    'title' => 'Top activités par coût',
+                    'empty' => 'Aucune activité disponible.',
+                    'rows' => array_map(fn ($item) => [
+                        'label' => $item['code'] . ' - ' . $item['nom_activite'],
+                        'value' => number_format($item['cout_millions'], 1, ',', ' ') . ' M FCFA',
+                    ], $tables['top_activites']),
+                ],
+                [
+                    'title' => 'Soumission par département',
+                    'empty' => 'Aucune donnée de soumission disponible.',
+                    'rows' => array_map(fn ($row) => [
+                        'label' => $row['nom'],
+                        'value' => $row['soumises'] . '/' . $row['total'] . ' (' . number_format($row['pct'], 1, ',', ' ') . '%)',
+                    ], $tables['soumission_departements']),
+                ],
+                [
+                    'title' => 'Départements en retard',
+                    'empty' => 'Aucun département en retard sur cet exercice.',
+                    'rows' => array_map(fn ($r) => [
+                        'label' => $r['nom'],
+                        'value' => $r['nb_brouillon'] . ' brouillon(s)',
+                    ], $tables['departements_en_retard']),
+                ],
+            ],
+        ];
+    @endphp
+
+    <script type="application/json" id="dashboard-report-data">{!! json_encode($dashboardReport, JSON_UNESCAPED_UNICODE) !!}</script>
 
     <script>
         const anneeSelect = document.getElementById('annee-select');
