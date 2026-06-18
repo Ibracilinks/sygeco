@@ -40,6 +40,11 @@ class Extrant extends Model
         return $this->hasMany(Activite::class);
     }
 
+    public function departements()
+    {
+        return $this->belongsToMany(Departement::class, 'departement_extrant')->withTimestamps();
+    }
+
     // Scopes
     public function scopeActif($query)
     {

@@ -37,6 +37,11 @@ class Resultat extends Model
         return $this->hasMany(Extrant::class);
     }
 
+    public function departements()
+    {
+        return $this->belongsToMany(Departement::class, 'departement_resultat')->withTimestamps();
+    }
+
     // Scopes
     public function scopeActif($query)
     {

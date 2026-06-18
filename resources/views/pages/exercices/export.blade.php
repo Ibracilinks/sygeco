@@ -63,7 +63,7 @@
                             <td style="{{ $cell }}{{ $center }}">{{ $activite->trimestre_2 === 'oui' ? 'X' : '' }}</td>
                             <td style="{{ $cell }}{{ $center }}">{{ $activite->trimestre_3 === 'oui' ? 'X' : '' }}</td>
                             <td style="{{ $cell }}{{ $center }}">{{ $activite->trimestre_4 === 'oui' ? 'X' : '' }}</td>
-                            <td style="{{ $cell }}{{ $center }}">{{ $activite->departement?->nom ?? $activite->departement?->code ?? '' }}</td>
+                            <td style="{{ $cell }}{{ $center }}">{{ $activite->departements->isNotEmpty() ? $activite->departements->pluck('nom')->join('/') : ($activite->departement?->nom ?? '') }}</td>
                             <td style="{{ $cell }}{{ $right }}">{{ (float) $activite->cout > 0 ? number_format((float) $activite->cout, 0, '.', ',') : '-' }}</td>
                         </tr>
                     @empty

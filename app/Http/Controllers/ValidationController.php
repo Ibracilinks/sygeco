@@ -5,10 +5,13 @@ namespace App\Http\Controllers;
 use App\Models\Activite;
 use App\Models\Departement;
 use App\Models\Extrant;
+use App\Notifications\ActiviteArbitrageNotification;
 use App\Notifications\ActiviteRefusee;
 use App\Notifications\ActiviteValidee;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class ValidationController extends Controller
@@ -117,6 +120,137 @@ class ValidationController extends Controller
 
         return redirect()->route('validations.index')
             ->with('success', 'Sélection des activités validée avec succès.');
+    }
+
+    /**
+     * Arbitrage budgétaire — Modifier une activité avant validation.
+     */
+    public function arbitrerModifier(Request $request, Activite $activite)
+    {
+        if (! $this->canValidate($activite) || $activite->statut !== 'soumis') {
+            abort(403);
+        }
+
+        $validated = $request->validate($this->reglesArbitrage() + [
+            'motif' => 'nullable|string|max:1000',
+        ]);
+
+        $activite->arbitrerModification(
+            collect($validated)->except('motif')->all(),
+            $validated['motif'] ?? null
+        );
+
+        $this->notifierArbitrage($activite->saisiePar, 'modifiee', $activite->nom_activite, $validated['motif'] ?? null);
+
+        return redirect()->route('validations.index')
+            ->with('success', 'Activité modifiée et l\'auteur a été notifié.');
+    }
+
+    /**
+     * Arbitrage budgétaire — Supprimer (archiver) une activité avant validation.
+     */
+    public function arbitrerSupprimer(Request $request, Activite $activite)
+    {
+        if (! $this->canValidate($activite) || $activite->statut !== 'soumis') {
+            abort(403);
+        }
+
+        $validated = $request->validate([
+            'motif' => 'required|string|min:5|max:1000',
+        ]);
+
+        $saisiPar = $activite->saisiePar;
+        $nom = $activite->nom_activite;
+
+        $activite->arbitrerSuppression($validated['motif']);
+
+        $this->notifierArbitrage($saisiPar, 'supprimee', $nom, $validated['motif']);
+
+        return redirect()->route('validations.index')
+            ->with('success', 'Activité supprimée et l\'auteur a été notifié.');
+    }
+
+    /**
+     * Arbitrage budgétaire — Fusionner plusieurs activités en une activité consolidée.
+     */
+    public function arbitrerFusionner(Request $request)
+    {
+        $validated = $request->validate($this->reglesArbitrage() + [
+            'activite_ids' => 'required|array|min:2',
+            'activite_ids.*' => 'integer|exists:activites,id',
+            'extrant_id' => 'required|integer|exists:extrants,id',
+            'departement_id' => 'required|integer|exists:departements,id',
+            'motif' => 'nullable|string|max:1000',
+        ]);
+
+        $sources = Activite::query()->soumis()->whereKey($validated['activite_ids'])->get()
+            ->filter(fn (Activite $a) => $this->canValidate($a));
+
+        if ($sources->count() < 2) {
+            return redirect()->route('validations.index')
+                ->with('error', 'Sélectionnez au moins deux activités fusionnables de votre périmètre.');
+        }
+
+        $consolidee = DB::transaction(function () use ($validated, $sources) {
+            $premiere = $sources->first();
+
+            $consolidee = Activite::create([
+                'extrant_id' => $validated['extrant_id'],
+                'departement_id' => $validated['departement_id'],
+                'nom_activite' => $validated['nom_activite'],
+                'indicateur_objectivement_verifiable' => $validated['indicateur_objectivement_verifiable'],
+                'moyen_verification' => $validated['moyen_verification'],
+                'cout' => $validated['cout'],
+                'trimestre_1' => $validated['trimestre_1'],
+                'trimestre_2' => $validated['trimestre_2'],
+                'trimestre_3' => $validated['trimestre_3'],
+                'trimestre_4' => $validated['trimestre_4'],
+                'statut' => 'soumis',
+                'saisi_par' => $premiere->saisi_par,
+                'date_saisie' => now(),
+                'date_soumission' => now(),
+            ]);
+
+            $consolidee->journaliserArbitrage('arbitrage_fusion', $validated['motif'] ?? null);
+
+            foreach ($sources as $source) {
+                $source->arbitrerSuppression($validated['motif'] ?? null);
+            }
+
+            return $consolidee;
+        });
+
+        // Notifier chaque auteur d'activité source (dédoublonné par utilisateur).
+        $sources->groupBy('saisi_par')->each(function ($groupe) use ($validated, $consolidee) {
+            $auteur = $groupe->first()->saisiePar;
+            foreach ($groupe as $source) {
+                $this->notifierArbitrage($auteur, 'fusionnee', $source->nom_activite, $validated['motif'] ?? null, $consolidee->nom_activite);
+            }
+        });
+
+        return redirect()->route('validations.index')
+            ->with('success', $sources->count().' activités fusionnées et les auteurs ont été notifiés.');
+    }
+
+    private function reglesArbitrage(): array
+    {
+        return [
+            'nom_activite' => 'required|string|max:1000',
+            'indicateur_objectivement_verifiable' => 'required|string|max:1000',
+            'moyen_verification' => 'required|string|max:1000',
+            'cout' => 'required|numeric|min:0',
+            'trimestre_1' => ['required', Rule::in(['oui', 'non'])],
+            'trimestre_2' => ['required', Rule::in(['oui', 'non'])],
+            'trimestre_3' => ['required', Rule::in(['oui', 'non'])],
+            'trimestre_4' => ['required', Rule::in(['oui', 'non'])],
+        ];
+    }
+
+    private function notifierArbitrage($auteur, string $action, string $nom, ?string $motif, ?string $nomConsolidee = null): void
+    {
+        if ($auteur) {
+            $auteur->notify(new ActiviteArbitrageNotification($action, $nom, $motif, $nomConsolidee));
+        }
     }
 
     public function exporter(Request $request)

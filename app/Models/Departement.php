@@ -37,6 +37,27 @@ class Departement extends Model
         return $this->hasMany(Activite::class, 'departement_id');
     }
 
+    // Relations many-to-many (responsabilités)
+    public function activitesResponsables()
+    {
+        return $this->belongsToMany(Activite::class, 'activite_departement')->withTimestamps();
+    }
+
+    public function objectifs()
+    {
+        return $this->belongsToMany(Objectif::class, 'departement_objectif')->withTimestamps();
+    }
+
+    public function resultats()
+    {
+        return $this->belongsToMany(Resultat::class, 'departement_resultat')->withTimestamps();
+    }
+
+    public function extrants()
+    {
+        return $this->belongsToMany(Extrant::class, 'departement_extrant')->withTimestamps();
+    }
+
     public function responsable()
     {
         return $this->belongsTo(User::class, 'responsable_id');

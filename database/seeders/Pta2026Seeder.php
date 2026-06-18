@@ -2,15 +2,15 @@
 
 namespace Database\Seeders;
 
-class Pta2025Seeder extends PtaImportSeeder
+class Pta2026Seeder extends PtaImportSeeder
 {
     protected function annee(): int
     {
-        return 2025;
+        return 2026;
     }
 
     protected function fichier(): string
     {
-        return 'pta_2025.csv';
+        return 'pta_2026.csv';
     }
 }

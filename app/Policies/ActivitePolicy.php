@@ -18,7 +18,7 @@ class ActivitePolicy
             return true;
         }
 
-        return $user->hasRole('chef_departement')
+        return ($user->hasRole('chef_departement') || $user->hasRole('agent'))
             && (int) $user->departement_id === (int) $activite->departement_id;
     }
 

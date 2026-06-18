@@ -122,7 +122,9 @@
                     @forelse ($tables['top_activites'] as $item)
                         <div>
                             <div class="mb-1 flex items-center justify-between gap-3 text-sm">
-                                <p class="truncate text-slate-700 dark:text-slate-100">{{ $item['code'] }} - {{ Str::limit($item['nom_activite'], 42) }}</p>
+                                <a href="{{ route('activites.show', $item['id']) }}" class="truncate text-slate-700 transition hover:text-sky-700 hover:underline dark:text-slate-100 dark:hover:text-sky-300">
+                                    {{ $item['code'] }} - {{ Str::limit($item['nom_activite'], 42) }}
+                                </a>
                                 <p class="font-semibold text-slate-900 dark:text-white">{{ number_format($item['cout_millions'], 1, ',', ' ') }} M</p>
                             </div>
                             <div class="h-2 rounded-full bg-slate-200 dark:bg-slate-700">

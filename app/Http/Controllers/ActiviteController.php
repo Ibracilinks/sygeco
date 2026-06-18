@@ -3,12 +3,15 @@
 namespace App\Http\Controllers;
 
 use App\Models\Activite;
+use App\Models\ActivitePieceJointe;
 use App\Models\Departement;
 use App\Models\Extrant;
 use App\Support\ActiveExercice;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\Rule;
 
 class ActiviteController extends Controller
 {
@@ -48,6 +51,10 @@ class ActiviteController extends Controller
             $query->pourTrimestre($request->trimestre);
         }
 
+        if ($request->filled('statut_execution')) {
+            $query->where('statut_execution', $request->statut_execution);
+        }
+
         if ($request->filled('search')) {
             $query->where(function ($q) use ($request) {
                 $q->where('nom_activite', 'like', "%{$request->search}%")
@@ -56,7 +63,7 @@ class ActiviteController extends Controller
         }
 
         // Si l'utilisateur est chef de département, filtrer par son département
-        if (Auth::user()->hasRole('chef_departement') && Auth::user()->departement_id) {
+        if ((Auth::user()->hasRole('chef_departement') || Auth::user()->hasRole('agent')) && Auth::user()->departement_id) {
             $query->where('departement_id', Auth::user()->departement_id);
         }
 
@@ -78,9 +85,60 @@ class ActiviteController extends Controller
             ->get();
         $departements = Departement::active()->ordered()->get();
         $statuts = ['brouillon', 'soumis', 'valide'];
-        $filters = $request->only(['search', 'extrant_id', 'departement_id', 'statut', 'trimestre']);
+        $filters = $request->only(['search', 'extrant_id', 'departement_id', 'statut', 'trimestre', 'statut_execution']);
 
         return view('pages.activites.index', compact('activites', 'extrants', 'departements', 'statuts', 'summary', 'filters'));
+    }
+
+    /**
+     * Suivi de l'exécution des activités (réalisé / en cours / non réalisé) avec observations.
+     */
+    public function suivi(Request $request)
+    {
+        $exerciceId = ActiveExercice::id();
+
+        $query = Activite::with(['extrant', 'departement'])->forExercice($exerciceId);
+
+        if ((Auth::user()->hasRole('chef_departement') || Auth::user()->hasRole('agent')) && Auth::user()->departement_id) {
+            $query->where('departement_id', Auth::user()->departement_id);
+        }
+
+        if ($request->filled('extrant_id')) {
+            $query->where('extrant_id', $request->extrant_id);
+        }
+        if ($request->filled('departement_id')) {
+            $query->where('departement_id', $request->departement_id);
+        }
+        if ($request->filled('statut_execution')) {
+            $query->where('statut_execution', $request->statut_execution);
+        }
+        if ($request->filled('search')) {
+            $query->where('nom_activite', 'like', "%{$request->search}%");
+        }
+
+        $base = (clone $query);
+        $summary = [
+            'total' => (clone $base)->count(),
+            'non_realise' => (clone $base)->where('statut_execution', 'non_realise')->count(),
+            'en_cours' => (clone $base)->where('statut_execution', 'en_cours')->count(),
+            'realise' => (clone $base)->where('statut_execution', 'realise')->count(),
+        ];
+        $summary['taux_realisation'] = $summary['total'] > 0
+            ? round($summary['realise'] / $summary['total'] * 100, 1)
+            : 0.0;
+
+        $activites = $query->orderBy('extrant_id')->orderBy('id')->paginate(20)->withQueryString();
+
+        $extrants = Extrant::query()
+            ->with('objectif')
+            ->actif()
+            ->when($exerciceId !== null, fn ($q) => $q->whereHas('objectif', fn ($oq) => $oq->where('exercice_id', $exerciceId)))
+            ->ordered()
+            ->get();
+        $departements = Departement::active()->ordered()->get();
+        $filters = $request->only(['search', 'extrant_id', 'departement_id', 'statut_execution']);
+
+        return view('pages.activites.suivi', compact('activites', 'extrants', 'departements', 'summary', 'filters'));
     }
 
     /**
@@ -155,6 +213,9 @@ class ActiviteController extends Controller
         $activite->load([
             'extrant.objectif',
             'departement.responsable',
+            'departements',
+            'executionMajPar',
+            'piecesJointes.auteur',
             'saisiePar',
             'validePar',
             'refusePar',
@@ -289,5 +350,66 @@ class ActiviteController extends Controller
 
         return redirect()->route('activites.show', $activite)
             ->with('error', 'Impossible de refuser cette activité.');
+    }
+
+    /**
+     * Mettre à jour le suivi d'exécution (Track Activité : réalisé / en cours / non réalisé).
+     */
+    public function updateExecution(Request $request, Activite $activite)
+    {
+        if (! Auth::user()->can('edit_activites') && ! Auth::user()->can('validate_activites')) {
+            return back()->with('error', "Vous n'êtes pas autorisé à mettre à jour le suivi d'exécution.");
+        }
+
+        $validated = $request->validate([
+            'statut_execution' => ['required', Rule::in(array_keys(Activite::STATUTS_EXECUTION))],
+            'execution_commentaire' => ['nullable', 'string', 'max:1000'],
+        ]);
+
+        $activite->update([
+            'statut_execution' => $validated['statut_execution'],
+            'execution_commentaire' => $validated['execution_commentaire'] ?? null,
+            'execution_maj_le' => now(),
+            'execution_maj_par' => Auth::id(),
+        ]);
+
+        return back()->with('success', "Suivi d'exécution mis à jour.");
+    }
+
+    public function storePieceJointe(Request $request, Activite $activite)
+    {
+        $this->authorize('view', $activite);
+
+        if (! Auth::user()->can('edit_activites') && ! Auth::user()->can('validate_activites')) {
+            return back()->with('error', "Vous n'êtes pas autorisé à ajouter des fichiers.");
+        }
+
+        $validated = $request->validate([
+            'fichier' => ['required', 'file', 'max:10240'],
+            'description' => ['nullable', 'string', 'max:255'],
+        ]);
+
+        $uploadedFile = $validated['fichier'];
+        $path = $uploadedFile->store("activites/{$activite->id}", 'public');
+
+        $activite->piecesJointes()->create([
+            'user_id' => Auth::id(),
+            'nom_original' => $uploadedFile->getClientOriginalName(),
+            'chemin' => $path,
+            'mime_type' => $uploadedFile->getClientMimeType(),
+            'taille' => $uploadedFile->getSize(),
+            'description' => $validated['description'] ?? null,
+        ]);
+
+        return back()->with('success', 'Fichier ajouté avec succès.');
+    }
+
+    public function downloadPieceJointe(Activite $activite, ActivitePieceJointe $pieceJointe)
+    {
+        $this->authorize('view', $activite);
+
+        abort_unless((int) $pieceJointe->activite_id === (int) $activite->id, 404);
+
+        return Storage::disk('public')->download($pieceJointe->chemin, $pieceJointe->nom_original);
     }
 }

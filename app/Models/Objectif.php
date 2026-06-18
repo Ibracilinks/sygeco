@@ -43,6 +43,11 @@ class Objectif extends Model
         return $this->hasManyThrough(Extrant::class, Resultat::class);
     }
 
+    public function departements()
+    {
+        return $this->belongsToMany(Departement::class, 'departement_objectif')->withTimestamps();
+    }
+
     // Scopes
     public function scopeActif($query)
     {

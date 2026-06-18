@@ -99,8 +99,13 @@
                 @endif
 
                 <flux:sidebar.item icon="clipboard-document-list" href="{{ route('activites.index') }}"
-                    :current="request()->routeIs('activites.*')">
+                    :current="request()->routeIs('activites.index') || request()->routeIs('activites.create') || request()->routeIs('activites.edit') || request()->routeIs('activites.show')">
                     {{ __('Activités') }}
+                </flux:sidebar.item>
+
+                <flux:sidebar.item icon="chart-bar" href="{{ route('activites.suivi') }}"
+                    :current="request()->routeIs('activites.suivi')">
+                    {{ __('Suivi des activités') }}
                 </flux:sidebar.item>
             </flux:sidebar.group>
         </flux:sidebar.nav>

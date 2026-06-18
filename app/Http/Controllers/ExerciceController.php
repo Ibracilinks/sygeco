@@ -78,7 +78,16 @@ class ExerciceController extends Controller
                 'soumis' => Activite::forExercice($exercice->id)->where('statut', 'soumis')->count(),
                 'valide' => Activite::forExercice($exercice->id)->where('statut', 'valide')->count(),
             ],
+            'execution' => [
+                'non_realise' => Activite::forExercice($exercice->id)->where('statut_execution', 'non_realise')->count(),
+                'en_cours' => Activite::forExercice($exercice->id)->where('statut_execution', 'en_cours')->count(),
+                'realise' => Activite::forExercice($exercice->id)->where('statut_execution', 'realise')->count(),
+            ],
         ];
+
+        $stats['taux_realisation'] = $stats['nb_activites'] > 0
+            ? round($stats['execution']['realise'] / $stats['nb_activites'] * 100, 1)
+            : 0.0;
 
         $relances = $exercice->relances()->orderByDesc('palier')->get();
 
@@ -166,6 +175,14 @@ class ExerciceController extends Controller
                 'labels' => ['Brouillon', 'Soumis', 'Validé'],
                 'values' => array_values($stats['activites_par_statut']),
             ],
+            'avancement' => [
+                'labels' => ['Réalisé', 'En cours', 'Non réalisé'],
+                'values' => [
+                    $stats['execution']['realise'],
+                    $stats['execution']['en_cours'],
+                    $stats['execution']['non_realise'],
+                ],
+            ],
             'activites_trimestre' => [
                 'labels' => array_keys($trimestres),
                 'values' => array_values($trimestres),
@@ -198,7 +215,7 @@ class ExerciceController extends Controller
                     ->with(['extrants' => function ($e) {
                         $e->orderBy('ordre')->orderBy('code')
                             ->with(['activites' => function ($a) {
-                                $a->with('departement:id,code,nom')->orderBy('id');
+                                $a->with(['departement:id,code,nom', 'departements:id,code,nom'])->orderBy('id');
                             }]);
                     }]);
             }])

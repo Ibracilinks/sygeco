@@ -80,6 +80,13 @@
                 <option value="4" @selected(($filters['trimestre'] ?? '') === '4')>T4</option>
             </select>
 
+            <select name="statut_execution" class="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 focus:border-slate-500 focus:outline-none dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100">
+                <option value="">Tout suivi</option>
+                @foreach (\App\Models\Activite::STATUTS_EXECUTION as $val => $label)
+                    <option value="{{ $val }}" @selected(($filters['statut_execution'] ?? '') === $val)>{{ $label }}</option>
+                @endforeach
+            </select>
+
             <div class="flex gap-2">
                 <button type="submit" class="w-full rounded-lg bg-slate-800 px-4 py-2 text-sm font-medium text-white dark:bg-slate-200 dark:text-slate-900">Filtrer</button>
                 <a href="{{ route('activites.index') }}" class="rounded-lg bg-slate-100 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-100 dark:hover:bg-slate-700">Reset</a>
@@ -95,6 +102,7 @@
                         <th class="px-5 py-3 text-left text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">Département</th>
                         <th class="px-5 py-3 text-left text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">Coût</th>
                         <th class="px-5 py-3 text-left text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">Statut</th>
+                        <th class="px-5 py-3 text-left text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">Suivi</th>
                         <th class="px-5 py-3 text-left text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">Actions</th>
                     </tr>
                 </thead>
@@ -118,6 +126,26 @@
                                         : 'bg-slate-100 text-slate-800 dark:bg-slate-700 dark:text-slate-200') }}">
                                     {{ $activite->statut_label }}
                                 </span>
+                            </td>
+                            <td class="px-5 py-4">
+                                @can('edit_activites')
+                                    <form action="{{ route('activites.execution', $activite) }}" method="POST" class="inline">
+                                        @csrf
+                                        <select name="statut_execution" onchange="this.form.submit()"
+                                            class="rounded-lg border px-2 py-1 text-xs font-medium focus:outline-none dark:bg-slate-950
+                                            {{ $activite->statut_execution === 'realise'
+                                                ? 'border-emerald-300 bg-emerald-50 text-emerald-800 dark:border-emerald-800 dark:text-emerald-200'
+                                                : ($activite->statut_execution === 'en_cours'
+                                                    ? 'border-amber-300 bg-amber-50 text-amber-800 dark:border-amber-800 dark:text-amber-200'
+                                                    : 'border-slate-300 bg-slate-50 text-slate-700 dark:border-slate-700 dark:text-slate-200') }}">
+                                            @foreach (\App\Models\Activite::STATUTS_EXECUTION as $val => $label)
+                                                <option value="{{ $val }}" @selected($activite->statut_execution === $val)>{{ $label }}</option>
+                                            @endforeach
+                                        </select>
+                                    </form>
+                                @else
+                                    <x-execution-badge :statut="$activite->statut_execution" />
+                                @endcan
                             </td>
                             <td class="px-5 py-4">
                                 <div class="flex flex-wrap items-center gap-1">
@@ -150,7 +178,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="6" class="px-5 py-10 text-center text-sm text-slate-500 dark:text-slate-400">Aucune activité trouvée.</td>
+                            <td colspan="7" class="px-5 py-10 text-center text-sm text-slate-500 dark:text-slate-400">Aucune activité trouvée.</td>
                         </tr>
                     @endforelse
                 </tbody>

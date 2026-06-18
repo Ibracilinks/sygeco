@@ -168,8 +168,29 @@
                             <span class="font-semibold text-slate-900 dark:text-white">{{ $stats['activites_par_statut']['valide'] }}</span>
                         </div>
                     </div>
+                    <div class="mt-4 border-t border-slate-200 pt-4 dark:border-slate-700">
+                        <p class="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Avancement</p>
+                        <div class="space-y-2 text-sm">
+                            <div class="flex items-center justify-between">
+                                <span class="inline-flex items-center gap-2 text-slate-600 dark:text-slate-300"><span class="h-2 w-2 rounded-full bg-emerald-500"></span>Réalisé</span>
+                                <span class="font-semibold text-slate-900 dark:text-white">{{ $stats['execution']['realise'] }}</span>
+                            </div>
+                            <div class="flex items-center justify-between">
+                                <span class="inline-flex items-center gap-2 text-slate-600 dark:text-slate-300"><span class="h-2 w-2 rounded-full bg-amber-500"></span>En cours</span>
+                                <span class="font-semibold text-slate-900 dark:text-white">{{ $stats['execution']['en_cours'] }}</span>
+                            </div>
+                            <div class="flex items-center justify-between">
+                                <span class="inline-flex items-center gap-2 text-slate-600 dark:text-slate-300"><span class="h-2 w-2 rounded-full bg-slate-400"></span>Non réalisé</span>
+                                <span class="font-semibold text-slate-900 dark:text-white">{{ $stats['execution']['non_realise'] }}</span>
+                            </div>
+                        </div>
+                    </div>
                     <dl class="mt-4 border-t border-slate-200 pt-4 text-sm dark:border-slate-700">
                         <div class="flex items-center justify-between">
+                            <dt class="text-slate-500 dark:text-slate-400">Taux de réalisation</dt>
+                            <dd class="font-semibold text-emerald-700 dark:text-emerald-300">{{ $stats['taux_realisation'] }}%</dd>
+                        </div>
+                        <div class="mt-2 flex items-center justify-between">
                             <dt class="text-slate-500 dark:text-slate-400">Budget moyen / activité</dt>
                             <dd class="font-medium text-slate-900 dark:text-white">{{ $stats['nb_activites'] > 0 ? number_format($stats['budget_total'] / $stats['nb_activites'], 0, ',', ' ') : '0' }}</dd>
                         </div>
@@ -305,6 +326,25 @@
                         'borderRadius' => 8,
                     ],
                 ]" :height="300" />
+            </article>
+        </section>
+
+        {{-- Avancement (suivi d'exécution) --}}
+        <section class="grid grid-cols-1 gap-6 xl:grid-cols-3">
+            <article class="rounded-xl border border-slate-200 bg-white p-6 dark:border-slate-700 dark:bg-slate-900 xl:col-span-2">
+                <div class="mb-4 border-b border-slate-200 pb-4 dark:border-slate-700">
+                    <h3 class="text-base font-semibold text-slate-900 dark:text-white">Avancement des activités</h3>
+                    <p class="text-sm text-slate-500 dark:text-slate-400">Suivi d'exécution : réalisé / en cours / non réalisé</p>
+                </div>
+                <x-charts.pie-chart :labels="$charts['avancement']['labels']" :data="$charts['avancement']['values']" type="donut" :colors="['#10b981', '#f59e0b', '#94a3b8']" :height="300" />
+            </article>
+
+            <article class="rounded-xl border border-slate-200 bg-white p-6 dark:border-slate-700 dark:bg-slate-900">
+                <div class="mb-4 border-b border-slate-200 pb-4 dark:border-slate-700">
+                    <h3 class="text-base font-semibold text-slate-900 dark:text-white">Taux de réalisation</h3>
+                    <p class="text-sm text-slate-500 dark:text-slate-400">Part des activités réalisées</p>
+                </div>
+                <x-charts.gauge-chart :value="$stats['taux_realisation']" title="Réalisé" unit="%" :size="200" />
             </article>
         </section>
 

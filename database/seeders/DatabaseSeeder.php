@@ -31,6 +31,7 @@ class DatabaseSeeder extends Seeder
             ExtrantSeeder::class,
             ActiviteSeeder::class,
             Pta2025Seeder::class,
+            Pta2026Seeder::class,
             // IndicateurSeeder::class,
             // IndicateurValeurSeeder::class,
         ]);

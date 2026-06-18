@@ -26,6 +26,10 @@ class Activite extends Model
         'trimestre_3',
         'trimestre_4',
         'statut',
+        'statut_execution',
+        'execution_commentaire',
+        'execution_maj_le',
+        'execution_maj_par',
         'saisi_par',
         'date_saisie',
         'date_soumission',
@@ -43,7 +47,41 @@ class Activite extends Model
         'date_soumission' => 'datetime',
         'date_validation' => 'datetime',
         'refuse_le' => 'datetime',
+        'execution_maj_le' => 'datetime',
     ];
+
+    /**
+     * Libellés et couleurs des statuts d'exécution (suivi « Track Activité »).
+     */
+    public const STATUTS_EXECUTION = [
+        'non_realise' => 'Non réalisé',
+        'en_cours' => 'En cours',
+        'realise' => 'Réalisé',
+    ];
+
+    public function getStatutExecutionLabelAttribute(): string
+    {
+        return self::STATUTS_EXECUTION[$this->statut_execution] ?? 'Non réalisé';
+    }
+
+    public function getStatutExecutionCouleurAttribute(): string
+    {
+        return match ($this->statut_execution) {
+            'realise' => 'emerald',
+            'en_cours' => 'amber',
+            default => 'slate',
+        };
+    }
+
+    public function executionMajPar()
+    {
+        return $this->belongsTo(User::class, 'execution_maj_par');
+    }
+
+    public function scopeByStatutExecution($query, $statut)
+    {
+        return $query->where('statut_execution', $statut);
+    }
 
     // Relations
     public function extrant()
@@ -54,6 +92,14 @@ class Activite extends Model
     public function departement()
     {
         return $this->belongsTo(Departement::class);
+    }
+
+    /**
+     * Départements responsables (many-to-many). `departement_id` reste le département principal.
+     */
+    public function departements()
+    {
+        return $this->belongsToMany(Departement::class, 'activite_departement')->withTimestamps();
     }
 
     public function saisiePar()
@@ -168,6 +214,11 @@ class Activite extends Model
         return $this->hasMany(ValidationHistorique::class);
     }
 
+    public function piecesJointes()
+    {
+        return $this->hasMany(ActivitePieceJointe::class)->latest();
+    }
+
     public function getDernierMotifRefus()
     {
         return $this->validationHistoriques()
@@ -210,7 +261,7 @@ class Activite extends Model
         return true;
     }
 
-    public function valider(string $commentaire = null)
+    public function valider(?string $commentaire = null)
     {
         if (! $this->peutEtreValide()) {
             return false;
@@ -245,7 +296,33 @@ class Activite extends Model
         return true;
     }
 
-    protected function logHistorique(string $action, string $ancienStatut, string $nouveauStatut, string $commentaire = null, int $utilisateurId = null)
+    /**
+     * Arbitrage budgétaire : modification d'une activité par le responsable avant validation.
+     */
+    public function arbitrerModification(array $data, ?string $motif = null): void
+    {
+        $this->update($data);
+        $this->logHistorique('arbitrage_modification', $this->statut, $this->statut, $motif);
+    }
+
+    /**
+     * Arbitrage budgétaire : suppression (archivage) d'une activité.
+     */
+    public function arbitrerSuppression(?string $motif = null): void
+    {
+        $this->logHistorique('arbitrage_suppression', $this->statut, $this->statut, $motif);
+        $this->delete();
+    }
+
+    /**
+     * Journalise une action d'arbitrage (ex. fusion) sur l'activité.
+     */
+    public function journaliserArbitrage(string $action, ?string $motif = null): void
+    {
+        $this->logHistorique($action, $this->statut, $this->statut, $motif);
+    }
+
+    protected function logHistorique(string $action, string $ancienStatut, string $nouveauStatut, ?string $commentaire = null, ?int $utilisateurId = null)
     {
         $this->validationHistoriques()->create([
             'action' => $action,

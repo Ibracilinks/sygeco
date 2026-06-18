@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Departement;
+use App\Models\Exercice;
 use App\Support\ActiveExercice;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Cache;
@@ -14,7 +15,27 @@ class DashboardDataService
 
     public function __construct()
     {
-        $this->annee = request()->get('annee', Carbon::now()->year);
+        // Année par défaut issue du contexte exercices : exercice actif de la session,
+        // sinon exercice « actif » courant, sinon année en cours.
+        $defaut = optional(Exercice::find(ActiveExercice::id()))->annee
+            ?? optional(Exercice::actifCourant())->annee
+            ?? Carbon::now()->year;
+
+        $this->annee = (int) request()->query('annee', $defaut);
+    }
+
+    /**
+     * Liste des années sélectionnables, issue des exercices existants (ordre décroissant).
+     *
+     * @return array<int, int>
+     */
+    protected function anneesExercices(): array
+    {
+        $annees = Exercice::query()->ordered()->pluck('annee')
+            ->map(fn ($a) => (int) $a)
+            ->all();
+
+        return $annees !== [] ? $annees : range((int) Carbon::now()->year, (int) Carbon::now()->year - 4);
     }
 
     /**
@@ -421,7 +442,7 @@ class DashboardDataService
         $budgetParDepartement = collect($this->getBudgetParDepartement());
 
         $maxActiviteCout = (float) max(1, (float) $topActivites->max('cout'));
-        $yearOptions = range((int) Carbon::now()->year, (int) Carbon::now()->year - 4);
+        $yearOptions = $this->anneesExercices();
         $totalActivitesStatut = array_sum($activitesParStatut);
 
         return [

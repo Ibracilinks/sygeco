@@ -1,16 +1,420 @@
-Objectif stratégique du PDDSS : Développer un système de financement permettant une meilleure mobilisation et utilisation des ressources financières pour la santé, une meilleure accessibilité aux services de santé, une gestion transparente et qui incite les prestataires et les utilisateurs à être plus efficients
-RS I	RS. I DES RESSOURCES FINANCIERES PLUS IMPORTANTES SONT MOBILISEES ET ALLOUEES EN TENANT COMPTE DES DISPARITES
-	Extrant 1.1 Le régime de l'assurance maladie universelle (RAMU) est opérationnel
-1	Organiser les cérémonies de lancement du RAMU à Bamako et dans les régions	Nombre de cérémonies	Rapports	X	X			DAGRH / SCRP	70,000,000
-2	Immatriculer 40 000 assurés du secteur public	Nombre de personnes immatriculées	Base de données	X	X	X	X	DAOGD/BR/PF	-
-3	Immatriculer 45 000 assurés du secteur privé	Nombre de personnes immatriculées	Base de données	X	X	X	X	DAOGD/BR/PF	-
-4	Immatriculer 10 000 indigents et leurs ayants droit	Nombre de personnes immatriculées	Base de données			X	X	DAOGD/BR/PF	-
-5	Immatriculer 5 000 assurés des populations spécifiques (bénéficiaires des gratuités légales)	Nombre de personnes immatriculées	Base de données			X	X	DAOGD/BR/PF	-
-6	Former les agents d'enrôlement de l'ANAM et de l'UTM au logiciel d'enrôlement MSSIB-GLI à Bamako et dans les régions	Nombre de personnes formées	Rapport		X			DAOGD	30,000,000
-7	Sensibiliser les membres des Bureaux des Centrales Syndicales des régions sur le RAMU	Nombre de personnes sensibilisées	Rapports	X	X	X	X	DAOGD/BR/CS/ DOCQS/ SCRP	55,000,000
-8	Sensibiliser les Comités Syndicaux des OGD et les Syndicats de la Santé sur la lutte contre la fraude	Nombre de personnes sensibilisées	Rapports		X	X	X	DAOGD/CS/SJC/ DOCQS/ SCRP	-
-9	Appuyer les agents chargés des opérations d'enrôlement des OGD (CMSS/INPS) sur le logiciel d'enrôlement (MSSIB-GLI) dans les régions et dans les cercles	Nombre de missions	Rapports			X	X	DAOGD/BR	46,000,000
-10	Réaliser 2 missions semestrielles de sensibilisation auprès des entreprises publiques et privées à Bamako et dans les régions pour susciter l'enrôlement des employés non encore immatriculés à l'assurance maladie	Nombre de campagnes	Rapports		X		X	DAOGD/ DOCQS/ SCRP/BR	33,900,000
-11	Conventionner 50 établissements de santé publics et privés	Nombre de conventions	Rapports	X	X	X	X	DOCQS/SJC	-
-12	Elaborer les textes relatifs à l'opérationnalisation du Régime d'Assurance Maladie Universelle (RAMU)	Nombre de textes	Nombre de textes	X	X	X	X	SJC/ /DAOGD/ DOCQS/DAI/ SAGS	-
-13	Mettre en place un groupe de travail pour élaborer le modèle des contrats d'objectifs et de moyens avec les OGD dans le cadre du RAMU	Groupe de travail	Décision de création/Rapport	X	X	X	X	SJC /DAOGD/ DOCQS/DAI/ SAGS	-
+"Objectif stratÃ©giqueÂ du PDDSS : DÃ©velopper un systÃ¨me de financement permettant une meilleure mobilisation et utilisation des ressources financiÃ¨res pour la santÃ©, une meilleure accessibilitÃ© aux services de santÃ©, une gestion transparente et qui incite les prestataires et les utilisateurs Ã  Ãªtre plus efficients",,,,,,,,,
+RS I,RS. I DES RESSOURCES FINANCIERES PLUS IMPORTANTES SONT MOBILISEES ET ALLOUEES EN TENANT COMPTE DES DISPARITES,,,,,,,,
+,Extrant 1.1 Le rÃ©gime de lâassurance maladie universelle (RAMU) est opÃ©rationnel ,,,,,,,,
+1,Organiser les cÃ©rÃ©monies de lancement du RAMU Ã  Bamako et dans les rÃ©gions,Nombre de cÃ©rÃ©monies,Rapports,X,X,,, DAGRH / SCRP,"70,000,000"
+2,Immatriculer 40 000 assurÃ©s du secteur public,Nombre de personnes immatriculÃ©es ,Base de donnÃ©es,X,X,X,X,DAOGD/BR/PF,-
+3,Immatriculer 45 000 assurÃ©s du secteur privÃ© ,Nombre de personnes immatriculÃ©es ,Base de donnÃ©es,X,X,X,X,DAOGD/BR/PF,-
+4,Immatriculer 10 000 indigents et leurs ayants droit ,Nombre de personnes immatriculÃ©es ,Base de donnÃ©es,,,X,X,DAOGD/BR/PF,-
+5,Immatriculer 5 000 assurÃ©s des populations spÃ©cifiques (bÃ©nÃ©ficiaires des gratuitÃ©s lÃ©gales),Nombre de personnes immatriculÃ©es ,Base de donnÃ©es,,,X,X,DAOGD/BR/PF,-
+6,Former les agents dâenrÃ´lement de lâANAM et de l'UTM au logiciel dâenrÃ´lement MSSIB-GLI Ã  Bamako et dans les rÃ©gions,Nombre de personnes formÃ©es ,Rapport,,X,,,DAOGD,"30,000,000"
+7,Sensibiliser les membres des Bureaux des Centrales Syndicales des rÃ©gions sur le RAMU ,Nombre de personnes sensibilisÃ©es,Rapports,X,X,X,X,DAOGD/BR/CS/ DOCQS/ SCRP,"55,000,000"
+8,Sensibiliser les ComitÃ©s Syndicaux des OGD et les Syndicats de la SantÃ© sur la lutte contre la fraude,Nombre de personnes sensibilisÃ©es,Rapports ,,X,X,X,DAOGD/CS/SJC/ DOCQS/ SCRP,-
+9,Appuyer les agents chargÃ©s des opÃ©rations d'enrÃ´lement des OGD (CMSS/INPS) sur le logiciel d'enrÃ´lement (MSSIB-GLI) dans les rÃ©gions et dans les cercles,Nombre de missions,Rapports ,,,X,X,DAOGD/BR,"46,000,000"
+10,RÃ©aliser 2 missions semestrielles de sensibilisation  auprÃ¨s des entreprises publiques et privÃ©es Ã  Bamako et dans les rÃ©gions pour susciter  l'enrÃ´lement des employÃ©s non encore immatriculÃ©s Ã  l'assurance maladie,Nombre de campagnes ,Rapports,,X,,X,DAOGD/ DOCQS/ SCRP/BR,"33,900,000"
+11,Conventionner 50 Ã©tablissements de santÃ©  publics et  privÃ©s,Nombre de conventions ,Rapports,X,X,X,X,DOCQS/SJC,-
+12,Elaborer les textes relatifs Ã  lâopÃ©rationnalisation du RÃ©gime dâAssurance Maladie Universelle (RAMU)Â ,Nombre de textes,Nombre de textes,X,X,X,X,SJC/ /DAOGD/ DOCQS/DAI/ SAGS,-
+13,Mettre en place un groupe de travail pour Ã©laborer le modÃ¨le  des contrats dâobjectifs et de moyens avec les OGD dans le cadre du RAMU,Groupe de travail ,DÃ©cision de crÃ©ation/Rapport,X,X,X,X,SJC /DAOGD/ DOCQS/DAI/ SAGS,-
+ TOTAL RS I,,,,,,,,,"234,900,000"
+RS II,RS. II LA GESTION FINANCIERE DU SECTEUR EST AMELIOREE,,,,,,,,
+,Extrant 2.1 Les allocations judicieuses de ressources financiÃ¨res ont permis dâamÃ©liorer la qualitÃ© des services offerts par la CANAM,,,,,,,,
+1,Evaluer et mettre Ã  la disposition de la CMSS la dotation de gestion technique,Montant de la dotation,Ordre de virement/ChÃ¨que,X,X,X,X,DAOGD/AC/ DBCGOQ,"40,000,000,000"
+2,Evaluer et mettre Ã  la disposition de l'INPS la dotation de gestion technique,Montant de la dotation,Ordre de virement/ChÃ¨que,X,X,X,X,DAOGD/AC/ DBCGOQ,"33,000,000,000"
+3,Evaluer et mettre Ã  la disposition de l'UTM la dotation de gestion technique,Montant de la dotation,Ordre de virement/ChÃ¨que,X,X,X,X,DAOGD/AC/ DBCGOQ,-
+4,Evaluer et mettre Ã  la disposition de l'ANAM la dotation de gestion technique,Montant de la dotation,Ordre de virement/ChÃ¨que,X,X,X,X,DAOGD/AC/ DBCGOQ,-
+5,Evaluer et mettre Ã  la disposition de la CMSS la dotation de gestion administrative,Montant de la dotation,Ordre de virement/ChÃ¨que,X,X,X,X,DAOGD/AC/ DBCGOQ,"3,349,857,820"
+6,Evaluer et mettre Ã  la disposition de l'INPS la dotation de gestion administrative,Montant de la dotation,Ordre de virement/ChÃ¨que,X,X,X,X,DAOGD/AC/ DBCGOQ,"3,978,282,000"
+7,Evaluer et mettre Ã  la disposition de l'UTM la dotation de gestion administrative,Montant de la dotation,Ordre de virement/ChÃ¨que,X,X,X,X,DAOGD/AC/ DBCGOQ,-
+8,Evaluer et mettre Ã  la disposition de l'ANAM la dotation de gestion administrative,Montant de la dotation,Ordre de virement/ChÃ¨que,X,X,X,X,DAOGD/AC/ DBCGOQ,-
+9,Effectuer 2 missions de vÃ©rifications semestrielles des paiements effectuÃ©s par l'OGD CMSS  aux  prestataires de soins conventionnÃ©s   ,Nombre de missions ,Rapports,,X,,X,DAOGD/AC/ DBCGOQ/ DAI ,-
+10,Effectuer 2 missions de vÃ©rifications semestrielles des paiements effectuÃ©s par l'OGD INPS  aux  prestataires de soins conventionnÃ©s   ,Nombre de missions ,Rapports,,X,,X,DAOGD/AC/ DBCGOQ/ DAI ,-
+11,Effectuer 2 missions de vÃ©rifications semestrielles des paiements effectuÃ©s par l'OGD ANAM  aux  prestataires de soins conventionnÃ©s  ,Nombre de missions ,Rapports,,X,,X,DAOGD/AC/ DBCGOQ/ DAI ,-
+12,Effectuer 2 missions de vÃ©rifications semestrielles des paiements effectuÃ©s par l'OGD UTM  aux  prestataires de soins conventionnÃ©s ,Nombre de missions ,Rapports,,X,,X,DAOGD/AC/ DBCGOQ/ DAI ,-
+13,Effectuer 2 pointages contradictoires semestriels de la dotation de gestion technique allouÃ©e Ã  l'INPS ,Nombre de missions ,Rapports,X,,X,,DAOGD/AC/ DBCGOQ/ DAI ,-
+14,Effectuer 2 pointages contradictoires semestriels de la dotation de gestion technique allouÃ©e Ã  la CMSS,Nombre de missions ,Rapports,X,,X,,DAOGD/AC/ DBCGOQ/ DAI ,-
+15,Effectuer 1 pointage contradictoire semestriel de la dotation de gestion technique allouÃ©e Ã  l'ANAM,Nombre de missions ,Rapport,,,X,,DAOGD/AC/ DBCGOQ/ DAI ,-
+16,Effectuer 1 pointage contradictoire semestriel de la dotation de gestion technique allouÃ©e Ã  l'UTM,Nombre de missions ,Rapport,,,X,,DAOGD/AC/ DBCGOQ/ DAI ,-
+17,Effectuer 2 pointages contradictoires semestriels de la dotation de gestion administrative allouÃ©e Ã  l'INPS,Nombre de missions,Rapports de mission,X,,X,,DAOGD/AC/ DBCGOQ,-
+18,Effectuer 2 pointages contradictoires semestriels de la dotation de gestion administrative allouÃ©e Ã  la CMSS,Nombre de missions,Rapports de mission,X,,X,,DAOGD/AC/ DBCGOQ,-
+19,Effectuer 1 pointage contradictoire semestriel de la dotation de gestion administrative allouÃ©e Ã  l'ANAM,Nombre de missions,Rapport de mission,,,X,,DAOGD/AC/ DBCGOQ,-
+20,Effectuer 1 pointage contradictoire semestriel de la dotation de gestion administrative allouÃ©e Ã  l'UTM,Nombre de missions,Rapport de mission,,,X,,DAOGD/AC/ DBCGOQ,-
+21,Effectuer      2      pointages contradictoires   semestriels des   reversements de cotisations   recouvrÃ©es par la CMSS,Nombre de missions,Rapports de mission,X,,X,,DAOGD/ AC/DBCGOQ/ DAI/ SJC,-
+22,Effectuer      2      pointages contradictoires   semestriels des   reversements de cotisations   recouvrÃ©es par l'INPS,Nombre de missions,Rapports de mission,X,,X,,DAOGD/ AC/DBCGOQ/DAI/ SJC,-
+23,Effectuer      1      pointage contradictoire   semestriel des   cotisations   recouvrÃ©es par l'ANAM,Nombre de missions,Rapport de mission,,,X,,DAOGD/ AC/DBCGOQ/ DAI/ SJC,-
+24,Effectuer      1     pointage contradictoire   semestriel des   cotisations   recouvrÃ©es par l'UTM,Nombre de missions,Rapport de mission,,,X,,DAOGD/ AC/DBCGOQ/ DAI/ SJC,-
+25,RÃ©aliser des missions de vÃ©rification des paiements effectuÃ©s par les OGD auprÃ¨s des prestataires de soins conventionnÃ©s  Ã  Bamako et dans les rÃ©gions ,Nombre de missions ,Rapports,X,X,X,X,DAOGD/ BR,"46,980,000"
+26,Suivre trimestriellement la liquidation des OGD Ã  Bamako,Nombre de missions ,Rapports,X,X,X,X,DAOGD,-
+27,Suivre trimestriellement la liquidation des OGD dans les rÃ©gions et assister les agents des Bureaux RÃ©gionaux sur la liquidation des feuilles de soins CMIE-CDI-PMI ,Nombre de missions,Rapports de mission,X,X,X,X,DAOGD/ DOCQS/BR,"43,050,000"
+28,Assurer la mise Ã  niveau des agents des OGD sur la nouvelle version de  liquidation et le paiement des feuilles de soins sur ACTIV PREMIUM Ã  Bamako et dans les rÃ©gions ,Nombre de cadres formÃ©s,Rapports,,X,,X,DAOGD/ DOCQS/BR,"18,000,000"
+29,"ContrÃ´ler et valider les feuilles de soins CMIE, CDI, PMI Bamako et rÃ©gions",Nombre de feuilles de soins contrÃ´les et validÃ©s,Rapports,X,X,X,X,DAOGD/DOCQS/ BR,-
+30,RÃ©aliser      des      missions semestrielles  de  suivi  des cotisations      auprÃ¨s      des employeurs publics et privÃ©s Ã  Bamako et dans les rÃ©gions,Nombre de missions,Rapports de mission,X,,X,,DAOGD/BR/PF,"45,380,000"
+31,RÃ©aliser   des   missions   de vÃ©rifications des cotisations    de l'Assurance Volontaire auprÃ¨s de lâOGD INPS  ainsi que des missions conjointes CANAM-INPS de contrÃ´le  et  de vÃ©rification  des  cotisations et des  comptes    cotisants des entreprises Ã  Bamako et dans les rÃ©gions,Nombre de missions,Rapports de mission,,X,,X,DAOGD/BR,"44,640,000"
+32,RÃ©aliser des missions conjointes de suivi des cotisations des fonctionnaires dÃ©tachÃ©s auprÃ¨s  des EPN avec la CMSS Ã  Bamako et dans les rÃ©gions,Nombre de missions,Rapports de mission,X,,X,,DAOGD,"24,640,000"
+33,Organiser un atelier d'information et de sensibilisation pour amener les membres de l'APBEF et du PATRONAT Ã  adhÃ©rer Ã  lâassurance maladie,Nombre d'atelier,Rapport,,,X,,DAOGD/AC/SJC/ /SCRP/DAGRH,"10,000,000"
+34,Organiser des rencontres rÃ©gionales d'Ã©changes avec les acteurs financiers chargÃ©s du recouvrement des cotisations de l'assurance maladie dans le cadre du suivi des cotisations de lâassurance maladie,Nombre de rencontres,Rapports,,X,,X,DAOGD/AC/SJC/ /SCRP/DAGRH,"27,000,000"
+35,Tenir   les   rÃ©unions   de   la commission   technique   du suivi du  recouvrement contentieux gÃ©rÃ© par lâINPS,Nombre de rÃ©unions,Comptes rendus de rÃ©union,,X,,X,DAOGD/AC/ SJC,-
+36,Effectuer 4 missions de suivi des assurÃ©s auprÃ¨s des structures publiques et privÃ©es Ã  Bamako,Nombre de missions,Rapports de mission,X,X,X,X,DAOGD,-
+37,Elaborer les comptes administratifs 2024,Compte administratif,Document,X,,,,DBCGOQ,-
+38,Ãlaborer le projet de budget 2026,Documents du projet de budget 2026,Rapports,,,X,,DBCGOQ,-
+39,Faire   une analyse sur les prÃ©visions Ã©conomiques et financiÃ¨res,Nombre d'analyses,Rapport,,,X,,DBCGOQ,-
+40,Suivre mensuellement   l'utilisation des ressources budgÃ©taires allouÃ©es,Nombre de suivis,Rapports,X,X,X,X,DBCGOQ,-
+41,"Effectuer 1 mission pour appuyer les Bureaux RÃ©gionaux de la CANAM Ã  l'Ã©laboration de leurs documents de programmation, d'estimation des dÃ©penses et du budget de 2026",Nombre de missions,Rapports,,,X,,DBCGOQ,"13,000,000"
+42,Ajuster les prÃ©visions en fonction de l'Ã©volution des dÃ©penses et des recettes en faisant une rÃ©union de rÃ©vision budgÃ©taire ,Nombre d'ajustement,Rapport,,,X,,DBCGOQ,-
+43,Analyser les Ã©carts entre le budget prÃ©vu et le budget exÃ©cutÃ©,Nombre d'analyses,Rapports,,X,,X,DBCGOQ,-
+44,Elaborer et mettre en Åuvre une procÃ©dure du recouvrement forcÃ© des crÃ©ances sociales,ProcÃ©dure,ProcÃ©dure,,X,,, DAOGD /AC/SJC ,-
+45,RÃ©aliser 2 missions de suivi des cotisations au sein des OGD et auprÃ¨s des employeurs publics et privÃ©s de la rÃ©gion de Kayes,Nombre de missions,Rapports,,X,,X,BR KAYES/DAOGD,"4,505,000"
+46,RÃ©aliser 2 missions de supervision de la liquidation au niveau des OGD Ã  Kayes,Nombre de supervisions,Rapports,X,,,X,BR KAYES/DAOGD,-
+47,RÃ©aliser 2 missions de contrÃ´le de paiements effectuÃ©s par les OGD aux prestataires de soins conventionnÃ©s de la rÃ©gion de Kayes,Nombre de missions,Rapports,,X,,X,BR KAYES/DAOGD,"4,505,000"
+48,RÃ©aliser 2 missions de suivi des cotisations au sein des OGD et auprÃ¨s des employeurs publics et privÃ©s de la rÃ©gion de Koulikoro,Nombre de missions,Rapports,,X,,X,BR KOULIKORO/ DAOGD,"4,505,000"
+49,RÃ©aliser 2 missions de supervision de la liquidation au niveau des OGD Ã  Koulikoro,Nombre de supervisions,Rapports,X,,,X,BR KOULIKORO/ DAOGD,-
+50,RÃ©aliser 2 missions de contrÃ´le de paiements effectuÃ©s par les OGD aux prestataires de soins conventionnÃ©s de la rÃ©gion de Koulikoro,Nombre de missions,Rapports,,X,,X,BR KOULIKORO,"4,505,000"
+51,RÃ©aliser 2 missions de suivi des cotisations au sein des OGD et auprÃ¨s des employeurs publics et privÃ©s de la rÃ©gion de Sikasso,Nombre de missions ,Rapports,,X,,X,BR SIKASSO/ DAOGD,"4,505,000"
+52,RÃ©aliser 2 missions de supervision de la liquidation au niveau des OGD Ã  Sikasso,Nombre de missions ,Rapports,X,,,X,BR SIKASSO,-
+53,RÃ©aliser 2 missions de contrÃ´le de paiements effectuÃ©s par les OGD aux prestataires de soins conventionnÃ©s de la rÃ©gion de Sikasso,Nombre de missions ,Rapports,,X,,X,BR SIKASSO/ DAOGD,"4,505,000"
+54,RÃ©aliser 2 missions de suivi des cotisations au sein des OGD et auprÃ¨s des employeurs publics et privÃ©s de la rÃ©gion de SÃ©gou,Nombre de missions,Rapports,,X,,X,BR SEGOU/ DAOGD,"5,435,000"
+55,RÃ©aliser 2 missions de supervision de la liquidation au niveau des OGD dans la rÃ©gion de SÃ©gou,Nombre de missions,Rapports,X,,,X,BR SEGOU,-
+56,RÃ©aliser 2 missions de contrÃ´le de paiements effectuÃ©s par les OGD aux prestataires de soins de la rÃ©gion de SÃ©gou,Nombre de missions,Rapports,,X,,X,BR SEGOU/ DAOGD,"5,435,000"
+57,RÃ©aliser 2 missions de suivi des cotisations au sein des OGD et auprÃ¨s des employeurs publics et privÃ©s de la rÃ©gion de Mopti,Nombre de missions ,Rapports,,X,,X,BR MOPTI/DAOGD,"4,505,000"
+58,RÃ©aliser 2 missions de supervision de la liquidation au niveau des OGD Ã  Mopti,Nombre de missions ,Rapports,X,,,X,BR MOPTI,-
+59,"RÃ©aliser 2 missions de contrÃ´le de paiements effectuÃ©s par les OGD aux prestataires de soins conventionnÃ©s de la RÃ©gion de Mopti (2 HÃ´pitaux, 8 districts sanitaires et 17 Pharmacies) ",Nombre de missions ,Rapports,,X,,X,BR MOPTI/DAOGD,"4,505,000"
+60,RÃ©aliser 2 missions de suivi des cotisations au sein des OGD et auprÃ¨s des employeurs publics et privÃ©s de la rÃ©gion de Tombouctou,Nombre de missions ,Rapports,,X,,X,PF TOMBOUCTOU/ DAOGD,"1,500,000"
+61,RÃ©aliser 2 missions de supervision de la liquidation au niveau des OGD Ã  Tombouctou,Nombre de missions ,Rapports,X,,,X,PF TOMBOUCTOU,-
+62,RÃ©aliser 2 missions de contrÃ´le de paiements effectuÃ©s par les OGD aux prestataires de soins conventionnÃ©s de la rÃ©gion de Tombouctou (2 Ã  Tombouctou et 2 dans les cercles),Nombre de missions ,Rapports,,X,,X,PF TOMBOUCTOU/ DAOGD,"1,500,000"
+63,RÃ©aliser 2 missions de suivi des cotisations au sein des OGD et auprÃ¨s des employeurs publics et privÃ©s de la rÃ©gion de Gao,Nombre de missions ,Rapports,,X,,X,PF GAO/DAOGD,"1,500,000"
+64,RÃ©aliser 2 missions de supervision de la liquidation au niveau des OGD Ã  Gao,Nombre de missions ,Rapports,X,,,X,PF GAO,-
+65,"RÃ©aliser 2 missions de contrÃ´le de paiements effectuÃ©s par les OGD aux prestataires de soins conventionnÃ©s de la rÃ©gion  de Gao (1  HÃ´pital, 3 districts sanitaires et 11 Pharmacies) ",Nombre de missions ,Rapports,,X,,X,PF GAO/DAOGD,"1,500,000"
+SOUS TOTAL 1,,,,,,,,,"80,653,739,820"
+,Extrant 2.2 Les actions de ContrÃ´le de Gestion ont permis dâamÃ©liorer les performances de la CANAM,,,,,,,,
+66,Suivre mensuellement les indicateurs de performance des diffÃ©rents processus et structures de la CANAM,Nombre de suivis,Rapport de suivis des processus ,X,X,X,X,DBCGOQ,-
+67,Mettre en place les indicateurs de performance (KPI) supplÃ©mentaires pour affiner le suivi des opÃ©rations,Nombre d'indicateurs,Rapports,X,X,X,X,DBCGOQ,-
+68,PrÃ©parer les rapports d'analyse de la performance ,Nombre de rapports,Documents,X,X,X,X,DBCGOQ,-
+69,Elaborer les rapports sur les  Ã©tats dâexÃ©cution du budget au 31 dÃ©cembre 2024 et au 30 juin 2025,Nombre de rapports,Documents,X,,X,,DBCGOQ,-
+70,Elaborer les rapports d'activitÃ©s au 31 dÃ©cembre 2024 et au 30 juin 2025,Nombre de rapports,Documents,X,,X,,DBCGOQ,-
+71,Effectuer 3 missions (Ã©valuation des performances Ã  travers le suivi des indicateurs et la supervision des activitÃ©s opÃ©rationnelles des structures centrales et rÃ©gionales au titre de l'exercice 2024 et Ã  mi-parcours de l'exercice 2025),Nombre de missions,Rapports,X,X,,X,DBCGOQ,"18,000,000"
+72,Ãlaborer le programme dâactivitÃ©s 2026,Programme d'activitÃ©s 2026                    ,Documents,,,X,,DBCGOQ,-
+SOUS TOTAL 2,,,,,,,,,"18,000,000"
+TOTAL RS II,,,,,,,,,"80,671,739,820"
+,RS. III LA COUVERTURE DES POPULATIONS PAR LES SYSTEMES DE PROTECTION SOCIALE A AUGMENTE,,,,,,,,
+,Extrant 3.1 Des prestations de soins de qualitÃ© sont fournies aux assurÃ©s ,,,,,,,,
+1,Effectuer 2  missions de suivi et  contrÃ´le de l'application des procÃ©dures de traitement des feuilles de soins et des bordereaux de liquidation au niveau des OGD,Nombre de structures contrÃ´lÃ©es,Rapports,,X,,X,DOCQS/DAOGD,-
+2,Effectuer le contrÃ´le mÃ©dical sur 10Â 000 feuilles de soins maladie et dâexamen Ã  Bamako ,Nombre de feuilles de soins contrÃ´lÃ©s,Rapports,X,X,X,X,DOCQS,-
+3,"Evaluer la qualitÃ© des soins au sein de 50 Ã©tablissements publics et privÃ©s conventionnÃ©s par la CANAM Ã  Bamako, Mopti, Tombouctou et Gao",Nombre d'Ã©tablissements,Rapports,X,X,X,X,DOCQS,"3,807,745"
+4,Organiser 10 rencontres des commissions paritaires entre la CANAM et les structures conventionnÃ©es de Bamako,Nombre de rencontres organisÃ©es,Rapports,X,X,X,X,DOCQS,-
+5,Organiser un atelier de rÃ©vision de la liste des mÃ©dicaments au  niveau du secteur privÃ© ,Nombre d'atelier,Rapport,,,X,,DOCQS,"30,000,000"
+6,Organiser un atelier de rÃ©vision des nomenclatures des actes mÃ©dicaux et de biologie  au  niveau des secteurs publics et privÃ©s ,Nombre d'atelier,Rapport,X,,,,DOCQS,"30,000,000"
+7,"Imprimer la liste des mÃ©dicaments, des actes mÃ©dicaux et biologiques",Nombre d'impression,Contrat / PV de rÃ©ception ,,,X,X,DOCQS/DAGRH,"20,000,000"
+8, Informer et sensibiliser les prestataires de santÃ© sur la prescription rationnelle,Nombre d'atelier,Rapport,,,X,,DOCQS/SCRP,"30,000,000"
+9,Promouvoir les activitÃ©s de la promotion de la santÃ©,Nombre d'activitÃ©s,Rapports ,,,X,X,DOCQS/SCRP,"30,000,000"
+10,Adopter de nouvelles mesures de maitrise du poste mÃ©dicament,Les mesures sont prises,Rapports ,,X,X,X,DOCQS,-
+11,Renforcer le plateau technique des structures sanitaires en partenariat avec l'Association World Health Partners,Nombre d'activitÃ©s,Rapports,,,X,X,DOCQS/DAGRH,"300,000,000"
+12,AcquÃ©rir 320 000 carnets de feuilles de soins maladie,QuantitÃ© de carnets de feuilles de soins ,Contrat / PV de rÃ©ception ,X,X,X,X,DAGRH/ DOCQS ,"1,300,000,000"
+13,AcquÃ©rir 30 000 carnets de demi-volet,QuantitÃ© de carnets de demi-volet de feuilles de soins,Contrat / PV de rÃ©ception,,,X,,DAGRH/ DOCQS,"60,180,000"
+14,AcquÃ©rir 50 000 carnets de feuilles d'examen,QuantitÃ© de carnets d'examen,Contrat / PV de rÃ©ception,X,X,X,X,DAGRH/ DOCQS,"165,200,000"
+15,AcquÃ©rir 70 cachets secs complets ,Nombre de cachets secs ,Contrat / PV de rÃ©ception ,,,X,,DAGRH/ DOCQS ,"24,000,000"
+16,AcquÃ©rir 140 manches pour cachets secs ,Nombre de manches ,Contrat / PV de rÃ©ception ,,,X,,DAGRH/ DOCQS ,"24,800,000"
+17,"Appuyer et suivre 100 structures sanitaires conventionnÃ©es Ã  Bamako, Mopti, Tombouctou et Gao",Nombre de structures,Rapports,X,X,X,X,DOCQS/               BR MOPTI/ TOMBOUCTOU/ GAO,"13,015,490"
+18,"Effectuer 50 contrÃ´les mÃ©dicaux au sein des structures conventionnÃ©es de Bamako, de Mopti (le CSREF de Mopti, l'HÃ´pital Mali Garvardo, et les CSREF de Douentza, Bandiagara et Koro), de Tombouctou (04 Ã  Tombouctou et 04 dans les cercles) et de Gao (CSREF de Gao, Ansongo, Bourem, Ansongo, Almoustrat l'HÃ´pital de Gao, Les CSREF de Kidal et de MÃ©naka) ",Nombre de contrÃ´les mÃ©dicaux,Rapports,X,X,X,X,DOCQS/               BR MOPTI/ TOMBOUCTOU/ GAO,"13,015,490"
+19,"Effectuer le contrÃ´le mÃ©dical sur 200 assurÃ©s dont 50 assurÃ©s grands consommateurs (avis mÃ©dicaux, autorisation de prise en charge et contrÃ´le de prestations) Ã  Bamako, Mopti (Ã  l'HÃ´pital SOMINE DOLO de Mopti, lâHÃ´pital Mali Garvardo, et les CSREF de Bandiagara, Koro et Djenne), Tombouctou (dont 10 Ã  Tombouctou et 05 dans les cercles) et Gao (Ã  l'HÃ´pital Hagadoumbou Moulaye de Gao, CSREF de Kidal et MÃ©naka)  ",Nombre d'assurÃ©s contrÃ´lÃ©s,Rapports,X,X,X,X,DOCQS/               BR MOPTI/ TOMBOUCTOU/ GAO,"13,015,490"
+20,"Effectuer 50 visites techniques des nouvelles structures sanitaires Ã  conventionner dans le district de Bamako, Mopti, Tombouctou et Gao",Nombre de visites techniques ,Rapports,X,X,X,X,DOCQS/               BR MOPTI/ TOMBOUCTOU/ GAO,"7,615,490"
+21,"Former 60 prestataires de soins conventionnÃ©s de Bamako, Mopti, Tombouctou et Gao sur la prise en charge des assurÃ©s (50 structures nouvellement conventionnÃ©es et 10 structures Ã  mettre Ã  niveau)",Nombre de prestataires conventionnÃ©s    formÃ©s                    ,Rapports,X,X,X,X,DOCQS/               BR MOPTI/ TOMBOUCTOU/ GAO,"5,815,490"
+22,Effectuer le contrÃ´le mÃ©dical au sein de 5 structures conventionnÃ©es  dans la rÃ©gion de Kayes,Nombre de structures contrÃ´lÃ©es,Rapports,X,X,X,X,BR KAYES/DOCQS,"4,505,000"
+23,"Effectuer le contrÃ´le mÃ©dical sur 130 assurÃ©s dans la ville de Kayes (avis mÃ©dicaux, autorisation de prise en charge et contrÃ´le de prestations)",Nombre d'assurÃ©s contrÃ´lÃ©s,Rapports,X,X,X,X,BR KAYES,-
+24,Effectuer des visites techniques au sein de 10 structures sanitaires Ã  conventionner dans la rÃ©gion de Kayes,Nombre de visites techniques,Rapports,X,X,X,X,BR KAYES,"2,460,000"
+25,Former 10 nouvelles structures conventionnÃ©es sur les procÃ©dures de prise en charge des assurÃ©s et la facturation dans la rÃ©gion de Kayes,Nombre de prestataires formÃ©s,Rapports,X,X,X,X,BR KAYES,"2,460,000"
+26,Mettre en Åuvre le plan de relance et de renforcement de  15 CSCOM dans la rÃ©gion de Kayes,Nombre de CSCOM relancÃ©s et renforcÃ©s,Rapports,X,X,X,X,BR KAYES,"4,505,000"
+27,Appuyer et suivre 20 structures sanitaires conventionnÃ©es dans la rÃ©gion de Kayes,Nombre d'activitÃ©s,Rapports,X,X,X,X,BR KAYES,"3,067,500"
+28,Effectuer le contrÃ´le mÃ©dical au sein de 05 structures conventionnÃ©es Ã  Koulikoro (5 pharmacies),Nombre de structures contrÃ´lÃ©es,Rapports,X,X,X,X,BR KOULIKORO,"4,505,000"
+29,"Effectuer le contrÃ´le mÃ©dical sur 100 assurÃ©s (avis mÃ©dicaux, autorisation de prise en charge et contrÃ´le de prestations)",Nombre d'assurÃ©s contrÃ´lÃ©s,Rapports,X,X,X,X,BR KOULIKORO,-
+30,Effectuer des visites techniques au sein de 20 structures sanitaires Ã  conventionner dans la rÃ©gion de Koulikoro,Nombre de visites techniques,Rapports,X,X,X,X,BR KOULIKORO,"2,540,000"
+31,Former 20 prestataires de soins conventionnÃ©s sur les procÃ©dures de prise en charge des assurÃ©s et la facturation dans la rÃ©gion de Koulikoro,Nombre de prestataires formÃ©s,Rapports,X,X,X,X,BR KOULIKORO,"2,540,000"
+32,Mettre en Åuvre le plan de relance et de renforcement de  20 CSCOM dans la rÃ©gion de Koulikoro,Nombre de CSCOM relancÃ©s et renforcÃ©s,Rapports,X,X,X,X,BR KOULIKORO,"4,505,000"
+33,Organiser des activitÃ©s dâaccompagnement des professionnels et des Ã©tablissements de santÃ© dans le cadre de la gestion du risque dans la rÃ©gion de Koulikoro,Nombre d'activitÃ©s,Rapports,X,X,X,X,BR KOULIKORO,"4,505,000"
+34,Effectuer le contrÃ´le mÃ©dical au sein de  05 structures conventionnÃ©es dans la rÃ©gion de Sikasso (3 Ã  Sikasso et 2 dans les cercles),Nombre de missions ,Rapports,X,X,X,X,BR SIKASSO/DOCQS,"2,666,000"
+35,"Effectuer le contrÃ´le mÃ©dical sur 100 assurÃ©s (avis mÃ©dicaux, autorisation de prise en charge et le contrÃ´le des prestations)",Nombre d'assurÃ©s contrÃ´les,Rapports,X,X,X,X,BR SIKASSO,-
+36,"Effectuer la visite technique au sein de 10 structures sanitaires Ã  conventionner dans la rÃ©gion de Sikasso/ 03 Pharmacies Ã  Sikasso/ 02  Cliniques ou Cabinets Ã  Koutiala/02 Cliniques ou Cabinets Ã  Bougouni/01 Clinique ou Cabinet  Ã  Kadiolo/01 Clinique ou Cabinet Ã  Yanfolila,  01 Clinique ou Cabinet Ã  KolondiÃ¨ba",Nombre de missions ,Rapports,X,X,X,X,BR SIKASSO,"1,270,000"
+37,Former 10 prestataires de soins conventionnÃ©s sur les procÃ©dures de prise en charge des assurÃ©s et la facturation dans la rÃ©gion de Sikasso ,Nombre  structures,Rapports,X,X,X,X,BR SIKASSO,"1,270,000"
+38,Mettre en Åuvre le plan de relance et de renforcement de 20 CSCOM  dans la rÃ©gion de Sikasso,Nombre structures,Rapports,X,X,X,X,BR SIKASSO,"4,817,500"
+39,Appuyer et suivre 30 structures sanitaires conventionnÃ©es dans la rÃ©gion de Sikasso,Nombre structures,Rapports,X,X,X,X,BR SIKASSO,"3,067,500"
+40,Effectuer le contrÃ´le mÃ©dical au sein de 5 structures sanitaires conventionnÃ©es dans la rÃ©gion de SÃ©gou ,Nombre de contrÃ´les,Rapports,,X,,X,BR SEGOU,"2,697,500"
+41,"Effectuer le contrÃ´le mÃ©dical sur 1000 assurÃ©s (prestations sous AP avis mÃ©dicaux, autorisations de prise en charge ALD) dans la rÃ©gion de SÃ©gou",Nombre de contrÃ´les ,Formulaires,X,X,X,X,BR SEGOU,-
+42,Effectuer des visites techniques au sein de 10 structures sanitaires Ã  conventionner dans la rÃ©gion de SÃ©gou ,Nombre de visites techniques,Rapports,X,X,X,X,BR SEGOU,"1,335,000"
+43,Former 10 nouvelles  structures sanitaires sur les procÃ©dures de prise en charge des assurÃ©s et la facturation dans la rÃ©gion de SÃ©gou,Nombre de prestataires formÃ©s,Rapports,X,X,X,X,BR SEGOU,"1,335,000"
+44,"Mettre en Åuvre le plan de relance et de renforcement de 10 CSCOM dans la rÃ©gion de SÃ©gou (2 Ã  Baraoueli, 1 Ã  Niono, 2 Ã  Bla, 3 Ã  San et 2 Ã  Markala)",Nombre de CSCOM relancÃ©s ,Rapports,X,,X,,BR SEGOU,"1,487,500"
+45,Appuyer et suivre 30 structures sanitaires conventionnÃ©es dans la rÃ©gion de SÃ©gou,Nombre de structures sanitaires,"Rapports, canevas, bordeaux",X,X,X,X,BR SEGOU,"2,297,500"
+46,Mettre en Åuvre le plan de relance et de renforcement de 12 CSCOM (les Districts sanitaires) dans la rÃ©gion de Mopti,Nombre structures,Rapports,X,X,X,X,BR MOPTI/DOCQS,"4,255,000"
+47,Mettre en Åuvre le plan de relance et de renforcement de  8 CSCOM dans la rÃ©gion de Tombouctou  (2 Ã  Tombouctou et 6 dans les cercles),Nombre structures,Rapports,X,X,X,X,PF TOMBOUCTOU/ DOCQS,"1,400,000"
+48,Mettre en Åuvre le plan de relance et de renforcement de 15 CSCOM (les Districts sanitaires) dans la rÃ©gion de Gao ,Nombre structures,Rapports,X,X,X,X,PF GAO/DOCQS,"1,400,000"
+49,Informer et sensibiliser les prescripteurs sur la prescription rationnelle dans les rÃ©gions,Nombre d'information et de sensibilisation,Rapports,X,X,X,X,BR/PF,-
+SOUS TOTAL 1,,,,,,,,,"2,135,356,195"
+,Extrant 3.2 La gestion de la CANAM est amÃ©liorÃ©e,,,,,,,,
+50,Elaborer le compte de gestion 2024,Compte de gestion,Document,,X,,, AC/ DBCGOQ ,-
+51,Elaborer les Etats Financiers 2024,Etats financiers,Documents,,X,,, AC,-
+52,Payer les honoraires du commissaire aux comptes,Cabinet,Contrat,,,X,,AC/DBCGOQ/ DAGRH,"25,000,000"
+53,Payer les autres dÃ©penses techniques de la CANAM,Montant ,ChÃ¨que,X,X,X,X, AC/ DBCGOQ ,"9,044,708,494"
+54,Payer les vignettes des moyens de transport,Montant,Facture,X,,,,AC/DAGRH,"7,000,000"
+55,RÃ©gler les salaires et accessoires du personnel,Montant,Etat des salaires,X,X,X,X, AC/DAGRH ,5927400102
+56,RÃ©gler les primes de rendement,Montant,Etat de paiement,X,X,X,X, AC/DAGRH ,834487055
+57,RÃ©gler la prime de bilan de l'exercice 2024,Montant,Etat de paiement,,,X,, AC/DAGRH ,"250,000,000"
+58,RÃ©gler les autres charges du personnel,Montant,Etat de paiement,X,X,X,X, AC/DAGRH ,"135,000,000"
+59,RÃ©gler les Charges sociales liÃ©es aux salaires et primes de rendement et d'intÃ©ressement,Montant,Etat de retenue,X,X,X,X, AC/DAGRH ,2948647122
+60,RÃ©gler les charges fiscales ,Montant,Etat de retenue,X,X,X,X, AC/DAGRH ,4118546333
+61,"RÃ©gler les perdiems des gardes, infirmiers",Montant,Etat de retenue,X,X,X,X, AC/DAGRH ,"35,000,000"
+62,RÃ©gler les frais d'acte de justice,Montant,Facture,X,X,X,X,AC/SJC,"100,000,000"
+63,RÃ©gler les charges financiÃ¨res de l'exercice 2025,Montant,RelevÃ©s bancaires,X,X,X,X, AC/ DBCGOQ ,"350,000,000"
+64,RÃ©gler les factures dâeau ,Montant,Factures,X,X,X,X, AC/ DBCGOQ ,"10,500,000"
+65,RÃ©gler les factures dâÃ©lectricitÃ©,Montant,Factures,X,X,X,X, AC/ DBCGOQ ,"70,000,000"
+66,RÃ©gler les factures dâinternet et tÃ©lÃ©phone,Montant,Factures,X,X,X,X, AC/ DBCGOQ ,"215,000,000"
+67,RÃ©gler les frais de rÃ©ceptions et rÃ©unionsÂ ,Montant,Factures/ Rapports,X,X,X,X,AC/DAGRH,"30,000,000"
+68,Faire le pointage trimestriel des donnÃ©es financiÃ¨res et budgÃ©taires,Nombre de sÃ©ances,Rapports,X,X,X,X,AC/DBCGOQ,-
+69,Recruter un cabinet dâassistance fiscale ,Cabinet,Contrat,,,X,,AC/DAGRH,"14,900,000"
+70,Recruter un cabinet pour la rÃ©alisation de la Revue Comptable 2024,Cabinet,Contrat,X,,,,AC/DAGRH,"15,000,000"
+71,Recruter un cabinet pour la poursuite de la revue de des comptes de crÃ©ances de la CANAM,Cabinet,Contrat,X,,,,AC/DAGRH,"14,800,000"
+72,RÃ©aliser l'Ã©tude architecturale et technique des siÃ¨ges des Bureaux RÃ©gionaux,Nombre d'Ã©tudes,Plan ,,,X,,AC/DAGRH,"30,000,000"
+73,Approvisionner la RÃ©gie d'avance,Montant,ChÃ¨que,X,X,X,X, AC/ DBCGOQ ,"100,000,000"
+74,Sâacquitter des cotisations annuelles de la CIPRES et de l'AISS au titre de l'exercice 2025,Montant des cotisations,Ordre de virement,,X,,, AC/ DBCGOQ ,"95,000,000"
+75,Assurer la dotation en carburants et lubrifiants,Montant,Factures,X,X,X,X, AC/ DBCGOQ ,"650,000,000"
+76,Effectuer une mission de contrÃ´le semestriel du patrimoine Ã  Bamako et dans les rÃ©gions,Nombre de missions,Rapport de mission,,,X,, AC/DAGRH/ DBCGOQ/ DAI ,"45,000,000"
+77,Effectuer l'inventaire permanent du patrimoine Ã  Bamako et dans les RÃ©gions,Nombre d'inventaires,Rapport,,,,X, AC/DAGRH/ DBCGOQ/ DAI ,"44,000,000"
+78,AcquÃ©rir des parcelles dans les rÃ©gions pour le siÃ¨ge des Bureaux RÃ©gionaux de la CANAM,Nombre de parcelles acquises,Titres de propriÃ©tÃ©,,,X,,AC/BR/ DAGRH,"300,000,000"
+79,RÃ©aliser les Ã©valuations annuelles des performances,Nombre de personnes Ã©valuÃ©es,Fiches d'Ã©valuations,,,,X,DAGRH,-
+80,"RÃ©aliser des missions trimestrielles auprÃ¨s des Bureaux RÃ©gionaux (atteinte des objectifs individuels, gestion du personnel, conditions de travail)",Nombre de missions,Rapports de mission,Â X,X,Â X,X,DAGRH,"40,000,000"
+81,RÃ©aliser des missions de contrÃ´le de prÃ©sence hebdomadaire dans les Espaces AMO de Bamako,Nombre de missions,Rapports de mission,X,X,X,X,DAGRH,-
+82,RÃ©aliser une mission de mise en place d'un plan de classement et de suivis dans les Bureaux RÃ©gionaux ,Nombre de missions rÃ©alisÃ©es,Rapports de mission,X,X,,X,DAGRH,"15,000,000"
+83,RÃ©aliser des visites de terrain de la Direction GÃ©nÃ©rale dans les Bureaux RÃ©gionaux,Nombre de visite,Rapports,,X,X,X,DAGRH,"30,000,000"
+84,Mettre en Åuvre le cadre organique 2021-2025 ,Nombre de rÃ©affectation,DÃ©cisions,,X,,,DAGRH,-
+85,Mettre Ã  jour le rÃ¨glement intÃ©rieur ,Nombre de rÃ©union,Rapport,X,,,,DAGRH,-
+86,Organiser une rencontre semestrielle dans le cadre de la politique du dialogue social,Nombre de rencontre,Rapport ,,X,,,DAGRH,"15,000,000"
+87,Elaborer un bilan social,Rapport de bilan,Rapport,,,,X,DAGRH,-
+88,Tenir les rÃ©unions de la commission d'avancement aux choix,Nombre de rÃ©union,Rapport,,,,X,DAGRH,"15,000,000"
+89,RÃ©viser le projet de plan de carriÃ¨re,Nombre de rÃ©union,Rapport,X,,,,DAGRH,"15,000,000"
+90,Assurer le nettoyage des locaux ,Nombre de personnes mises Ã  disposition,Contrat,X,X,X,X,DAGRH,"90,000,000"
+91,Installer le rÃ©seau informatique et ondulÃ© sur les sites de la CANAM,Nombre de piÃ¨ces,PV de rÃ©ception,,X,,,DAGRH/DSI,PM
+92,AcquÃ©rir des piÃ¨ces de rechange pour les photocopieuses,Nombre de piÃ¨ces ,PV de rÃ©ception,,X,,,DAGRH,"24,800,000"
+93,AcquÃ©rir les matÃ©riels de plomberie et d'Ã©lectricitÃ©,Nombre et nature des piÃ¨ces,Contrat/Rapport,,X,,,DAGRH,"30,000,000"
+94,AcquÃ©rir des mobiliers de bureau ,Nombre de mobiliers de bureau ,PV de rÃ©ception,,X,,,DAGRH,"200,000,000"
+95,AcquÃ©rir des vÃ©hicules et des motos,Nombre de vÃ©hicules/ Nombre de motos,PV de rÃ©ception,,,X,,DAGRH,"450,000,000"
+96,"AcquÃ©rir des imprimÃ©s (papiers entÃªte,â¦)",QuantitÃ© d'imprimÃ©s,PV de rÃ©ception,,,X,,DAGRH,"24,800,000"
+97,AcquÃ©rir des produits alimentaires,Nombre et nature des produits ,PV de rÃ©ception,X,,,,DAGRH,"90,000,000"
+98,AcquÃ©rir des climatiseurs inverter ,Nombre de climatiseurs ,PV de rÃ©ception,,X,,,DAGRH,"20,000,000"
+99,"AcquÃ©rir des petits matÃ©riels, Ã©lectromÃ©nagers et outillages ",Nombre et nature des matÃ©riels,PV de rÃ©ception,,X,,,DAGRH,"10,000,000"
+100,AcquÃ©rir des batteries pour les vÃ©hicules,Nombre de batteries ,PV de rÃ©ception,X,,,,DAGRH,"12,000,000"
+101,AcquÃ©rir des batteries pour les groupes Ã©lectrogÃ¨nes ,Nombre de batteries ,PV de rÃ©ception,X,,,,DAGRH,"11,000,000"
+102,AcquÃ©rir des produits hygiÃ©niques et dÃ©sinfectants,Nombre de produits ,PV de rÃ©ception,X,,,,DAGRH,"15,000,000"
+103,AcquÃ©rir des piÃ¨ces de rechange pour les climatiseurs  ,Nombre de piÃ¨ces ,PV de rÃ©ception,,X,,,DAGRH,"10,000,000"
+104,AcquÃ©rir des fournitures de bureau ,Nombre de fournitures ,PV de rÃ©ception,X,,,,DAGRH,"90,000,000"
+105,"AcquÃ©rir du matÃ©riel de stockage, des boÃ®tes dâarchives ",Nombre de boÃ®tes d'archives,PV de rÃ©ception,,X,,,DAGRH,"15,000,000"
+106,AcquÃ©rir des linges et vÃªtements,Nombre de linges et vÃªtements,PV de rÃ©ception,X,,,,DAGRH,"30,000,000"
+107,AcquÃ©rir des pneus pour les vÃ©hicules,Nombre de pneus ,PV de rÃ©ception,,X,,,DAGRH,"50,000,000"
+108,AcquÃ©rir des piÃ¨ces rechange pour les groupes Ã©lectrogÃ¨nes ,Nombre de piÃ¨ces ,PV de rÃ©ception,,X,,,DAGRH,"30,000,000"
+109,AcquÃ©rir des piÃ¨ces rechange pour les ascenseurs,Nombre de piÃ¨ces,Contrat / Rapport,,X,,,DAGRH,"20,000,000"
+110,AcquÃ©rir des panneaux solaires pour la salle serveur et les sites d'Espace AMO Ã  Bamako,Nombre de panneaux solaires,Contrat,,X,,,DAGRH,"60,000,000"
+111,Recruter un cabinet pour la revue des marchÃ©s 2024 ,Cabinet,Contrat,,,X,,DAGRH,"8,000,000"
+112,Recruter un cabinet pour lâanalyse de vulnÃ©rabilitÃ©s et tests d'intrusions du systÃ¨me dâinformation de la CANAM  ,Cabinet,Contrat ,X,,,,DAGRH/DSI,"98,500,000"
+113,Recruter un cabinet pour lâimplantation du dispositif de gestion des comptes par portefeuilles,Cabinet,Contrat ,X,,,,DAGRH/DSI/ DAOGD,"180,000,000"
+114,Recruter un prestataire pour lâacheminement des courriers et matÃ©riels,Prestataire,Contrat,X,X,X,X,DAGRH,"100,000,000"
+115,Recruter un restaurateur pour assurer le service traiteur lors des ateliers et des formations ,Restaurateur,Contrat,X,X,X,X,DAGRH,PM
+116,Louer une salle de confÃ©rence disposant d'un service traiteur ,Salle de confÃ©rence,Contrat,X,X,X,X,DAGRH,PM
+117,Assurer la surveillance et le gardiennage des locaux ,Nombre d'agents mis Ã  disposition,Contrat,X,X,X,X,DAGRH,"100,000,000"
+118,Assurer la pulvÃ©risation et la dÃ©ratisation des locaux ,Nombre d'interventions,Contrat,X,X,X,X,DAGRH,"24,800,000"
+119,Collecter et Ã©vacuer les dÃ©chets des locaux de la CANAM Ã  Bamako,Nombre d'interventions,Contrat,X,X,X,X,DAGRH,"10,000,000"
+120,"Assurer le paiement des loyers (SiÃ¨ge, Annexes et les Bureaux RÃ©gionaux)",Montant des loyers,Contrat/Facture,X,X,X,X,DAGRH,470000000
+121,Assurer la maintenance des ascenseurs ,Nombre d'interventions,Contrat/Rapports,X,X,X,X,DAGRH,"24,800,000"
+122,Assurer la maintenance du systÃ¨me de plomberie Ã  Bamako et dans les rÃ©gions,Nombre d'interventions,Contrat/Rapports,X,X,X,X,DAGRH,"20,000,000"
+123,Assurer la maintenance des moyens logistiques ,Nombre d'interventions,Contrat/Rapports,X,X,X,X,DAGRH,"40,000,000"
+124,Assurer la maintenance du logiciel de gestion contract manager ,Nombre d'interventions,Contrat ,,,X,,DAGRH,"15,000,000"
+125,Assurer la maintenance des groupes Ã©lectrogÃ¨nes ,Nombre d'interventions,Contrat/Rapports,X,X,X,X,DAGRH,"35,000,000"
+126,Assurer la maintenance des panneaux solaires,Nombre d'interventions,Contrat/Rapports,X,X,X,X,DAGRH,"20,000,000"
+127,Entretenir les photocopieuses Ã  Bamako et dans les rÃ©gions ,Nombre d'interventions,Contrat/Rapports,X,X,X,X,DAGRH/DSI,"24,800,000"
+128,Assurer la rÃ©paration des moyens logistiques,Nombre d'interventions,Contrat/Rapports,X,X,X,X,DAGRH,"98,000,000"
+129,"Assurer la rÃ©paration des mobiliers de bureau, des portes, des fenÃªtres, changement des serrures et autres Ã  Bamako et dans les rÃ©gions ",Nombre d'interventions,Contrat/Rapports,X,X,X,X,DAGRH,"35,000,000"
+130,Souscrire Ã  une police d'assurance du matÃ©riel de transport,Nombre de police d'assurance,Police d'assurance,X,X,X,X,DAGRH,70000000
+131,Souscrire Ã  une police d'assurance maladie complÃ©mentaire,Nombre de police d'assurance,Contrat,X,X,X,X,DAGRH,"180,000,000"
+132,Souscrire Ã  une police dâassurance globale des bÃ¢timents abritant la CANAM,Nombre de police d'assurance,Police d'assurance,X,X,X,X,DAGRH,"24,800,000"
+133,Poursuivre la construction du siÃ¨ge de la CANAMÂ (tranche annuelle),BÃ¢timent,PV de rÃ©ception,X,X,X,X,DAGRH,"6,000,000,000"
+134,CrÃ©er 3 nouveaux Bureaux RÃ©gionaux ou Directions RÃ©gionales  de la CANAM ,Nombre de Bureaux RÃ©gionaux crÃ©es,DÃ©cision de crÃ©ation,,X,,,DAGRH,PM
+135,RÃ©aliser des travaux de rÃ©habilitation des locaux de la CANAM,Nombre de travaux,Contrat,,,X,,DAGRH,"80,000,000"
+136,Mettre en place un systÃ¨me de connexion internet Ã  Tombouctou et Gao,Nombre de sites connectÃ©s ,PV de rÃ©ception,,X,,,DAGRH/DSI,"8,000,000"
+137, AmÃ©nager les salles d'archives du nouveau site aux normes conventionnelles (standard),Nombre d'amÃ©nagements,Rapport ,X,,,,DAGRH,-
+138,Elaborer la politique de la formation,Politique de la formation disponible ,Rapport,,X,,,DAGRH,-
+139,Eriger les Bureaux RÃ©gionaux en Directions RÃ©gionales,Nombre de Bureaux RÃ©gionaux Ã©rigÃ©s,DÃ©cision,X,,,,DAGRH,-
+140,Doter les Bureaux RÃ©gionaux/Directions RÃ©gionales de personnel supplÃ©mentaire,Nombre d'agent mis Ã   disposition,DÃ©cision ,X,,,,DAGRH,-
+141,ProcÃ©der au recrutement du personnel conformÃ©ment au cadre organique 2021-2025 et Ã  la mise en Åuvre du RAMU,Nombre d'agents recrutÃ©s,Contrat,X,,,,DAGRH,-
+142,Organiser des visites de chantier du nouveau siÃ¨ge de la CANAM,Nombre de visites,Rapports,X,X,X,X,DAGRH,-
+143,Organiser 2 sessions ordinaires du Conseil dâAdministration,Nombre de sessions,PV,X,X,X,X,DAGRH,"60,000,000"
+144,Elaborer les contrats dâobjectifs individuels du personnel,Nombre de contrats d'objectifs,Rapport,X,,,,DAGRH,-
+145,Elaborer les lettres d'indications des attentes individuelles du personnel,Nombre de contrats d'objectifs,Rapport,X,,,,DAGRH,-
+146,Participer aux rÃ©unions du conseil des ministres de tutelle des pays membres de la CIPRES,Nombre de participants,Rapports,,X,X,,DAGRH,"30,000,000"
+147,NumÃ©riser les dossiers du personnel,Nombre de dossiers numÃ©risÃ©s,Dossier,X,X,X,X,DAGRH,-
+148,AcquÃ©rir 20 aÃ©rateurs pour les salles d'archivages,Nombre d'aÃ©rateurs,Contrat / PV de rÃ©ception,,,X,,DAGRH,"10,000,000"
+149,AcquÃ©rir et installer un systÃ¨me solaire dans 4 Bureaux RÃ©gionaux de la CANAM,Nombre de Bureaux RÃ©gionaux Ã©quipÃ©s,Contrat,X,,,,DAGRH,"15,000,000"
+150,AcquÃ©rir des appareils sanitaires,Nombre d'appareils,PV de rÃ©ception,X,,,,DAGRH,"15,000,000"
+151,Apporter des appuis techniques et financiers aux partenaires de la CANAM,Montant,Ordres de virement/ ChÃ¨ques,X,X,X,X,DAGRH,"560,500,000"
+152,RÃ©aliser 17 missions d'audit Ã  Bamako et dans les Bureaux RÃ©gionaux,Nombre de Mission ,Rapports de mission,X,X,X,X,DAI,"40,000,000"
+153,RÃ©aliser 2 missions de rÃ©Ã©valuation des risques ,Nombre de Mission ,Rapports de mission,,X,,X,DAI,-
+154,RÃ©aliser des missions de suivi de la mise en Åuvre des actions face aux risques ,Nombre de mission,Rapports de mission,X,X,X,X,DAI,-
+155,RÃ©aliser le suivi des recommandations des audits internes et externes,Nombre de Mission ,Rapports de mission,,X,,X,DAI,-
+156,RÃ©aliser le contrÃ´le trimestriel sur les Ã©tats de rapprochement bancaire,Nombre de contrÃ´le ,Rapports de contrÃ´le ,X,X,X,X,DAI,-
+157,RÃ©aliser le contrÃ´le semestriel sur les dotations du carburant ,Nombre de contrÃ´le ,Rapports de contrÃ´le ,,X,,X,DAI,-
+158,Effectuer les contrÃ´les de caisse,Nombre de contrÃ´le ,Rapports de contrÃ´le ,X,X,X,X,DAI,-
+159,Mettre en place un plan de continuitÃ© des activitÃ©s de la CANAM avec l'assistance de la CIPRES,Plan de continuitÃ© ,Rapport ,X,X,X,X,DAI,PM
+160,Recruter un Cabinet de Certification pour rÃ©aliser l'audit de suivi 2 (audit post certification),Nombre de contrÃ´le ,Rapport de contrÃ´le ,,,,X,DAI/DBCGOQ /DAGRH,"14,000,000"
+161,"RÃ©aliser les missions trimestrielles de suivi du SMQ (sensibilisation sur la documentation, les plans d'actions, la gestion des rÃ©clamations, etc.) auprÃ¨s des 14 processus Ã  Bamako et dans les rÃ©gions ",Nombre de missions,Rapports,X,X,X,X,DBCGOQ,"24,000,000"
+162,"RÃ©aliser des missions semestrielles de suivi du SMQ auprÃ¨s des OGD (mise en Åuvre des procÃ©dures, utilisation des formulaires, rÃ©clamations,  etc...)",Nombre de missions,Rapports,,X,,X,DBCGOQ,-
+163,RÃ©aliser une confÃ©rence des processus (revue de tous les processus du systÃ¨me),Nombre de revue des processus ,Rapport,,,X,,DBCGOQ/ DAGRH,-
+164,RÃ©aliser la revue de direction  ,Nombre de sÃ©ance,Rapport,,,X,,DBCGOQ/ DAGRH,-
+165,Assurer la tenue et Ã  la mise Ã  jour des informations documentÃ©es du SystÃ¨me de Management QualitÃ©,Nombre de mise Ã  jour,Rapports,X,X,X,X,DBCGOQ,-
+166,"Collecter, dispatcher et suivre le traitement des rÃ©clamations ",Nombre de rÃ©clamations traitÃ©s,Rapports,X,X,X,X,DBCGOQ,-
+167,Sensibiliser le personnel aux bonnes pratiques et aux exigences qualitÃ©  ,Nombre de sÃ©ances de sensibilisations,Rapports,X,X,X,X,DBCGOQ,-
+168,Mettre en place une application pour la gestion des rÃ©clamations,Application,Rapports,X,X,X,X,DBCGO /DSI,-
+169,Recruter un consultant pour l'Ã©laboration du Plan StratÃ©gique de DÃ©veloppement 2026-2030,Consultant,Contrat,,X,X,,DBCGOQ/ DAGRH,"14,800,000"
+170,AcquÃ©rir et dÃ©ployer 300 licences Microsoft ,Nombre de licences,Contrat / Rapport,,X,,,DSI/DAGRH,"140,000,000"
+171,AcquÃ©rir des Ã©quipements rÃ©seau (10 Switch et 3 antennes point Ã  point),Nombre d'Ã©quipements,Contrat/PV de rÃ©ception,,X,,,DSI/DAGRH,"110,000,000"
+172,AcquÃ©rir un contrÃ´leur de domaine et DNS pour la gestion centralisÃ©e des ordinateurs,Logiciel,Contrat,,X,,,DSI,"20,000,000"
+173,AcquÃ©rir un serveur Vcenter pour la gestion centralisÃ©e et optimale des machines virtuelles (SERVEURS),Nombre de serveurs,PV de rÃ©ception,,X,,,DSI/DAGRH,"20,000,000"
+174,AcquÃ©rir de licences  d'antivirus serveur (une licence serveur pour  500 utilisateurs),Nombre de licences,Contrat,X,,,,DSI/DAGRH,"20,000,000"
+175,AcquÃ©rir des batteries pour onduleur ,Nombre de batteries,PV de rÃ©ception,,,X,,DSI/DAGRH,"8,000,000"
+176,AcquÃ©rir 2 serveurs  avec baie de disque  et licence pour les sauvegardes,Nombre de serveurs,PV de rÃ©ception,X,,,,DSI/DAGRH,"180,000,000"
+177,AcquÃ©rir 8 photocopieuses ,Nombre de photocopieuses,PV de rÃ©ception,,X,,,DSI/DAGRH,"30,000,000"
+178,AcquÃ©rir 2 licences pour les Ã©quipements de sÃ©curitÃ© (FIRWALL et ELLOT) ,Nombre de licences,Contrat,X,,,,DSI/DAGRH,"10,000,000"
+179,AcquÃ©rir  les tÃªtes d'impression pour imprimante SIGMA DS3,Nombre de tÃ¨tes,PV de rÃ©ception,,X,,,DSI/DAGRH,"20,000,000"
+180,AcquÃ©rir  des camÃ©ras de vidÃ©osurveillance pour la salle d'archivage et magasin de la CANAM,Nombre de camÃ©ras,PV de rÃ©ception,,X,,,DSI/DAGRH,"30,000,000"
+181,AcquÃ©rir  un systÃ¨me d'Ã©tiquetage  des Ã©quipements de la comptabilitÃ© matiÃ¨re,SystÃ¨me,Contrat,,X,,,DSI/DAGRH,"10,000,000"
+182,AcquÃ©rir  une licence professionnelle de supervision de rÃ©seau informatique (NAGIOS),Nombre de licences,Contrat,,X,,,DSI/DAGRH,"20,000,000"
+183,Assurer la maintenance du logiciel de gestion du parc et du rÃ©seau informatiqueÂ ,Nombre de maintenances,Rapports,,X,,X,DSI/DAGRH,"15,000,000"
+184,Assurer la maintenance du logiciel de gestion du parc auto,Nombre de maintenances,Rapports,,X,,X,DSI/DAGRH,"10,000,000"
+185,Assurer la maintenance et le support technique ORACLE SIMSYSTEM ,Nombre de maintenances,Rapports,X,X,X,X,DSI/DAGRH,"190,000,000"
+186,Assurer la maintenance du systÃ¨me de messagerie et intranet de la CANAM,Nombre de maintenances,Rapports,X,X,X,X,DSI/DAGRH,"15,000,000"
+187,Assurer la maintenance et le support technique BDOCÂ ,Nombre de maintenances,Rapports,,X,,X,DSI/DAGRH,"15,000,000"
+188,"Assurer la maintenance du rÃ©seau local filaire, OndulÃ©, Ã©lectrique et les climatiseurs de la CANAM",Nombre de maintenances,Rapports,X,X,X,X,DSI/DAGRH,"80,000,000"
+189,Assurer la maintenance des extincteurs d'incendie,Nombre de maintenances,Rapports,,X,,X,DSI/DAGRH,"8,000,000"
+190,Assurer la maintenance des vidÃ©osurveillances,Nombre de maintenances,Rapports,,X,,X,DSI/DAGRH,"10,000,000"
+191,Assurer la maintenance et la rÃ©paration des serveurs,Nombre de maintenances,Rapports,,X,,X,DSI/DAGRH,"18,000,000"
+192,Assurer la maintenance et la rÃ©paration des systÃ¨mes de dÃ©tection  (incendie et eau),Nombre de maintenances,Rapports,,X,,X,DSI/DAGRH,"15,000,000"
+193,Assurer la maintenance des onduleurs ,Nombre de maintenances,Rapports,,X,,X,DSI/DAGRH,"24,000,000"
+194,Assurer la maintenance du logiciel PRED,Nombre de maintenances,Rapports,,X,,X,DSI/DAGRH,"5,000,000"
+195,Assurer la maintenance et la rÃ©paration du systÃ¨me de contrÃ´le dâaccÃ¨s aux locaux ,Nombre de maintenances,Rapports,,X,X,X,DSI/DAGRH,"15,000,000"
+196,Assurer la maintenance et le support technique du logiciel gestion des stocks  et les Ã©volutions fonctionnelles,Nombre de maintenances,Rapports,,X,,X,DSI/DAGRH,"10,000,000"
+197,"Assurer la maintenance des Ã©quipements informatiques (Routeurs, switch, etc...)",Nombre de maintenances,Rapports,,X,,X,DSI/DAGRH,"15,000,000"
+198,RÃ©aliser des missions de support technique et de suivi trimestriel des Ã©quipements biomÃ©triques,Nombre de missions,Rapports de mission,X,X,X,X,DSI,"35,000,000"
+199,Recruter un prestataire pour la remise Ã  niveau de la sÃ©curitÃ© des rÃ©seaux informatiques  de la CANAM,Prestataire,Contrat,,X,,X,DSI/DAGRH,"160,000,000"
+200,Suivre  le traitement des cas de fraudes dÃ©tectÃ©s Ã  BAMAKO et dans les rÃ©gions ,Nombre de cas,Rapports d'investigation,X,X,X,X,SJC/AC/DAOGD/ DOCQS/BR / PF,-
+201,Recruter un cabinet d'assistance juridique et de conseil,Cabinet,Contrat,X,X,X,X,SJ/DAGRH,"14,900,000"
+202,Recruter un cabinet pour la mise Ã  jour du plan de lutte contre la fraude,Cabinet,Contrat,X,,,,SJC/DAGRH,"14,900,000"
+203,Recruter un cabinet pour rÃ©aliser l'audit des traitements Ã  caractÃ¨re personnel,Cabinet,Contrat,X,,,,SJC/DAGRH,"14,900,000"
+204,Effectuer 1 mission de sensibilisation du personnel des Bureaux RÃ©gionaux sur la protection des donnÃ©es Ã  caractÃ¨re personnel ,Nombre de mission de  sensibilisation,Rapport,,X,,,SJC/SCRP,"2,450,000"
+205,Effectuer 1 mission d'information et de  sensibilisation  sur la gestion de la fraude au niveau des Bureaux RÃ©gionaux,Nombre de mission d'information et de  sensibilisation  ,Rapport,,,X,,SJC/DOQCS/SCRP,"2,250,000"
+206,Informer et sensibiliser le personnel sur la  protection des donnÃ©es Ã  caractÃ¨re personnel Ã  Bamako,Nombre de Sensibilisations,Rapports,X,X,X,X,SJC,-
+207,Organiser un atelier d'information et de sensibilisation avec les prestataires sur la fraude Ã  Bamako,Nombre dâatelier,Rapport,,X,,,SJC/DOCQS/ DAOGD/SCRP,"10,000,000"
+208,Organiser un atelier d'information et de sensibilisation avec la sociÃ©tÃ© civile sur la fraude Ã  Bamako,Nombre dâatelier,Rapport,,,X,,SJC/DOCQS/ DAOGD/SCRP,"10,000,000"
+209,"Suivre la mise en Åuvre des procÃ©dures du SystÃ¨me de Management QualitÃ© (SMQ) au niveau des OGD Ã  Kayes, Koulikoro, Sikasso, SÃ©gou, Mopti, Tombouctou et Gao",Nombre de suivis ,Rapports,X,X,X,X,BR/PF ,-
+SOUS TOTAL 2,,,,,,,,,"36,599,989,106"
+,Extrant 3.3 La gestion de l'assurance maladie est amÃ©liorÃ©e,,,,,,,,
+210,Assurer le support ORACLE pour les bases de donnÃ©es internes,Nombre d'interventions,Rapports,X,,X,,DSI/DAGRH,"20,000,000"
+211,Assurer la maintenance et   2 supports techniques ORACLE  des logiciels ACTIV PREMIUM production / secours,Nombre d'interventions,Rapports,,X,,X,DSI/DAGRH,"250,000,000"
+212,Assurer la maintenance du logiciel de notification des assurÃ©s,Nombre de maintenances,Rapports,X,X,X,X,DSI/DAGRH,"15,000,000"
+213,Assurer la maintenance du logiciel de gestion des feuilles de soins,Nombre de maintenances,Rapports,X,X,X,X,DSI/DAGRH,"10,000,000"
+214,Assurer la maintenance et le support technique du logiciel AMOANYWHERE et les Ã©volutions fonctionnelles pour le RAMU,Nombre de maintenances,Rapports,X,X,X,X,DSI/DAGRH,"18,000,000"
+215,Assurer la maintenance et le support technique du systÃ¨me de gestion des cotisations,Nombre de maintenances,Rapports,X,X,X,X,DSI/DAGRH,"20,000,000"
+216,Assurer la maintenance et le support technique des logiciels de gestion biomÃ©trique de l'assurance maladie et les Ã©volutions fonctionnelles,Nombre de maintenances,Rapports,X,X,X,X,DSI,"250,000,000"
+217,Assurer la maintenance et le support technique  ACTIV PREMIUM et les Ã©volutions fonctionnelles pour le RAMU,Nombre de maintenances,Rapports,X,X,X,X,DSI,"400,000,000"
+218,Assurer la maintenance du systÃ¨me de sauvegarde NAS et de traitement import-export des donnÃ©es du rÃ©gime de l'assurance maladie,Nombre de maintenances,Rapports,,X,,X,DSI,"15,000,000"
+219,Poursuivre lâinterconnexion rÃ©seau CANAM/OGD/PRESTATAIRES (2 stations de base et 20 clients),Nombre de sites connectÃ©s,Rapport,,X,,,DSI/DAGRH,"350,000,000"
+220,"AcquÃ©rir des Ã©quipements biomÃ©triques (25 stations dâenrÃ´lement, 300 check ID, 550 BSA et 80 imprimantes thermiques)",Nombre d'Ã©quipements biomÃ©triques,PV de rÃ©ception,X,,,,DSI/DAGRH,"585,000,000"
+221, AcquÃ©rir 600 rubans pour la production des cartes,Nombre de rubans,Contrat / PV de rÃ©ception,,X,,,DSI/DAGRH,"150,000,000"
+222,AcquÃ©rir 300 000 cartes biomÃ©triques  ,Nombre de cartes biomÃ©triques,Contrat / PV de rÃ©ception,X,,,,DSI/DAGRH,"1,600,000,000"
+223, AcquÃ©rir 100 000 bobines thermiques ,Nombre de bobines thermiques,Contrat / PV de rÃ©ception,,,X,,DSI/DAGRH,"150,000,000"
+224,Tenir les rÃ©unions des comitÃ©s des projets informatiques ,Nombre de rÃ©unionsÂ ,Comptes rendus,X,X,X,X,DSI/DOCQS/ DAOGD,-
+225,Recruter un consultant pour la rÃ©alisation d'une Ã©tude d'Ã©tablissement d'une politique de placement des fonds de rÃ©serves de la CANAM pour le financement des structures sanitaires dans le cadre dâune convention ,Etude,Contrat/Rapport,,,,X,SAGS/AC/ DAGRH,"50,000,000"
+226,AcquÃ©rir un logiciel en statistiques SPSS version PREMIUM,Logiciel,Contrat,,X,,,SAGS/DAGRH,"24,000,000"
+227,Mettre Ã  jour de faÃ§on pÃ©riodique les Ã©tudes financiÃ¨res et actuarielles du RAMU,Base de donnÃ©es,Rapport,,,,X,SAGS,-
+228,Mettre en place un systÃ¨me de tableaux de bord et de reporting actuariels rÃ©guliers,Tableaux de bord,Rapports,X,X,X,X,SAGS,-
+229,Mettre Ã  la disposition des chercheurs et des organismes publics et privÃ©s les donnÃ©es statistiques du rÃ©gime dâassurance maladie,Nombre de demandes reÃ§ues,Rapports,X,X,X,X,SAGS,-
+230,Analyser les coÃ»ts de revient des prestations par composante,Nombre d'analyses,Rapports,X,X,X,X,SAGS,-
+231,RÃ©aliser des missions pour le suivi-Ã©valuation des activitÃ©s menÃ©es ayant un impact quantifiable sur la pÃ©rennitÃ© et la viabilitÃ© du rÃ©gime Ã  Bamako et dans les rÃ©gionsÂ ,Nombre de missions,Rapports,,,X,,SAGS,"15,000,000"
+232,"Produire, imprimer et diffuser les donnÃ©es statistiques du rÃ©gime d'assurance maladie ",Annuaire statistique,Document / Contrat/PV de rÃ©ception,,,X,X,SAGS/SCRP/ DAGRH,"20,000,000"
+233,Elaborer une cartographie des risques actuariels,Cartographie des risques,Rapport,,,X,,SAGS/DBCGOQ/ DAI,-
+234,Tenir les rÃ©unions du ComitÃ© de Suivi de l'assurance maladie  de la rÃ©gion de Kayes,Nombre de rÃ©unions,Rapports,X,X,X,X,BR KAYES,"1,000,000"
+235,Effectuer des missions de supervision au sein des centres d'enrÃ´lement et de rÃ©-enrÃ´lement pour des cartes sans empreintes dans la rÃ©gion de Kayes,Nombre de missions,Rapports,X,X,X,X,BR KAYES,"5,255,000"
+236,Produire et envoyer les cartes d'assurÃ©s aux OGD,Nombre de cartes produites,Rapports,X,X,X,X,BR KAYES,-
+237,Tenir les rÃ©unions du ComitÃ© de Suivi de l'assurance maladie de la rÃ©gion de Koulikoro,Nombre de rÃ©unions,Rapports,,X,,X,BR KOULIKORO,"1,000,000"
+238,Effectuer des missions de supervision au sein des centres d'enrÃ´lement et de rÃ©-enrÃ´lement pour des cartes sans empreintes dans la rÃ©gion de Koulikoro,Nombre de missions,Rapports,X,X,X,X,BR KOULIKORO,"4,505,000"
+239,Produire et envoyer les cartes d'assurÃ©s aux OGD,Nombre de cartes produites,Rapports,X,X,X,X,BR KOULIKORO,-
+240,Tenir les rÃ©unions du ComitÃ© de Suivi de l'assurance maladie de la rÃ©gion de Sikasso,Nombre de rÃ©unions,Rapports,,X,,X,BR SIKASSO,"1,000,000"
+241,Effectuer des missions de supervision au sein des centres d'enrÃ´lement et de rÃ©-enrÃ´lement pour des cartes sans empreintes dans la rÃ©gion de Sikasso,Nombre de missions ,Rapports,X,X,X,X,BR SIKASSO,"7,372,500"
+242,Produire et envoyer les cartes d'assurÃ©s aux OGD,Nombre de cartes produites,RapportsÂ ,X,X,X,X,BR SIKASSO,-
+243,Tenir les rÃ©unions de la commission de suivi l'assurance maladie de la rÃ©gion de SÃ©gou,Nombre de rÃ©unions,Comptes rendus de rÃ©union,X,X,X,X,BR SEGOU,"1,000,000"
+244,Effectuer 2 missions de supervision au sein des centres d'enrÃ´lement et de rÃ© enrÃ´lement pour des cartes sans empreintes dans la rÃ©gion de SÃ©gou,Nombre de missions,Rapports,X,,Â X,,BR SEGOU,"4,070,000"
+245,Produire et envoyer les cartes d'assurÃ©s aux OGD,Nombre de cartes produites,RapportsÂ ,X,X,X,X,BR SEGOU,-
+246,Tenir les rÃ©unions du ComitÃ© de Suivi de l'assurance maladie de la rÃ©gion Mopti,Nombre de rÃ©unionsÂ ,Rapports,X,X,X,X,BR MOPTI,"1,000,000"
+247,"Effectuer 2 missions de supervision au sein des centres d'enrÃ´lement et de rÃ©-enrÃ´lement pour des cartes sans empreintes dans la rÃ©gion de Mopti (Koro, Bankass, Bandiagara, Douentza, Djenne, Tenenkou, Youwarou) ",Nombre de missions ,Rapports,X,,,X,BR MOPTI,"5,910,000"
+248,Produire et envoyer les cartes d'assurÃ©s aux OGD,Nombre de cartes produitesÂ ,Rapports,X,X,X,X,BR MOPTI,-
+249,Tenir les rÃ©unions du ComitÃ© de Suivi de l'assurance maladie de la rÃ©gion Tombouctou,Nombre de rÃ©unions,Rapports,X,X,X,X,PF TOMBOUCTOU,"1,000,000"
+250,"Effectuer 2 missions de supervision au sein des centres d'enrÃ´lement, de distribution des cartes d'assurÃ©s et de rÃ© enrÃ´lement pour des cartes sans empreintes dans la rÃ©gion de Tombouctou (1 Ã  Tombouctou et 1 dans les cercles)",Nombre de missions ,Rapports,,X,,X,PF TOMBOUCTOU,"1,970,000"
+251,"Effectuer 2 missions d'immatriculation, d'affiliation et de validation des prÃ©-immatriculations effectuÃ©es par les OGD de la rÃ©gion de Tombouctou Ã  Bamako",Nombre de dossiers validÃ©s,Rapports,,X,,X,PF TOMBOUCTOU,"3,000,000"
+252,Produire et envoyer les cartes d'assurÃ©s aux OGD,Nombre de cartes produitesÂ Â ,Rapports,X,X,X,X,PF TOMBOUCTOU,-
+253,Tenir les rÃ©unions du ComitÃ© de Suivi de l'assurance maladie de la rÃ©gion de Gao,Nombre de rÃ©unions,Rapports,X,X,X,X,PF GAO,"1,000,000"
+254,"Effectuer 2 missions de supervision au sein des centres d'enrÃ´lement et de rÃ©-enrÃ´lement pour des cartes sans empreintes (Ansongo, Bourem, Kidal et MÃ©naka)",Nombre de missions ,Rapports,,X,,X,PF GAO,"1,970,000"
+255,"Effectuer 2 missions d'immatriculation, d'affiliation et de validation des prÃ©-immatriculations effectuÃ©es par les OGD de la rÃ©gion de Gao Ã  Bamako",Nombre de dossiers validÃ©s,Rapports,,X,,X,PF GAO,"3,000,000"
+256,Produire et envoyer les cartes d'assurÃ©s aux OGD,Nombre de cartes produitesÂ Â Â ,Rapports,X,X,X,X,PF TOMBOUCTOU,-
+SOUS TOTAL 3,,,,,,,,,"3,986,052,500"
+Extrant 3.4 La communication sur l'assurance maladie est renforcÃ©e,,,,,,,,,
+257,Elaborer le plan stratÃ©gique de communication annuel  ,Plan de communication annuel,Document,Â X,,,,SCRP,-
+258,Sensibiliser les membres du Conseil dâAdministration sur le SMQ,Nombre de sÃ©ances,Rapport,,Â X,,,SCRP/ Equipe projet,-
+259,"RÃ©aliser des spots (vidÃ©os, radios, visuels) pour sensibiliser le public sur le RAMU, la fraude, la prescription et la promotion de la SantÃ©",Nombre de production ,Rapport,Â X,,,,SCRP,"45,000,000"
+260,Diffuser des spots (vidÃ©os et radios) sur l'ORTM,Nombre de diffusion,Rapports,Â X,Â X,Â X,Â X,SCRP,"40,000,000"
+261,"RÃ©aliser des insertions et annonces dans les numÃ©ros spÃ©ciaux de la presse Ã©crite pour sensibiliser le public  sur le RAMU, la fraude, la prescription et la promotion de la SantÃ©",Nombre d'insertions /Nombre d'annonces,Rapports,Â X,Â X,Â X,Â X,SCRP,"10,000,000"
+262,"Renforcer le partenariat avec la presse privÃ©e (presse Ã©crite et en ligne, radio, tÃ©lÃ© et rÃ©seaux sociaux)",Nombre de diffusion /Nombre d'insertions,Contrat / Rapport,,Â X,,,SCRP,PM
+263,Poursuivre le partenariat avec Team Call Center,Nombre de diffusion /Nombre d'insertions,Contrat / Rapport,,X,,,SCRP,PM
+264,Imprimer le bulletin d'information trimestriel de la CANAM,Nombre de bulletins produits ,Rapport,,Â X,,,SCRP,"24,000,000"
+265,"Participer aux diffÃ©rentes activitÃ©s Ã©vÃ¨nementielles (atelier, campagnes, foire, salon, forum, etc...)",Nombre d'activitÃ©s Ã©vÃ¨nementielles ,Rapport,,Â X,,,SCRP/Toutes Directions et Services,"50,000,000"
+266,"Confectionner des supports de visibilitÃ©, objets publicitaires (agendas, kakemonos, livrets, porte-clÃ©s, calendriers, dÃ©pliants, t-shirts, casquettes, etc...)","Nombre de : agendas, kakemonos, livrets, porte-clÃ©s, calendriers, dÃ©pliants, t-shirts, casquettes",PV de rÃ©ception,,,Â X,,SCRP/DAGRH,"60,000,000"
+267,"InsÃ©rer les messages de sensibilisation   sur le RAMU, la fraude, la prescription et la promotion de la SantÃ©, dans les magazines internationaux et les agendas",Nombre de d'insertions,Contrat/Rapport,Â X,Â X,Â X,Â X,SCRP,"20,000,000"
+268,ProcÃ©der Ã  l'affichage grand format Ã  travers la ville de Bamako et dans les rÃ©gions ,Nombre d'affiches,Rapport,,,,Â X,SCRP/DAGRH,"70,000,000"
+269,Confectionner des enseignes lumineuses ,Nombre d'enseignes ,PV de rÃ©ception,,,X,,SCRP/DAGRH,"40,000,000"
+270,"RÃ©aliser des activitÃ©s de journÃ©es portes ouvertes de la CANAM et de l'Assurance Maladie (animation de certains aspects de la vie, soirÃ©e Gala, Ã©change, initiation d'un Ã©vÃ¨nement de renaissance de la CANAM, etcâ¦)",Nombre d'activitÃ©s ,Rapport,,,X,,CS/SCRP/DAGRH,"35,000,000"
+271,"RÃ©aliser des activitÃ©s sportives et de promotion de la santÃ© avec le personnel et les partenaires de la CANAM (coupe CANAM, coupe inter Entreprise, matchs amicaux, marche sportive, etcâ¦)",Nombre d'activitÃ©s ,Rapport,,,X,,CS/SCRP/DAGRH,"4,500,000"
+272,Organiser un atelier national d'information et de sensibilisation de la sociÃ©tÃ© civile sur la fraude Ã  l'assurance maladie,Nombre d'atelier ,Rapport,,,X,,SCRP/DAGRH,"20,000,000"
+273,Organiser un atelier national d'information et de sensibilisation sur le RAMU (UNTM et Syndicats Nationaux),Nombre d'atelier ,Rapport,,X,,,SCRP/DAGRH,"30,000,000"
+274,Organiser un atelier national d'information et de sensibilisation sur le RAMU (Organisation patronale),Nombre d'atelier ,Rapport,,X,,,SCRP/DAGRH,"35,000,000"
+SOUS TOTAL 4,,,,,,,,,"483,500,000"
+TOTAL RS III,,,,,,,,,"43,204,897,801"
+,RS. IV LES ORGANISATIONS DE L'ECONOMIE SOCIALE ET SOLIDAIRE SONT PLUS PERFORMANTES,,,,,,,,
+,Extrant 4.1 les capacitÃ©s du personnel et des Administrateurs de la CANAM sont renforcÃ©esÂ ,,,,,,,,
+1,Mettre en Åuvre les activitÃ©s 2025 du plan de formation triennal 2023-2025,Nombre de personnes formÃ©es,Rapport de formation,X,,,,DAGRH,"451,205,554"
+2,RÃ©gler les frais de formation des Administrateurs,Montant,Factures/ Rapports de mission,X,X,X,X,DAGRH,"50,000,000"
+3,RÃ©gler les indemnitÃ©s de missions et les frais de sÃ©jour des Administrateurs,Montant,Factures/ Rapports de mission,X,X,X,X,DAGRH,"60,000,000"
+4,RÃ©gler les indemnitÃ©s de missions et les frais de sÃ©jour pour des personnes autres que les Administrateurs et le personnel,Montant,Factures/ Rapports de mission,X,X,X,X,DAGRH,"30,000,000"
+5,"Assurer la participation des cadres aux diffÃ©rents sÃ©minaires, rencontres, ateliers, colloques, rÃ©unions, congrÃ¨s, confÃ©rences, forums, nationaux et internationaux.â¦ de l'AISS, de la CIPRES, de la CIFOPE, de l'AFRITAC de l'Ouest, de l'ISO, EN3S,  ATI Afrique, Commission TOFE de la DNTCP, Finances Publiques, en matiÃ¨re de travail actuariel, etc... Â ",Nombre de participants,Rapports,X,X,X,X,DAGRH,"132,770,000"
+6,"Participer aux colloques et confÃ©rences internationales (lâIIA, lâIFACI, lâAFIIA, l'ECIIA et de UAI-AO, FFQ)",Nombre de participation ,Rapports ,X,X,X,X,DAI/DAGRH,"70,000,000"
+7,RÃ©aliser un voyage d'Ã©tudes pour 6 cadres de la CANAM au Rwanda et au Burundi sur le financement basÃ© sur les rÃ©sultats et l'Ã©valuation de performance des partenaires de l'assurance maladie dans le cadre du RAMU,Nombre de participants,Rapport,,,X,, AC/ DAGRH/DOCQS/ DBCGOQ,"40,000,000"
+8,Participer au paramÃ©trage et Ã  la rÃ©alisation du module paiement des prestations sur ACTIV PREMIUM,Nombre de participants,Rapport,,X,,,AC/DSI/DAOGD/ DBCGOQ,"40,000,000"
+9,OpÃ©rationnaliser  l'interface comptable sur ACTIV  PREMIUM ,Interface Comptable,Facture,,X,X,,AC/DSI,"45,000,000"
+10,RÃ©aliser 2 Sessions de paramÃ©trages sur BAMIG (SYM Compta et TrÃ©sorerie),Nombre de sessions,Rapports,,X,,,AC/DSI/DAGRH,"20,000,000"
+11,Participer aux sÃ©ances de paramÃ©trage du module paiement sur ACTIV PREMIUM pour 4 cadres de la DAOGD et 3 autres cadres des Directions concernÃ©es par le sujet avec CEGEDIM,Nombre de participants,Rapport ,,X,,,DAOGD/AC/DSI,"60,620,000"
+12,RÃ©aliser 1 voyage d'Ã©tudes de partage d'expÃ©riences pour 5 cadres de la Direction du Budget du ContrÃ´le de Gestion et de l'Organisation/QualitÃ© sur les techniques de prÃ©vision des recettes et des dÃ©penses Ã  la CNPS de la CÃ´te d'Ivoire,Nombre de Participants,Rapport,,X,,,DBCGOQ/  DAGRH,"20,000,000"
+13,RÃ©aliser 1 voyage d'Ã©tudes pour 4 cadres de la Direction du Budget du ContrÃ´le de Gestion et de l'Organisation QualitÃ© sur le fonctionnement du Service ContrÃ´le de Gestion Ã  la Caisse de SÃ©curitÃ© Sociale du SÃ©nÃ©gal,Nombre de Participants,Rapport,,,X,,DBCGOQ/ DAGRH,"16,000,000"
+14,Faire participer 5 cadres de la CANAM au 6Ã¨me forum  francophone de la qualitÃ© ,Nombre de participants,Rapports,,,X,,DBCGOQ/  DAGRH,"25,000,000"
+15,Participer Ã  la rencontre des DBA ,Nombre de participants,Rapport,,X,,,DSI/DAGRH,"8,000,000"
+16,Participer Ã  la rencontre des DSI sur le SystÃ¨me d'Information,Nombre de participants,Rapport,,,X,,DSI/DAGRH,"8,000,000"
+17,Participer Ã  la rencontre des RSSI sur la sÃ©curitÃ© des  SystÃ¨mes d'Information,Nombre de participants,Rapport,,,,X,DSI/DAGRH,"8,000,000"
+18,Participer aux ComitÃ©s de Pilotage du SystÃ¨me d'Information (COPIL),Nombre de participants,Rapports,,X,,X,DSI/DAGRH,"45,000,000"
+19,RÃ©aliser 1 voyage d'Ã©tudes de partage dâexpÃ©riences pour 3 cadres dans le domaine de la gestion des grandes donnÃ©es,Nombre de participants,Rapport,,,X,,SAGS/DAGRH,"12,000,000"
+20,RÃ©aliser 1 voyage d'Ã©tudes pour 5 cadres de la CANAM sur la gestion de  l'Assurance Maladie Universelle au Ghana,Nombre de participants,Rapport,X,,,,SJC /CT RAMU/DOCQS/ DAOGD/DSI / DAGRH,"20,000,000"
+21,RÃ©aliser 1 voyage d'Ã©tudes pour 5 cadres de la CANAM sur la gestion de  la fraude Ã  l'assurance maladie au Maroc,Nombre de participants,Rapport,,X,,,SJC/AC/DOCQS/ DAOGD/DSI/ DAGRH,"20,000,000"
+SOUS TOTAL 1,,,,,,,,,"1,181,595,554"
+,Extrant 4.2 les conditions de travail sont amÃ©liorÃ©es,,,,,,,,
+22,Repeindre les bÃ¢timents de la CANAM,Nombre de bÃ¢timents peints,Contrat/Rapport,X,X,X,X,DAGRH,"40,000,000"
+23,Payer les cotisations des Auditeurs Ã  l'IFACI et l'ACIAM,Montant,Factures,X,,,,DAI/DAGRH,"2,500,000"
+24,AcquÃ©rir un systÃ¨me informatisÃ© de gestion des  budgets des missions,SystÃ¨me,Contrat,,X,,,DBCGOQ / DSI/DAGRH,"14,800,000"
+25,AcquÃ©rir le logiciel SAP Analytics Cloud pour l'Ã©valuation des activitÃ©s de la CANAM  ,Logiciel ,Contrat ,,X,,,DBCGOQ / DSI/DAGRH,"40,000,000"
+26,AcquÃ©rir 10 livres sur la qualitÃ© pour les cadres du Service Organisation QualitÃ© ,Nombre de Livres,Facture,,X,,,DBCGOQ /DAGRH,"500,000"
+27,AcquÃ©rir un logiciel Minitab avec 2 licences pour analyser automatiquement la performance du processus,Logiciel,Facture,,X,,,DBCGOQ / DSI/DAGRH,"3,000,000"
+28,Renouveler le contrat annuel de maintenance et support du logiciel Xqualia,Contrat de maintenance annuelle,Facture,,X,,,DBCGOQ / DSI/DAGRH,"14,980,500"
+29,AcquÃ©rir des consommables et accessoires informatiques ,QuantitÃ© de consommables et accessoires informatiquesÂ ,PV de rÃ©ception,,X,,,DSI/DAGRH,"120,000,000"
+30,AcquÃ©rir les piÃ¨ces de rechange des matÃ©riels biomÃ©triques,Nature de piÃ¨ces / Nombre de piÃ¨ces,PV de rÃ©ception,,X,,,DSI/DAGRH,"60,000,000"
+31,"AcquÃ©rir des ordinateurs de bureau et imprimantes (80 Ordinateur bureau, 40 Ordinateur Portable I5, 30 Ordinateur Portable I7, 15 Imprimante multifonction, 60 imprimante simple)",Nombre d'ordinateur / Nombre d'imprimantes,PV de rÃ©ception,,X,,,DSI/DAGRH,"250,000,000"
+32,Abonner les cadres du SJC au journal officiel du Mali,Contrat,Facture,X,,,,SJC/DAGRH,"50,000"
+33,"Doter  les cadres du SJC des recueils de textes de l'OHADA, des textes relatifs Ã  la procÃ©dure de passation des marchÃ©s publics et des dÃ©lÃ©gations de services publics et du code GÃ©nÃ©ral des ImpÃ´ts",Nombre de recueils de textes,Facture,X,,,,SJC/DAGRH,"300,000"
+34,Mettre Ã  jour l'Ã©tude sur l'Ã©valuation des provisions pour indemnitÃ©s de fins de carriÃ¨res par la mÃ©thode actuarielle aux fins de la comptabilisation selon les normes IAS19/IFRS et CIPRES.,Cabinet,Contrat/Rapport,X,,,,SAGS/AC/ DAGRH,"14,900,000"
+SOUS TOTAL 2,,,,,,,,,"561,030,500"
+TOTAL RS IV,,,,,,,,,"1,742,626,054"
+TOTAUX,,,,,,,,,"125,854,163,675"

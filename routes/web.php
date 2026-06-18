@@ -49,6 +49,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
             Route::post('/{activite}/valider', [ValidationController::class, 'valider'])->name('valider');
             Route::post('/{activite}/refuser', [ValidationController::class, 'refuser'])->name('refuser');
             Route::post('/valider-plusieurs', [ValidationController::class, 'validerPlusieurs'])->name('valider-plusieurs');
+            // Arbitrage budgétaire
+            Route::post('/{activite}/arbitrer-modifier', [ValidationController::class, 'arbitrerModifier'])->name('arbitrer-modifier');
+            Route::post('/{activite}/arbitrer-supprimer', [ValidationController::class, 'arbitrerSupprimer'])->name('arbitrer-supprimer');
+            Route::post('/arbitrer-fusionner', [ValidationController::class, 'arbitrerFusionner'])->name('arbitrer-fusionner');
             Route::get('/export/excel', [ValidationController::class, 'exporter'])->name('exporter');
         });
     });
@@ -69,6 +73,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/create', [ActiviteController::class, 'create'])->name('create');
         Route::post('/', [ActiviteController::class, 'store'])->name('store');
         Route::get('/export', [ActiviteController::class, 'export'])->name('export');
+        Route::get('/suivi', [ActiviteController::class, 'suivi'])->name('suivi');
         Route::get('/{activite}', [ActiviteController::class, 'show'])->name('show');
         Route::get('/{activite}/edit', [ActiviteController::class, 'edit'])->name('edit');
         Route::put('/{activite}', [ActiviteController::class, 'update'])->name('update');
@@ -78,6 +83,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('/{activite}/soumettre', [ActiviteController::class, 'soumettre'])->name('soumettre');
         Route::post('/{activite}/valider', [ActiviteController::class, 'valider'])->name('valider');
         Route::post('/{activite}/refuser', [ActiviteController::class, 'refuser'])->name('refuser');
+        Route::post('/{activite}/execution', [ActiviteController::class, 'updateExecution'])->name('execution');
+        Route::post('/{activite}/pieces-jointes', [ActiviteController::class, 'storePieceJointe'])->name('pieces-jointes.store');
+        Route::get('/{activite}/pieces-jointes/{pieceJointe}', [ActiviteController::class, 'downloadPieceJointe'])->name('pieces-jointes.download');
     });
 });
 
