@@ -3,6 +3,7 @@
 namespace Database\Factories;
 
 use App\Models\Extrant;
+use App\Models\Objectif;
 use App\Models\Resultat;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
@@ -40,6 +41,9 @@ class ExtrantFactory extends Factory
         $code = $extrant['code_prefix'] . '_' . $numero;
 
         return [
+            // Par défaut un extrant appartient à un objectif (FK non nullable).
+            // Surchargé par les états forResultat()/forObjectif() et les seeders.
+            'objectif_id' => Objectif::factory(),
             'code' => $code,
             'libelle' => $extrant['libelle_prefix'] . ' ' . $this->faker->words(3, true),
             'description' => $this->faker->paragraph(),

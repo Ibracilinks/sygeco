@@ -138,7 +138,14 @@ class ActiviteController extends Controller
         $departements = Departement::active()->ordered()->get();
         $filters = $request->only(['search', 'extrant_id', 'departement_id', 'statut_execution']);
 
-        return view('pages.activites.suivi', compact('activites', 'extrants', 'departements', 'summary', 'filters'));
+        // Fenêtre de saisie de l'exécution : ouverte pour le dbcgoq en permanence,
+        // sinon uniquement pendant le mi-parcours ou l'évaluation de l'exercice actif.
+        $exercice = ActiveExercice::model();
+        $periodeSuivi = $exercice?->periodeSuiviCourante();
+        $peutSaisirExecution = Auth::user()->can('validate_activites')
+            || ($exercice?->enPeriodeSuiviExecution() ?? false);
+
+        return view('pages.activites.suivi', compact('activites', 'extrants', 'departements', 'summary', 'filters', 'exercice', 'periodeSuivi', 'peutSaisirExecution'));
     }
 
     /**
@@ -357,8 +364,20 @@ class ActiviteController extends Controller
      */
     public function updateExecution(Request $request, Activite $activite)
     {
-        if (! Auth::user()->can('edit_activites') && ! Auth::user()->can('validate_activites')) {
+        $user = Auth::user();
+
+        if (! $user->can('edit_activites') && ! $user->can('validate_activites')) {
             return back()->with('error', "Vous n'êtes pas autorisé à mettre à jour le suivi d'exécution.");
+        }
+
+        // Les chefs de département ne peuvent renseigner l'exécution que pendant une fenêtre
+        // ouverte (mi-parcours ou évaluation). Le dbcgoq (validate_activites) garde l'accès permanent.
+        if (! $user->can('validate_activites')) {
+            $exercice = $activite->exercice();
+
+            if (! $exercice || ! $exercice->enPeriodeSuiviExecution()) {
+                return back()->with('error', "La saisie de l'exécution n'est ouverte que pendant les périodes de mi-parcours ou d'évaluation.");
+            }
         }
 
         $validated = $request->validate([

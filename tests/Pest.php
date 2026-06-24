@@ -15,7 +15,7 @@ use Tests\TestCase;
 
 pest()->extend(TestCase::class)
  // ->use(Illuminate\Foundation\Testing\RefreshDatabase::class)
-    ->in('Feature');
+    ->in('Feature', 'Unit');
 
 /*
 |--------------------------------------------------------------------------
@@ -46,4 +46,37 @@ expect()->extend('toBeOne', function () {
 function something()
 {
     // ..
+}
+
+/*
+|--------------------------------------------------------------------------
+| Helpers métier (rôles & permissions)
+|--------------------------------------------------------------------------
+*/
+
+use App\Models\User;
+use Database\Seeders\RoleAndPermissionSeeder;
+use Spatie\Permission\Models\Role;
+
+/**
+ * Sème les rôles et permissions une seule fois par test.
+ */
+function seedRolesAndPermissions(): void
+{
+    if (! Role::where('name', 'dbcgoq')->exists()) {
+        test()->seed(RoleAndPermissionSeeder::class);
+    }
+}
+
+/**
+ * Crée un utilisateur (vérifié) doté du rôle indiqué avec ses permissions réelles.
+ */
+function userWithRole(string $role, array $attributes = []): User
+{
+    seedRolesAndPermissions();
+
+    $user = User::factory()->create($attributes);
+    $user->assignRole($role);
+
+    return $user->fresh();
 }

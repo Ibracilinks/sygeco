@@ -17,6 +17,12 @@ class Exercice extends Model
         'date_ouverture_saisie',
         'date_limite_saisie',
         'ouverture_notifiee_le',
+        'date_debut_mi_parcours',
+        'date_fin_mi_parcours',
+        'mi_parcours_notifiee_le',
+        'date_debut_evaluation',
+        'date_fin_evaluation',
+        'evaluation_notifiee_le',
         'statut',
     ];
 
@@ -29,6 +35,12 @@ class Exercice extends Model
             'date_ouverture_saisie' => 'date',
             'date_limite_saisie' => 'date',
             'ouverture_notifiee_le' => 'datetime',
+            'date_debut_mi_parcours' => 'date',
+            'date_fin_mi_parcours' => 'date',
+            'mi_parcours_notifiee_le' => 'datetime',
+            'date_debut_evaluation' => 'date',
+            'date_fin_evaluation' => 'date',
+            'evaluation_notifiee_le' => 'datetime',
         ];
     }
 
@@ -52,6 +64,63 @@ class Exercice extends Model
         }
 
         return (int) now()->startOfDay()->diffInDays($this->date_limite_saisie->copy()->startOfDay(), false);
+    }
+
+    /**
+     * Vérifie si la date du jour est comprise dans une fenêtre [début, fin].
+     */
+    protected function dansFenetre($debut, $fin): bool
+    {
+        if (! $debut || ! $fin) {
+            return false;
+        }
+
+        $aujourdhui = now()->startOfDay();
+
+        return $aujourdhui->betweenIncluded(
+            $debut->copy()->startOfDay(),
+            $fin->copy()->startOfDay()
+        );
+    }
+
+    /**
+     * La fenêtre de saisie du mi-parcours est-elle ouverte aujourd'hui ?
+     */
+    public function enPeriodeMiParcours(): bool
+    {
+        return $this->dansFenetre($this->date_debut_mi_parcours, $this->date_fin_mi_parcours);
+    }
+
+    /**
+     * La fenêtre d'évaluation de fin d'exercice est-elle ouverte aujourd'hui ?
+     */
+    public function enPeriodeEvaluation(): bool
+    {
+        return $this->dansFenetre($this->date_debut_evaluation, $this->date_fin_evaluation);
+    }
+
+    /**
+     * Une fenêtre de renseignement de l'exécution (mi-parcours ou évaluation) est-elle ouverte ?
+     */
+    public function enPeriodeSuiviExecution(): bool
+    {
+        return $this->enPeriodeMiParcours() || $this->enPeriodeEvaluation();
+    }
+
+    /**
+     * Libellé de la fenêtre de suivi en cours, ou null si aucune n'est ouverte.
+     */
+    public function periodeSuiviCourante(): ?string
+    {
+        if ($this->enPeriodeMiParcours()) {
+            return 'mi_parcours';
+        }
+
+        if ($this->enPeriodeEvaluation()) {
+            return 'evaluation';
+        }
+
+        return null;
     }
 
     public function scopeActif($query)

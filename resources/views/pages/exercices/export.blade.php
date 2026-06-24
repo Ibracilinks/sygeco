@@ -5,9 +5,14 @@
     $banner = 'border:1px solid #000000;padding:8px;font-size:13px;font-weight:bold;text-align:left;background-color:#ffffff;font-family:Calibri,Arial,sans-serif;';
     $rsRow = 'border:1px solid #000000;padding:6px;font-size:12px;font-weight:bold;text-align:center;background-color:#e2efda;font-family:Calibri,Arial,sans-serif;';
     $extrantRow = 'border:1px solid #000000;padding:6px;font-size:12px;font-weight:bold;text-align:center;background-color:#fce4d6;font-family:Calibri,Arial,sans-serif;';
+    $rsTotalLabel = 'border:1px solid #000000;padding:6px;font-size:12px;font-weight:bold;text-align:right;background-color:#c6e0b4;font-family:Calibri,Arial,sans-serif;';
+    $rsTotalCell = 'border:1px solid #000000;padding:6px;font-size:12px;font-weight:bold;text-align:right;background-color:#c6e0b4;font-family:Calibri,Arial,sans-serif;';
+    $grandTotalLabel = 'border:1px solid #000000;padding:8px;font-size:13px;font-weight:bold;text-align:right;background-color:#8ea9db;font-family:Calibri,Arial,sans-serif;';
+    $grandTotalCell = 'border:1px solid #000000;padding:8px;font-size:13px;font-weight:bold;text-align:right;background-color:#8ea9db;font-family:Calibri,Arial,sans-serif;';
     $center = 'text-align:center;';
     $right = 'text-align:right;';
     $rang = 0;
+    $grandTotal = 0;
 @endphp
 <!DOCTYPE html>
 <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel">
@@ -41,6 +46,7 @@
             </tr>
 
             @forelse ($objectif->resultats as $resultat)
+                @php $rsTotal = 0; @endphp
                 {{-- Ligne Résultat stratégique --}}
                 <tr>
                     <td colspan="10" style="{{ $rsRow }}">{{ $resultat->code }} {{ $resultat->libelle }}</td>
@@ -53,7 +59,11 @@
                     </tr>
 
                     @forelse ($extrant->activites as $activite)
-                        @php $rang++; @endphp
+                        @php
+                            $rang++;
+                            $rsTotal += (float) $activite->cout;
+                            $grandTotal += (float) $activite->cout;
+                        @endphp
                         <tr>
                             <td style="{{ $cell }}{{ $center }}">{{ $rang }}</td>
                             <td style="{{ $cell }}">{{ $activite->nom_activite }}</td>
@@ -76,6 +86,12 @@
                         <td colspan="10" style="{{ $cell }}{{ $center }}color:#888;">Aucun extrant</td>
                     </tr>
                 @endforelse
+
+                {{-- Sous-total du résultat stratégique --}}
+                <tr>
+                    <td colspan="9" style="{{ $rsTotalLabel }}">Sous-total {{ $resultat->code }}</td>
+                    <td style="{{ $rsTotalCell }}">{{ number_format($rsTotal, 0, '.', ',') }}</td>
+                </tr>
             @empty
                 <tr>
                     <td colspan="10" style="{{ $cell }}{{ $center }}color:#888;">Aucun résultat</td>
@@ -87,6 +103,12 @@
         @empty
             <tr><td style="{{ $cell }}">Aucun objectif pour cet exercice {{ $exercice->annee }}.</td></tr>
         @endforelse
+
+        {{-- Total général de l'exercice --}}
+        <tr>
+            <td colspan="9" style="{{ $grandTotalLabel }}">TOTAL GÉNÉRAL — Exercice {{ $exercice->annee }}</td>
+            <td style="{{ $grandTotalCell }}">{{ number_format($grandTotal, 0, '.', ',') }}</td>
+        </tr>
     </table>
 </body>
 </html>
