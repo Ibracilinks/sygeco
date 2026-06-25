@@ -26,9 +26,10 @@ class RelanceSoumissionActivitesNotification extends Notification
         return (new MailMessage)
             ->subject('Relance — soumission des activités (exercice '.$this->exercice->annee.')')
             ->greeting('Bonjour '.$notifiable->name.',')
-            ->line("L'exercice {$this->exercice->annee} compte encore {$this->nbBrouillons} activité(s) en brouillon pour votre département.")
+            ->line("La Direction du Budget, du Contrôle de Gestion, de l'Organisation et de la Qualité (DBCGOQ) attire votre attention sur l'état d'avancement du Plan de Travail Annuel de l'exercice {$this->exercice->annee}.")
+            ->line("À ce jour, votre département compte encore **{$this->nbBrouillons} activité(s) en brouillon** non soumise(s) à validation.")
             ->action('Voir les activités', url(route('activites.index')))
-            ->line('Merci de les soumettre pour validation.');
+            ->line('Nous vous prions de bien vouloir procéder à leur soumission pour validation dans les meilleurs délais.');
     }
 
     public function toArray(object $notifiable): array
@@ -38,6 +39,7 @@ class RelanceSoumissionActivitesNotification extends Notification
             'annee' => $this->exercice->annee,
             'nb_brouillons' => $this->nbBrouillons,
             'message' => "Relance exercice {$this->exercice->annee} : {$this->nbBrouillons} activité(s) à soumettre.",
+            'url' => route('activites.index'),
         ];
     }
 }

@@ -15,7 +15,7 @@ class ActiviteValidee extends Notification
 
     public function via($notifiable)
     {
-        return ['mail'];
+        return ['mail', 'database'];
     }
 
     public function toMail($notifiable)
@@ -37,9 +37,12 @@ class ActiviteValidee extends Notification
     public function toArray($notifiable)
     {
         return [
+            'type' => 'activite_validee',
             'activite_id' => $this->activite->id,
             'action' => 'validée',
             'commentaire' => $this->commentaire,
+            'message' => 'Votre activité « ' . $this->activite->nom_activite . ' » a été validée.',
+            'url' => route('activites.show', $this->activite),
         ];
     }
 }

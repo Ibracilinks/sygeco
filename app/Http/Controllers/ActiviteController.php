@@ -6,10 +6,15 @@ use App\Models\Activite;
 use App\Models\ActivitePieceJointe;
 use App\Models\Departement;
 use App\Models\Extrant;
+use App\Models\User;
+use App\Notifications\ActiviteRefusee;
+use App\Notifications\ActiviteSoumiseNotification;
+use App\Notifications\ActiviteValidee;
 use App\Support\ActiveExercice;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 
@@ -309,6 +314,8 @@ class ActiviteController extends Controller
         $this->authorize('submit', $activite);
 
         if ($activite->soumettre()) {
+            $this->notifierValidateurs($activite);
+
             return redirect()->route('activites.index')
                 ->with('success', 'Activité soumise avec succès.');
         }
@@ -328,6 +335,10 @@ class ActiviteController extends Controller
         }
 
         if ($activite->valider()) {
+            if ($activite->saisiePar) {
+                $activite->saisiePar->notify(new ActiviteValidee($activite));
+            }
+
             return redirect()->route('activites.index')
                 ->with('success', 'Activité validée avec succès.');
         }
@@ -351,12 +362,29 @@ class ActiviteController extends Controller
         ]);
 
         if ($activite->refuser($validated['motif_refus'])) {
+            if ($activite->saisiePar) {
+                $activite->saisiePar->notify(new ActiviteRefusee($activite, $validated['motif_refus']));
+            }
+
             return redirect()->route('activites.show', $activite)
                 ->with('success', 'Activité refusée et renvoyée en brouillon.');
         }
 
         return redirect()->route('activites.show', $activite)
             ->with('error', 'Impossible de refuser cette activité.');
+    }
+
+    /**
+     * Notifie les comptes habilités à valider (permission validate_activites) qu'une activité
+     * vient d'être soumise.
+     */
+    protected function notifierValidateurs(Activite $activite): void
+    {
+        $validateurs = User::query()->permission('validate_activites')->get();
+
+        if ($validateurs->isNotEmpty()) {
+            Notification::send($validateurs, new ActiviteSoumiseNotification($activite));
+        }
     }
 
     /**

@@ -7,6 +7,7 @@ use App\Http\Controllers\ExerciceController;
 use App\Http\Controllers\ExtrantController;
 use App\Http\Controllers\ActiviteController;
 use App\Http\Controllers\JournalController;
+use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\ObjectifController;
 use App\Http\Controllers\ResultatController;
 use App\Http\Controllers\UserController;
@@ -19,6 +20,14 @@ Route::get('/', function () {
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard');
+
+    // Notifications in-app (accessible à tout utilisateur connecté)
+    Route::prefix('notifications')->name('notifications.')->group(function () {
+        Route::get('/', [NotificationController::class, 'index'])->name('index');
+        Route::post('/lire-tout', [NotificationController::class, 'readAll'])->name('read-all');
+        Route::get('/{notification}/lire', [NotificationController::class, 'read'])->name('read');
+        Route::delete('/{notification}', [NotificationController::class, 'destroy'])->name('destroy');
+    });
 
     Route::middleware(['role:dbcgoq'])->group(function () {
         Route::get('budget-analysis', [BudgetAnalysisController::class, 'index'])->name('budget.analysis');

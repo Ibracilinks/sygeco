@@ -45,6 +45,7 @@ class MiParcoursOuvertNotification extends Notification
             'annee' => $this->exercice->annee,
             'date_fin' => $this->exercice->date_fin_mi_parcours?->toDateString(),
             'message' => "Suivi à mi-parcours ouvert pour l'exercice {$this->exercice->annee} : renseignez l'état d'exécution de vos activités.",
+            'url' => route('activites.suivi'),
         ];
     }
 }

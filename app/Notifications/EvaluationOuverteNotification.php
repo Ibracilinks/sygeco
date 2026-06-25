@@ -45,6 +45,7 @@ class EvaluationOuverteNotification extends Notification
             'annee' => $this->exercice->annee,
             'date_fin' => $this->exercice->date_fin_evaluation?->toDateString(),
             'message' => "Évaluation de fin d'exercice ouverte pour l'exercice {$this->exercice->annee} : finalisez l'état d'exécution de vos activités.",
+            'url' => route('activites.suivi'),
         ];
     }
 }

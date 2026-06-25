@@ -43,6 +43,7 @@ class OuvertureSaisieActivitesNotification extends Notification
             'annee' => $this->exercice->annee,
             'date_limite_saisie' => $this->exercice->date_limite_saisie?->toDateString(),
             'message' => "Ouverture de la saisie des activités pour l'exercice {$this->exercice->annee}.",
+            'url' => route('activites.index'),
         ];
     }
 }

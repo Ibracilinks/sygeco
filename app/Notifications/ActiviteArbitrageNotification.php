@@ -50,6 +50,7 @@ class ActiviteArbitrageNotification extends Notification
             'nom_consolidee' => $this->nomConsolidee,
             'motif' => $this->motif,
             'message' => $this->phrase(),
+            'url' => route('activites.index'),
         ];
     }
 
