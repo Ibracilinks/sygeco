@@ -78,6 +78,14 @@ class Activite extends Model
         return $this->belongsTo(User::class, 'execution_maj_par');
     }
 
+    /**
+     * Exercice rattaché à l'activité (via extrant → objectif).
+     */
+    public function exercice(): ?Exercice
+    {
+        return $this->extrant?->objectif?->exercice;
+    }
+
     public function scopeByStatutExecution($query, $statut)
     {
         return $query->where('statut_execution', $statut);

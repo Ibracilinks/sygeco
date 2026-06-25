@@ -34,6 +34,9 @@
                     wire:navigate>
                     {{ __('Dashboard') }}
                 </flux:sidebar.item>
+                <flux:sidebar.item icon="presentation-chart-line" href="{{ route('sap.analytics') }}" target="_blank">
+                    SAP Cloud Analytics
+                </flux:sidebar.item>
             </flux:sidebar.group>
 
             <!-- Organisation -->
@@ -107,6 +110,13 @@
                     :current="request()->routeIs('activites.suivi')">
                     {{ __('Suivi des activités') }}
                 </flux:sidebar.item>
+
+                @php($nbNonLues = auth()->user()?->unreadNotifications()->count() ?? 0)
+                <flux:sidebar.item icon="bell" href="{{ route('notifications.index') }}"
+                    :badge="$nbNonLues > 0 ? $nbNonLues : null"
+                    :current="request()->routeIs('notifications.*')">
+                    {{ __('Notifications') }}
+                </flux:sidebar.item>
             </flux:sidebar.group>
         </flux:sidebar.nav>
 
@@ -120,6 +130,8 @@
         <flux:sidebar.toggle class="lg:hidden" icon="bars-2" inset="left" />
 
         <flux:spacer />
+
+        <x-notifications-menu />
 
         <flux:dropdown position="top" align="end">
             <flux:profile :initials="auth()->user()->initials()" icon-trailing="chevron-down" />

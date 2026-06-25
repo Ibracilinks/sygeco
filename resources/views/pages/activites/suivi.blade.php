@@ -18,6 +18,29 @@
             </div>
         @endif
 
+        {{-- État de la fenêtre de saisie de l'exécution --}}
+        @if ($periodeSuivi === 'mi_parcours')
+            <div class="rounded-lg border border-sky-200 bg-sky-50 p-4 dark:border-sky-800 dark:bg-sky-950/40">
+                <p class="text-sm font-medium text-sky-800 dark:text-sky-200">
+                    🟢 Période de suivi à mi-parcours ouverte@if ($exercice?->date_fin_mi_parcours) — jusqu'au {{ $exercice->date_fin_mi_parcours->format('d/m/Y') }}@endif.
+                    Renseignez l'état d'exécution de vos activités.
+                </p>
+            </div>
+        @elseif ($periodeSuivi === 'evaluation')
+            <div class="rounded-lg border border-indigo-200 bg-indigo-50 p-4 dark:border-indigo-800 dark:bg-indigo-950/40">
+                <p class="text-sm font-medium text-indigo-800 dark:text-indigo-200">
+                    🟢 Période d'évaluation de fin d'exercice ouverte@if ($exercice?->date_fin_evaluation) — jusqu'au {{ $exercice->date_fin_evaluation->format('d/m/Y') }}@endif.
+                    Finalisez l'état d'exécution de vos activités.
+                </p>
+            </div>
+        @elseif (! $peutSaisirExecution)
+            <div class="rounded-lg border border-amber-200 bg-amber-50 p-4 dark:border-amber-800 dark:bg-amber-950/40">
+                <p class="text-sm font-medium text-amber-800 dark:text-amber-200">
+                    🔒 Aucune fenêtre de saisie ouverte. La mise à jour de l'exécution n'est possible que pendant les périodes de mi-parcours ou d'évaluation.
+                </p>
+            </div>
+        @endif
+
         {{-- KPI avancement --}}
         <div class="grid grid-cols-2 gap-4 sm:grid-cols-3 xl:grid-cols-5">
             <div class="rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-900">
@@ -106,7 +129,7 @@
                                 @endif
                             </td>
                             <td class="px-5 py-4">
-                                @can('edit_activites')
+                                @if (auth()->user()->can('edit_activites') && $peutSaisirExecution)
                                     <form action="{{ route('activites.execution', $activite) }}" method="POST" class="flex flex-col gap-2 sm:flex-row sm:items-start">
                                         @csrf
                                         <select name="statut_execution"
@@ -122,7 +145,7 @@
                                     </form>
                                 @else
                                     <p class="text-sm text-slate-600 dark:text-slate-300">{{ $activite->execution_commentaire ?: '—' }}</p>
-                                @endcan
+                                @endif
                             </td>
                         </tr>
                     @empty

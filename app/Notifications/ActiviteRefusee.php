@@ -15,7 +15,7 @@ class ActiviteRefusee extends Notification
 
     public function via($notifiable)
     {
-        return ['mail'];
+        return ['mail', 'database'];
     }
 
     public function toMail($notifiable)
@@ -34,9 +34,12 @@ class ActiviteRefusee extends Notification
     public function toArray($notifiable)
     {
         return [
+            'type' => 'activite_refusee',
             'activite_id' => $this->activite->id,
             'action' => 'refusée',
             'motif' => $this->motif,
+            'message' => 'Votre activité « ' . $this->activite->nom_activite . ' » a été refusée. Motif : ' . $this->motif,
+            'url' => route('activites.show', $this->activite),
         ];
     }
 }

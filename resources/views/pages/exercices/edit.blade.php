@@ -57,6 +57,50 @@
                         @enderror
                     </div>
                 </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium dark:text-white mb-1">Début du mi-parcours</label>
+                        <input type="date" name="date_debut_mi_parcours"
+                            value="{{ old('date_debut_mi_parcours', $exercice->date_debut_mi_parcours?->format('Y-m-d')) }}"
+                            class="w-full rounded-lg border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-zinc-900 px-3 py-2 dark:text-white">
+                        <p class="mt-1 text-xs text-neutral-500">Ouvre la saisie de l'exécution (réalisé / en cours / non réalisé).</p>
+                        @error('date_debut_mi_parcours')
+                            <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                        @enderror
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium dark:text-white mb-1">Fin du mi-parcours</label>
+                        <input type="date" name="date_fin_mi_parcours"
+                            value="{{ old('date_fin_mi_parcours', $exercice->date_fin_mi_parcours?->format('Y-m-d')) }}"
+                            class="w-full rounded-lg border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-zinc-900 px-3 py-2 dark:text-white">
+                        <p class="mt-1 text-xs text-neutral-500">Ferme la fenêtre de suivi à mi-parcours.</p>
+                        @error('date_fin_mi_parcours')
+                            <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                        @enderror
+                    </div>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium dark:text-white mb-1">Début de l'évaluation</label>
+                        <input type="date" name="date_debut_evaluation"
+                            value="{{ old('date_debut_evaluation', $exercice->date_debut_evaluation?->format('Y-m-d')) }}"
+                            class="w-full rounded-lg border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-zinc-900 px-3 py-2 dark:text-white">
+                        <p class="mt-1 text-xs text-neutral-500">Ouvre l'évaluation de fin d'exercice (bilan d'exécution).</p>
+                        @error('date_debut_evaluation')
+                            <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                        @enderror
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium dark:text-white mb-1">Fin de l'évaluation</label>
+                        <input type="date" name="date_fin_evaluation"
+                            value="{{ old('date_fin_evaluation', $exercice->date_fin_evaluation?->format('Y-m-d')) }}"
+                            class="w-full rounded-lg border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-zinc-900 px-3 py-2 dark:text-white">
+                        <p class="mt-1 text-xs text-neutral-500">Ferme la fenêtre d'évaluation.</p>
+                        @error('date_fin_evaluation')
+                            <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                        @enderror
+                    </div>
+                </div>
                 <div>
                     <label class="block text-sm font-medium dark:text-white mb-1">Statut *</label>
                     <select name="statut"

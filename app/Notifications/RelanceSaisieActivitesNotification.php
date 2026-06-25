@@ -31,17 +31,18 @@ class RelanceSaisieActivitesNotification extends Notification
 
         $mail = (new MailMessage)
             ->subject($this->sujet().' — exercice '.$this->exercice->annee)
-            ->greeting('Bonjour '.$notifiable->name.',');
+            ->greeting('Bonjour '.$notifiable->name.',')
+            ->line("Dans le cadre de l'élaboration du Plan de Travail Annuel (PTA) de l'exercice {$this->exercice->annee}, la Direction du Budget, du Contrôle de Gestion, de l'Organisation et de la Qualité (DBCGOQ) vous rappelle que la saisie de vos activités est en cours.");
 
         if ($jours === 0) {
-            $mail->line("Dernier jour pour renseigner vos activités de l'exercice {$this->exercice->annee}".($limite ? " (date limite : {$limite})" : '').'.');
+            $mail->line("**Aujourd'hui est le dernier jour** pour renseigner vos activités".($limite ? " (date limite : {$limite})" : '').'.');
         } else {
-            $mail->line("Il reste {$jours} jour(s) pour renseigner vos activités de l'exercice {$this->exercice->annee}".($limite ? " (date limite : {$limite})" : '').'.');
+            $mail->line("Il vous reste **{$jours} jour(s)** pour finaliser cette saisie".($limite ? " (date limite : {$limite})" : '').'.');
         }
 
         return $mail
             ->action('Renseigner mes activités', url(route('activites.index')))
-            ->line('Merci de finaliser la saisie de vos activités dans les délais.');
+            ->line('Nous vous remercions de bien vouloir finaliser la saisie de vos activités avant l\'échéance afin de garantir la consolidation du PTA dans les délais impartis.');
     }
 
     public function toArray(object $notifiable): array
@@ -52,6 +53,7 @@ class RelanceSaisieActivitesNotification extends Notification
             'palier' => $this->palier,
             'date_limite_saisie' => $this->exercice->date_limite_saisie?->toDateString(),
             'message' => $this->sujet()." (exercice {$this->exercice->annee}).",
+            'url' => route('activites.index'),
         ];
     }
 

@@ -31,7 +31,9 @@ class ActiviteFactory extends Factory
 
         return [
             'extrant_id' => Extrant::factory(),
-            'departement_id' => Departement::get()->random()->id,
+            // Réutilise un département existant (comportement des seeders) ou en crée
+            // un à la volée si la base est vide (cas des tests).
+            'departement_id' => Departement::query()->inRandomOrder()->value('id') ?? Departement::factory(),
             'nom_activite' => $this->generateNomActivite(),
             'indicateur_objectivement_verifiable' => $this->generateIndicateur(),
             'moyen_verification' => $this->generateMoyenVerification(),

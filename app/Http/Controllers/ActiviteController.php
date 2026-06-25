@@ -6,10 +6,15 @@ use App\Models\Activite;
 use App\Models\ActivitePieceJointe;
 use App\Models\Departement;
 use App\Models\Extrant;
+use App\Models\User;
+use App\Notifications\ActiviteRefusee;
+use App\Notifications\ActiviteSoumiseNotification;
+use App\Notifications\ActiviteValidee;
 use App\Support\ActiveExercice;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 
@@ -138,7 +143,14 @@ class ActiviteController extends Controller
         $departements = Departement::active()->ordered()->get();
         $filters = $request->only(['search', 'extrant_id', 'departement_id', 'statut_execution']);
 
-        return view('pages.activites.suivi', compact('activites', 'extrants', 'departements', 'summary', 'filters'));
+        // Fenêtre de saisie de l'exécution : ouverte pour le dbcgoq en permanence,
+        // sinon uniquement pendant le mi-parcours ou l'évaluation de l'exercice actif.
+        $exercice = ActiveExercice::model();
+        $periodeSuivi = $exercice?->periodeSuiviCourante();
+        $peutSaisirExecution = Auth::user()->can('validate_activites')
+            || ($exercice?->enPeriodeSuiviExecution() ?? false);
+
+        return view('pages.activites.suivi', compact('activites', 'extrants', 'departements', 'summary', 'filters', 'exercice', 'periodeSuivi', 'peutSaisirExecution'));
     }
 
     /**
@@ -302,6 +314,8 @@ class ActiviteController extends Controller
         $this->authorize('submit', $activite);
 
         if ($activite->soumettre()) {
+            $this->notifierValidateurs($activite);
+
             return redirect()->route('activites.index')
                 ->with('success', 'Activité soumise avec succès.');
         }
@@ -321,6 +335,10 @@ class ActiviteController extends Controller
         }
 
         if ($activite->valider()) {
+            if ($activite->saisiePar) {
+                $activite->saisiePar->notify(new ActiviteValidee($activite));
+            }
+
             return redirect()->route('activites.index')
                 ->with('success', 'Activité validée avec succès.');
         }
@@ -344,6 +362,10 @@ class ActiviteController extends Controller
         ]);
 
         if ($activite->refuser($validated['motif_refus'])) {
+            if ($activite->saisiePar) {
+                $activite->saisiePar->notify(new ActiviteRefusee($activite, $validated['motif_refus']));
+            }
+
             return redirect()->route('activites.show', $activite)
                 ->with('success', 'Activité refusée et renvoyée en brouillon.');
         }
@@ -353,12 +375,48 @@ class ActiviteController extends Controller
     }
 
     /**
+     * Notifie qu'une activité vient d'être soumise.
+     *
+     * Cible « par département » : le ou les chefs du département de l'activité (hors auteur
+     * de la soumission). Si le département n'a pas de chef, on prévient les validateurs
+     * centraux (permission validate_activites) pour que la soumission ne passe pas inaperçue.
+     */
+    protected function notifierValidateurs(Activite $activite): void
+    {
+        $destinataires = User::query()
+            ->role('chef_departement')
+            ->where('departement_id', $activite->departement_id)
+            ->where('id', '!=', Auth::id())
+            ->get();
+
+        if ($destinataires->isEmpty()) {
+            $destinataires = User::query()->permission('validate_activites')->get();
+        }
+
+        if ($destinataires->isNotEmpty()) {
+            Notification::send($destinataires, new ActiviteSoumiseNotification($activite));
+        }
+    }
+
+    /**
      * Mettre à jour le suivi d'exécution (Track Activité : réalisé / en cours / non réalisé).
      */
     public function updateExecution(Request $request, Activite $activite)
     {
-        if (! Auth::user()->can('edit_activites') && ! Auth::user()->can('validate_activites')) {
+        $user = Auth::user();
+
+        if (! $user->can('edit_activites') && ! $user->can('validate_activites')) {
             return back()->with('error', "Vous n'êtes pas autorisé à mettre à jour le suivi d'exécution.");
+        }
+
+        // Les chefs de département ne peuvent renseigner l'exécution que pendant une fenêtre
+        // ouverte (mi-parcours ou évaluation). Le dbcgoq (validate_activites) garde l'accès permanent.
+        if (! $user->can('validate_activites')) {
+            $exercice = $activite->exercice();
+
+            if (! $exercice || ! $exercice->enPeriodeSuiviExecution()) {
+                return back()->with('error', "La saisie de l'exécution n'est ouverte que pendant les périodes de mi-parcours ou d'évaluation.");
+            }
         }
 
         $validated = $request->validate([

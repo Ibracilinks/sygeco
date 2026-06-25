@@ -12,7 +12,6 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
-use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class ValidationController extends Controller
 {
@@ -255,49 +254,49 @@ class ValidationController extends Controller
 
     public function exporter(Request $request)
     {
-        $query = $this->buildQuery($request)->with(['extrant.objectif', 'departement', 'saisiePar']);
+        $activites = $this->buildQuery($request)
+            ->with([
+                'extrant.resultat.objectif',
+                'departement:id,code,nom',
+                'departements:id,code,nom',
+            ])
+            ->get();
 
-        $filename = 'activites-en-attente-' . now()->format('Ymd_His') . '.csv';
+        // Regroupe les activités selon le cadre logique : Objectif → Résultat stratégique → Extrant.
+        $objectifs = $activites
+            ->groupBy(fn ($a) => optional(optional($a->extrant)->resultat)->objectif_id)
+            ->map(function ($parObjectif) {
+                $objectif = optional(optional($parObjectif->first()->extrant)->resultat)->objectif;
 
-        $response = new StreamedResponse(function () use ($query) {
-            $handle = fopen('php://output', 'w');
-            fputcsv($handle, [
-                'Code activité',
-                'Nom activité',
-                'Département',
-                'Extrant',
-                'Objectif',
-                'Date de soumission',
-                'Coût',
-                'Indicateur',
-                'Saisi par',
-                'Statut',
-            ]);
+                $resultats = $parObjectif
+                    ->groupBy(fn ($a) => optional($a->extrant)->resultat_id)
+                    ->map(function ($parResultat) {
+                        $resultat = optional($parResultat->first()->extrant)->resultat;
 
-            $query->chunk(100, function ($activites) use ($handle) {
-                foreach ($activites as $activite) {
-                    fputcsv($handle, [
-                        'ACT-' . $activite->id,
-                        $activite->nom_activite,
-                        $activite->departement->nom ?? 'N/A',
-                        $activite->extrant->code ?? 'N/A',
-                        $activite->extrant->objectif->code ?? 'N/A',
-                        optional($activite->date_soumission)->format('d/m/Y H:i'),
-                        number_format($activite->cout, 0, ',', ' '),
-                        $activite->indicateur_objectivement_verifiable,
-                        $activite->saisiePar->name ?? 'N/A',
-                        $activite->statut,
-                    ]);
-                }
-            });
+                        $extrants = $parResultat
+                            ->groupBy(fn ($a) => $a->extrant_id)
+                            ->map(fn ($parExtrant) => [
+                                'extrant' => $parExtrant->first()->extrant,
+                                'activites' => $parExtrant->values(),
+                            ])
+                            ->values();
 
-            fclose($handle);
-        });
+                        return ['resultat' => $resultat, 'extrants' => $extrants];
+                    })
+                    ->values();
 
-        $response->headers->set('Content-Type', 'text/csv; charset=UTF-8');
-        $response->headers->set('Content-Disposition', "attachment; filename=\"{$filename}\"");
+                return ['objectif' => $objectif, 'resultats' => $resultats];
+            })
+            ->values();
 
-        return $response;
+        $html = view('pages.validations.export', compact('objectifs'))->render();
+
+        $filename = 'cadre-logique-activites-' . now()->format('Ymd_His') . '.xls';
+
+        return response($html, 200, [
+            'Content-Type' => 'application/vnd.ms-excel; charset=UTF-8',
+            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+        ]);
     }
 
     private function buildQuery(Request $request)

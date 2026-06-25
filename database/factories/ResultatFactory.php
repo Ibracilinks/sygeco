@@ -64,6 +64,8 @@ class ResultatFactory extends Factory
         $code = $resultat['code_prefix'] . '_' . $numero;
 
         return [
+            // FK non nullable ; surchargé par forObjectif() et les seeders.
+            'objectif_id' => Objectif::factory(),
             'code' => $code,
             'libelle' => $resultat['libelle'],
             'description' => $resultat['description'],
