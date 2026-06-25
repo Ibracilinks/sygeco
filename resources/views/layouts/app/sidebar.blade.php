@@ -34,6 +34,9 @@
                     wire:navigate>
                     {{ __('Dashboard') }}
                 </flux:sidebar.item>
+                <flux:sidebar.item icon="presentation-chart-line" href="{{ route('sap.analytics') }}" target="_blank">
+                    SAP Cloud Analytics
+                </flux:sidebar.item>
             </flux:sidebar.group>
 
             <!-- Organisation -->

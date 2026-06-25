@@ -10,6 +10,7 @@ use App\Http\Controllers\JournalController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\ObjectifController;
 use App\Http\Controllers\ResultatController;
+use App\Http\Controllers\SapAnalyticsController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\ValidationController;
 use Illuminate\Support\Facades\Route;
@@ -20,6 +21,9 @@ Route::get('/', function () {
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard');
+
+    // Dashboard parallèle « SAP Cloud Analytics » (présentation autonome, mêmes données)
+    Route::get('sap-analytics', [SapAnalyticsController::class, 'index'])->name('sap.analytics');
 
     // Notifications in-app (accessible à tout utilisateur connecté)
     Route::prefix('notifications')->name('notifications.')->group(function () {

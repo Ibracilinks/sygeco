@@ -412,7 +412,9 @@ class DashboardDataService
             ->withCount([
                 'activites as nb_brouillon' => fn ($q) => $q->forExercice($exerciceId)->where('statut', 'brouillon'),
             ])
-            ->having('nb_brouillon', '>', 0)
+            // Équivaut à « nb_brouillon > 0 » sans HAVING (rejeté par SQLite sans GROUP BY,
+            // et portable sur tous les SGBD).
+            ->whereHas('activites', fn ($q) => $q->forExercice($exerciceId)->where('statut', 'brouillon'))
             ->get()
             ->map(fn ($d) => [
                 'nom' => $d->nom,
