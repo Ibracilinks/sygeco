@@ -32,7 +32,7 @@ class OuvertureSaisieActivitesNotification extends Notification
         }
 
         return $mail
-            ->action('Renseigner mes activités', url(route('activites.index')))
+            ->action('Renseigner mes activités', url($this->lien($notifiable)))
             ->line('Merci de renseigner vos activités avant la date limite.');
     }
 
@@ -43,7 +43,17 @@ class OuvertureSaisieActivitesNotification extends Notification
             'annee' => $this->exercice->annee,
             'date_limite_saisie' => $this->exercice->date_limite_saisie?->toDateString(),
             'message' => "Ouverture de la saisie des activités pour l'exercice {$this->exercice->annee}.",
-            'url' => route('activites.index'),
+            'url' => $this->lien($notifiable),
         ];
+    }
+
+    /**
+     * Le DBCGOQ ouvre la fiche de l'exercice ; les autres comptes, leur écran de saisie.
+     */
+    private function lien(object $notifiable): string
+    {
+        return $notifiable->hasRole('dbcgoq')
+            ? route('exercices.show', $this->exercice)
+            : route('activites.index');
     }
 }

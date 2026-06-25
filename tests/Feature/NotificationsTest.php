@@ -99,12 +99,69 @@ test('ActiviteValidee et ActiviteRefusee passent par mail et database', function
     expect((new ActiviteRefusee($activite, 'motif assez long'))->via(new User()))->toBe(['mail', 'database']);
 });
 
-test('le payload database contient un message et une url', function () {
+test('le payload database contient un message et une url vers l\'entité', function () {
+    seedRolesAndPermissions();
     $activite = Activite::factory()->create();
-    $data = (new ActiviteSoumiseNotification($activite))->toArray(new User());
 
-    expect($data)->toHaveKeys(['message', 'url', 'activite_id']);
-    expect($data['url'])->toContain('/validations/');
+    // Un chef ouvre la fiche de l'activité...
+    $chef = User::factory()->create();
+    $chef->assignRole('chef_departement');
+    $dataChef = (new ActiviteSoumiseNotification($activite))->toArray($chef);
+
+    expect($dataChef)->toHaveKeys(['message', 'url', 'activite_id']);
+    expect($dataChef['url'])->toContain('/activites/'.$activite->id);
+
+    // ...le DBCGOQ ouvre l'écran de validation de cette même activité.
+    $admin = User::factory()->create();
+    $admin->assignRole('dbcgoq');
+    $dataAdmin = (new ActiviteSoumiseNotification($activite))->toArray($admin);
+
+    expect($dataAdmin['url'])->toContain('/validations/'.$activite->id);
+});
+
+test('le lien de soumission reçu par le chef pointe vers une page accessible (pas 403)', function () {
+    seedRolesAndPermissions();
+    $dep = \App\Models\Departement::factory()->create();
+    $chef = User::factory()->dansDepartement($dep)->create();
+    $chef->assignRole('chef_departement');
+    $activite = Activite::factory()->soumis()->pourDepartement($dep)->create();
+
+    $url = (new ActiviteSoumiseNotification($activite))->toArray($chef)['url'];
+
+    // Le chef doit pouvoir réellement ouvrir le lien de la notification.
+    $this->actingAs($chef)->get($url)->assertOk();
+});
+
+test('le lien d\'arbitrage pointe vers l\'activité concernée', function () {
+    seedRolesAndPermissions();
+    $dep = \App\Models\Departement::factory()->create();
+    $auteur = User::factory()->dansDepartement($dep)->create();
+    $auteur->assignRole('chef_departement');
+    $activite = Activite::factory()->pourDepartement($dep)->create();
+
+    // Cas « modifiée » : lien vers la fiche de l'activité (accessible à l'auteur).
+    $modif = (new \App\Notifications\ActiviteArbitrageNotification('modifiee', $activite->nom_activite, 'motif', null, $activite))->toArray($auteur);
+    expect($modif['url'])->toContain('/activites/'.$activite->id);
+
+    // Cas « supprimée » : l'entité n'existe plus -> repli sur la liste.
+    $suppr = (new \App\Notifications\ActiviteArbitrageNotification('supprimee', 'Nom snapshot', 'motif', null, null))->toArray($auteur);
+    expect($suppr['url'])->toContain('/activites');
+    expect($suppr['url'])->not->toContain('/activites/');
+});
+
+test('le lien des notifications d\'exercice est adapté au rôle', function () {
+    seedRolesAndPermissions();
+    $exercice = \App\Models\Exercice::factory()->create(['annee' => 2026]);
+
+    $admin = User::factory()->create();
+    $admin->assignRole('dbcgoq');
+    $chef = User::factory()->create();
+    $chef->assignRole('chef_departement');
+
+    $notif = new \App\Notifications\MiParcoursOuvertNotification($exercice);
+
+    expect($notif->toArray($admin)['url'])->toContain('/exercices/'.$exercice->id);
+    expect($notif->toArray($chef)['url'])->toContain('/activites/suivi');
 });
 
 /*

@@ -33,8 +33,18 @@ class MiParcoursOuvertNotification extends Notification
         }
 
         return $mail
-            ->action('Renseigner le suivi', url(route('activites.suivi')))
+            ->action('Renseigner le suivi', url($this->lien($notifiable)))
             ->line('Merci de votre collaboration.');
+    }
+
+    /**
+     * Le DBCGOQ ouvre la fiche de l'exercice ; les chefs, l'écran de suivi d'exécution.
+     */
+    private function lien(object $notifiable): string
+    {
+        return $notifiable->hasRole('dbcgoq')
+            ? route('exercices.show', $this->exercice)
+            : route('activites.suivi');
     }
 
     public function toArray(object $notifiable): array
@@ -45,7 +55,7 @@ class MiParcoursOuvertNotification extends Notification
             'annee' => $this->exercice->annee,
             'date_fin' => $this->exercice->date_fin_mi_parcours?->toDateString(),
             'message' => "Suivi à mi-parcours ouvert pour l'exercice {$this->exercice->annee} : renseignez l'état d'exécution de vos activités.",
-            'url' => route('activites.suivi'),
+            'url' => $this->lien($notifiable),
         ];
     }
 }

@@ -41,7 +41,7 @@ class RelanceSaisieActivitesNotification extends Notification
         }
 
         return $mail
-            ->action('Renseigner mes activités', url(route('activites.index')))
+            ->action('Renseigner mes activités', url($this->lien($notifiable)))
             ->line('Nous vous remercions de bien vouloir finaliser la saisie de vos activités avant l\'échéance afin de garantir la consolidation du PTA dans les délais impartis.');
     }
 
@@ -53,8 +53,18 @@ class RelanceSaisieActivitesNotification extends Notification
             'palier' => $this->palier,
             'date_limite_saisie' => $this->exercice->date_limite_saisie?->toDateString(),
             'message' => $this->sujet()." (exercice {$this->exercice->annee}).",
-            'url' => route('activites.index'),
+            'url' => $this->lien($notifiable),
         ];
+    }
+
+    /**
+     * Le DBCGOQ ouvre la fiche de l'exercice ; les autres comptes, leur écran de saisie.
+     */
+    private function lien(object $notifiable): string
+    {
+        return $notifiable->hasRole('dbcgoq')
+            ? route('exercices.show', $this->exercice)
+            : route('activites.index');
     }
 
     private function sujet(): string
