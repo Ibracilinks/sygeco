@@ -375,15 +375,26 @@ class ActiviteController extends Controller
     }
 
     /**
-     * Notifie les comptes habilités à valider (permission validate_activites) qu'une activité
-     * vient d'être soumise.
+     * Notifie qu'une activité vient d'être soumise.
+     *
+     * Cible « par département » : le ou les chefs du département de l'activité (hors auteur
+     * de la soumission). Si le département n'a pas de chef, on prévient les validateurs
+     * centraux (permission validate_activites) pour que la soumission ne passe pas inaperçue.
      */
     protected function notifierValidateurs(Activite $activite): void
     {
-        $validateurs = User::query()->permission('validate_activites')->get();
+        $destinataires = User::query()
+            ->role('chef_departement')
+            ->where('departement_id', $activite->departement_id)
+            ->where('id', '!=', Auth::id())
+            ->get();
 
-        if ($validateurs->isNotEmpty()) {
-            Notification::send($validateurs, new ActiviteSoumiseNotification($activite));
+        if ($destinataires->isEmpty()) {
+            $destinataires = User::query()->permission('validate_activites')->get();
+        }
+
+        if ($destinataires->isNotEmpty()) {
+            Notification::send($destinataires, new ActiviteSoumiseNotification($activite));
         }
     }
 

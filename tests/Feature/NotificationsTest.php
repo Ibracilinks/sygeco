@@ -16,7 +16,33 @@ uses(\Illuminate\Foundation\Testing\RefreshDatabase::class);
 |--------------------------------------------------------------------------
 */
 
-test('soumettre une activité notifie les validateurs dbcgoq', function () {
+test('la soumission notifie les chefs du même département, pas ceux des autres', function () {
+    Notification::fake();
+    seedRolesAndPermissions();
+
+    $dep = Departement::factory()->create();
+    $autreDep = Departement::factory()->create();
+
+    $chefAuteur = User::factory()->dansDepartement($dep)->create();
+    $chefAuteur->assignRole('chef_departement');
+    $coChef = User::factory()->dansDepartement($dep)->create();
+    $coChef->assignRole('chef_departement');
+    $chefAutreDep = User::factory()->dansDepartement($autreDep)->create();
+    $chefAutreDep->assignRole('chef_departement');
+
+    $activite = Activite::factory()->brouillon()->pourDepartement($dep)->create();
+
+    $this->actingAs($chefAuteur)->post(route('activites.soumettre', $activite))
+        ->assertRedirect(route('activites.index'));
+
+    // Le co-chef du département reçoit la notification...
+    Notification::assertSentTo($coChef, ActiviteSoumiseNotification::class);
+    // ...mais ni l'auteur de la soumission, ni le chef d'un autre département.
+    Notification::assertNotSentTo($chefAuteur, ActiviteSoumiseNotification::class);
+    Notification::assertNotSentTo($chefAutreDep, ActiviteSoumiseNotification::class);
+});
+
+test('si le département n\'a pas d\'autre chef, le repli notifie les validateurs dbcgoq', function () {
     Notification::fake();
     seedRolesAndPermissions();
 
@@ -43,7 +69,7 @@ test('un agent ne reçoit pas la notification de soumission', function () {
     $chef = User::factory()->dansDepartement($dep)->create();
     $chef->assignRole('chef_departement');
 
-    $agent = User::factory()->create();
+    $agent = User::factory()->dansDepartement($dep)->create();
     $agent->assignRole('agent');
 
     $activite = Activite::factory()->brouillon()->pourDepartement($dep)->create();
