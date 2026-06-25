@@ -222,10 +222,16 @@ test('le scope byDepartement filtre par département', function () {
 });
 
 test('le scope forExercice filtre via extrant -> objectif', function () {
-    $extrant = Extrant::factory()->create();
-    $exerciceId = $extrant->objectif->exercice_id;
-    Activite::factory()->pourExtrant($extrant)->count(2)->create();
-    Activite::factory()->count(1)->create();
+    // Deux exercices distincts et explicites pour éviter toute collision d'année aléatoire.
+    $objectifA = \App\Models\Objectif::factory()->pourAnnee(2024)->create();
+    $extrantA = Extrant::factory()->create(['objectif_id' => $objectifA->id]);
+    $exerciceId = $objectifA->exercice_id;
+
+    $objectifB = \App\Models\Objectif::factory()->pourAnnee(2025)->create();
+    $extrantB = Extrant::factory()->create(['objectif_id' => $objectifB->id]);
+
+    Activite::factory()->pourExtrant($extrantA)->count(2)->create();
+    Activite::factory()->pourExtrant($extrantB)->count(1)->create();
 
     expect(Activite::forExercice($exerciceId)->count())->toBe(2);
     expect(Activite::forExercice(null)->count())->toBe(3);

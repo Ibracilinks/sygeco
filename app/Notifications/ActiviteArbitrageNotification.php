@@ -2,6 +2,7 @@
 
 namespace App\Notifications;
 
+use App\Models\Activite;
 use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
@@ -13,12 +14,15 @@ class ActiviteArbitrageNotification extends Notification
     /**
      * @param  string  $action  modifiee | supprimee | fusionnee
      * @param  string  $nomActivite  Libellé de l'activité concernée (snapshot)
+     * @param  Activite|null  $cible  Entité à consulter (activité modifiée ou consolidée) ;
+     *                                 null pour une suppression (l'entité n'existe plus).
      */
     public function __construct(
         public string $action,
         public string $nomActivite,
         public ?string $motif = null,
-        public ?string $nomConsolidee = null
+        public ?string $nomConsolidee = null,
+        public ?Activite $cible = null
     ) {}
 
     public function via(object $notifiable): array
@@ -37,8 +41,10 @@ class ActiviteArbitrageNotification extends Notification
             $mail->line('Motif : '.$this->motif);
         }
 
+        $cible = $this->lien($notifiable);
+
         return $mail
-            ->action('Voir mes activités', url(route('activites.index')))
+            ->action($this->cible ? 'Voir l\'activité' : 'Voir mes activités', url($cible))
             ->line("Cette décision a été prise lors de l'arbitrage budgétaire, avant validation.");
     }
 
@@ -50,8 +56,21 @@ class ActiviteArbitrageNotification extends Notification
             'nom_consolidee' => $this->nomConsolidee,
             'motif' => $this->motif,
             'message' => $this->phrase(),
-            'url' => route('activites.index'),
+            'url' => $this->lien($notifiable),
         ];
+    }
+
+    /**
+     * Lien vers l'entité concernée si elle existe encore et que le destinataire peut la consulter,
+     * sinon repli sur la liste des activités (cas d'une suppression).
+     */
+    private function lien(object $notifiable): string
+    {
+        if ($this->cible && $notifiable->can('view', $this->cible)) {
+            return route('activites.show', $this->cible);
+        }
+
+        return route('activites.index');
     }
 
     private function sujet(): string

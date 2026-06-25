@@ -139,7 +139,7 @@ class ValidationController extends Controller
             $validated['motif'] ?? null
         );
 
-        $this->notifierArbitrage($activite->saisiePar, 'modifiee', $activite->nom_activite, $validated['motif'] ?? null);
+        $this->notifierArbitrage($activite->saisiePar, 'modifiee', $activite->nom_activite, $validated['motif'] ?? null, null, $activite);
 
         return redirect()->route('validations.index')
             ->with('success', 'Activité modifiée et l\'auteur a été notifié.');
@@ -223,7 +223,7 @@ class ValidationController extends Controller
         $sources->groupBy('saisi_par')->each(function ($groupe) use ($validated, $consolidee) {
             $auteur = $groupe->first()->saisiePar;
             foreach ($groupe as $source) {
-                $this->notifierArbitrage($auteur, 'fusionnee', $source->nom_activite, $validated['motif'] ?? null, $consolidee->nom_activite);
+                $this->notifierArbitrage($auteur, 'fusionnee', $source->nom_activite, $validated['motif'] ?? null, $consolidee->nom_activite, $consolidee);
             }
         });
 
@@ -245,10 +245,10 @@ class ValidationController extends Controller
         ];
     }
 
-    private function notifierArbitrage($auteur, string $action, string $nom, ?string $motif, ?string $nomConsolidee = null): void
+    private function notifierArbitrage($auteur, string $action, string $nom, ?string $motif, ?string $nomConsolidee = null, ?Activite $cible = null): void
     {
         if ($auteur) {
-            $auteur->notify(new ActiviteArbitrageNotification($action, $nom, $motif, $nomConsolidee));
+            $auteur->notify(new ActiviteArbitrageNotification($action, $nom, $motif, $nomConsolidee, $cible));
         }
     }
 

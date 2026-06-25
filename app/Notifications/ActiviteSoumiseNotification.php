@@ -30,7 +30,7 @@ class ActiviteSoumiseNotification extends Notification
             ->line('Département : '.optional($this->activite->departement)->nom)
             ->line('Extrant : '.optional($this->activite->extrant)->code)
             ->line('Coût : '.number_format((float) $this->activite->cout, 0, ',', ' ').' FCFA')
-            ->action('Examiner l\'activité', url(route('validations.show', $this->activite)))
+            ->action('Examiner l\'activité', url($this->lien($notifiable)))
             ->line('Merci de procéder à la validation ou au refus dans les meilleurs délais.');
     }
 
@@ -41,7 +41,18 @@ class ActiviteSoumiseNotification extends Notification
             'activite_id' => $this->activite->id,
             'departement' => optional($this->activite->departement)->nom,
             'message' => 'Activité soumise pour validation : « '.$this->activite->nom_activite.' » ('.optional($this->activite->departement)->nom.').',
-            'url' => route('validations.show', $this->activite),
+            'url' => $this->lien($notifiable),
         ];
+    }
+
+    /**
+     * Lien vers l'entité, adapté à l'accès du destinataire :
+     * le DBCGOQ ouvre l'écran de validation, les chefs ouvrent la fiche de l'activité.
+     */
+    private function lien(object $notifiable): string
+    {
+        return $notifiable->hasRole('dbcgoq')
+            ? route('validations.show', $this->activite)
+            : route('activites.show', $this->activite);
     }
 }
