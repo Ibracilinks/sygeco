@@ -2,9 +2,28 @@
 
 use App\Models\Activite;
 use App\Models\Departement;
+use App\Models\Exercice;
 use App\Models\Extrant;
+use App\Models\Objectif;
+use App\Models\Resultat;
 
 uses(\Illuminate\Foundation\Testing\RefreshDatabase::class);
+
+/**
+ * Crée une activité nommée, rattachée à un exercice et un département donnés,
+ * de sorte qu'elle apparaisse dans l'index (filtré par l'exercice actif).
+ */
+function activiteNommee(Exercice $exercice, Departement $departement, string $nom): Activite
+{
+    $objectif = Objectif::factory()->create(['exercice_id' => $exercice->id, 'annee' => $exercice->annee]);
+    $resultat = Resultat::factory()->forObjectif($objectif)->create();
+    $extrant = Extrant::factory()->forResultat($resultat)->create();
+
+    return Activite::factory()
+        ->pourExtrant($extrant)
+        ->pourDepartement($departement)
+        ->create(['nom_activite' => $nom]);
+}
 
 /*
 |--------------------------------------------------------------------------
@@ -171,6 +190,61 @@ test('le dbcgoq peut refuser une activité avec un motif', function () {
     expect($activite->fresh())
         ->statut->toBe('brouillon')
         ->motif_refus->toBe('Budget non justifié, merci de revoir');
+});
+
+test('un chef voit les activités de son sous-arbre (entité + entités en dessous)', function () {
+    seedRolesAndPermissions();
+    $exercice = Exercice::factory()->actif()->create();
+    $direction = Departement::factory()->direction()->create();
+    $departement = Departement::factory()->departement()->enfantDe($direction)->create();
+    $service = Departement::factory()->service()->enfantDe($departement)->create();
+    $horsArbre = Departement::factory()->direction()->create();
+
+    $chef = \App\Models\User::factory()->dansDepartement($departement)->create();
+    $chef->assignRole('chef');
+
+    activiteNommee($exercice, $departement, 'ACTPROPRE');
+    activiteNommee($exercice, $service, 'ACTSERVICE');
+    activiteNommee($exercice, $horsArbre, 'ACTHORS');
+
+    $this->actingAs($chef)
+        ->withSession([\App\Support\ActiveExercice::SESSION_KEY => $exercice->id])
+        ->get(route('activites.index'))
+        ->assertOk()
+        ->assertSee('ACTPROPRE')
+        ->assertSee('ACTSERVICE')
+        ->assertDontSee('ACTHORS');
+});
+
+test('un agent ne voit que les activités de sa propre entité', function () {
+    seedRolesAndPermissions();
+    $exercice = Exercice::factory()->actif()->create();
+    $direction = Departement::factory()->direction()->create();
+    $service = Departement::factory()->service()->enfantDe($direction)->create();
+
+    $agent = \App\Models\User::factory()->dansDepartement($direction)->create();
+    $agent->assignRole('agent');
+
+    activiteNommee($exercice, $direction, 'ACTDIR');
+    activiteNommee($exercice, $service, 'ACTSRV');
+
+    $this->actingAs($agent)
+        ->withSession([\App\Support\ActiveExercice::SESSION_KEY => $exercice->id])
+        ->get(route('activites.index'))
+        ->assertOk()
+        ->assertSee('ACTDIR')
+        ->assertDontSee('ACTSRV');
+});
+
+test('un chef peut voir (policy) une activité d\'une entité en dessous', function () {
+    seedRolesAndPermissions();
+    $departement = Departement::factory()->departement()->create();
+    $service = Departement::factory()->service()->enfantDe($departement)->create();
+    $chef = \App\Models\User::factory()->dansDepartement($departement)->create();
+    $chef->assignRole('chef');
+    $activite = Activite::factory()->pourDepartement($service)->create();
+
+    expect($chef->can('view', $activite))->toBeTrue();
 });
 
 test('refuser exige un motif d\'au moins 10 caractères', function () {

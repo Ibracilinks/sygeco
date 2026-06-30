@@ -13,69 +13,48 @@ class RoleAndPermissionSeeder extends Seeder
         // Reset cached roles and permissions
         app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
 
-        // Permissions pour Objectifs
-        Permission::create(['name' => 'view_objectifs']);
-        Permission::create(['name' => 'create_objectifs']);
-        Permission::create(['name' => 'edit_objectifs']);
-        Permission::create(['name' => 'delete_objectifs']);
-        Permission::create(['name' => 'validate_objectifs']);
+        // Idempotent : firstOrCreate + syncPermissions, pour coexister avec la
+        // migration de réconciliation des rôles et pouvoir être rejoué sans erreur.
+        $permissions = [
+            // Objectifs
+            'view_objectifs', 'create_objectifs', 'edit_objectifs', 'delete_objectifs', 'validate_objectifs',
+            // Extrants
+            'view_extrants', 'create_extrants', 'edit_extrants', 'delete_extrants',
+            // Activités
+            'view_activites', 'create_activites', 'edit_activites', 'delete_activites', 'submit_activites', 'validate_activites',
+            // Départements
+            'view_departements', 'create_departements', 'edit_departements', 'delete_departements',
+            // Utilisateurs
+            'view_users', 'create_users', 'edit_users', 'delete_users',
+            // Exercices
+            'view_exercices', 'manage_exercices',
+            // Indicateurs
+            'view_indicateurs', 'create_indicateurs', 'edit_indicateurs', 'delete_indicateurs', 'validate_indicateurs',
+        ];
 
-        // Permissions pour Extrants
-        Permission::create(['name' => 'view_extrants']);
-        Permission::create(['name' => 'create_extrants']);
-        Permission::create(['name' => 'edit_extrants']);
-        Permission::create(['name' => 'delete_extrants']);
+        foreach ($permissions as $permission) {
+            Permission::firstOrCreate(['name' => $permission]);
+        }
 
-        // Permissions pour Activités
-        Permission::create(['name' => 'view_activites']);
-        Permission::create(['name' => 'create_activites']);
-        Permission::create(['name' => 'edit_activites']);
-        Permission::create(['name' => 'delete_activites']);
-        Permission::create(['name' => 'submit_activites']);
-        Permission::create(['name' => 'validate_activites']);
-
-        // Permissions pour Départements
-        Permission::create(['name' => 'view_departements']);
-        Permission::create(['name' => 'create_departements']);
-        Permission::create(['name' => 'edit_departements']);
-        Permission::create(['name' => 'delete_departements']);
-
-        // Permissions pour Utilisateurs
-        Permission::create(['name' => 'view_users']);
-        Permission::create(['name' => 'create_users']);
-        Permission::create(['name' => 'edit_users']);
-        Permission::create(['name' => 'delete_users']);
-
-        // Permissions pour Exercices
-        Permission::create(['name' => 'view_exercices']);
-        Permission::create(['name' => 'manage_exercices']);
-
-        // Permissions pour Indicateurs
-        Permission::create(['name' => 'view_indicateurs']);
-        Permission::create(['name' => 'create_indicateurs']);
-        Permission::create(['name' => 'edit_indicateurs']);
-        Permission::create(['name' => 'delete_indicateurs']);
-        Permission::create(['name' => 'validate_indicateurs']);
-
-        // Création des rôles
+        // Création des rôles (idempotente)
         // superadmin : équipe IT, accès technique complet
-        $roleSuperadmin = Role::create(['name' => 'superadmin']);
+        $roleSuperadmin = Role::firstOrCreate(['name' => 'superadmin']);
         // dbcgoq : gère toutes les données métier de l'application
-        $roleDbcgoq = Role::create(['name' => 'dbcgoq']);
+        $roleDbcgoq = Role::firstOrCreate(['name' => 'dbcgoq']);
         // chef : responsable d'une entité (direction, département ou service) ;
         // le niveau découle du type de l'entité rattachée à l'utilisateur
-        $roleChef = Role::create(['name' => 'chef']);
-        $roleAgent = Role::create(['name' => 'agent']);
+        $roleChef = Role::firstOrCreate(['name' => 'chef']);
+        $roleAgent = Role::firstOrCreate(['name' => 'agent']);
 
         // Attribution des permissions
-        $roleSuperadmin->givePermissionTo(Permission::all());
-        $roleDbcgoq->givePermissionTo(Permission::all());
+        $roleSuperadmin->syncPermissions(Permission::all());
+        $roleDbcgoq->syncPermissions(Permission::all());
 
         // Le chef valide les soumissions de ses entités enfants via le flux
         // montant (middleware role:chef + ValidationController). La permission
         // « validate_activites » reste réservée au validateur central (dbcgoq),
         // car elle conditionne aussi l'accès permanent au suivi d'exécution.
-        $roleChef->givePermissionTo([
+        $roleChef->syncPermissions([
             'view_activites',
             'create_activites',
             'edit_activites',
@@ -85,8 +64,6 @@ class RoleAndPermissionSeeder extends Seeder
             'view_exercices',
         ]);
 
-        $roleAgent->givePermissionTo([
-            'view_activites'
-        ]);
+        $roleAgent->syncPermissions(['view_activites']);
     }
 }

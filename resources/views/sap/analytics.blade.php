@@ -230,7 +230,7 @@
     <div class="sac-storybar">
         <div class="sac-story-title">
             Plan de Travail Annuel
-            <span>Histoire · CANAM — Suivi budgétaire &amp; exécution</span>
+            <span>CANAM — Suivi budgétaire &amp; exécution</span>
         </div>
         <nav class="sac-tabs" id="sac-tabs">
             <button class="sac-tab active" data-page="overview">Vue d'ensemble</button>

@@ -14,12 +14,16 @@ class ActivitePolicy
 
     public function view(User $user, Activite $activite): bool
     {
-        if ($user->hasRole('dbcgoq')) {
+        if ($user->hasRole('dbcgoq') || $user->hasRole('superadmin')) {
             return true;
         }
 
-        return ($user->hasRole('chef') || $user->hasRole('agent'))
-            && (int) $user->departement_id === (int) $activite->departement_id;
+        // Un chef voit les activités de son entité et de tout son sous-arbre ;
+        // un agent uniquement celles de sa propre entité.
+        $perimetre = $user->perimetreActivitesIds();
+
+        return $perimetre !== null
+            && in_array((int) $activite->departement_id, $perimetre, true);
     }
 
     public function create(User $user): bool

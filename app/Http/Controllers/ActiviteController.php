@@ -67,9 +67,9 @@ class ActiviteController extends Controller
             });
         }
 
-        // Si l'utilisateur est chef de département, filtrer par son département
-        if ((Auth::user()->hasRole('chef') || Auth::user()->hasRole('agent')) && Auth::user()->departement_id) {
-            $query->where('departement_id', Auth::user()->departement_id);
+        // Périmètre : un chef voit son entité + tout son sous-arbre ; un agent, sa seule entité.
+        if ($perimetre = Auth::user()?->perimetreActivitesIds()) {
+            $query->whereIn('departement_id', $perimetre);
         }
 
         $summaryQuery = clone $query;
@@ -88,7 +88,7 @@ class ActiviteController extends Controller
             ->when($exerciceId !== null, fn ($q) => $q->whereHas('objectif', fn ($oq) => $oq->where('exercice_id', $exerciceId)))
             ->ordered()
             ->get();
-        $departements = Departement::active()->ordered()->get();
+        $departements = $this->departementsVisibles();
         $statuts = ['brouillon', 'soumis', 'valide'];
         $filters = $request->only(['search', 'extrant_id', 'departement_id', 'statut', 'trimestre', 'statut_execution']);
 
@@ -104,8 +104,9 @@ class ActiviteController extends Controller
 
         $query = Activite::with(['extrant', 'departement'])->forExercice($exerciceId);
 
-        if ((Auth::user()->hasRole('chef') || Auth::user()->hasRole('agent')) && Auth::user()->departement_id) {
-            $query->where('departement_id', Auth::user()->departement_id);
+        // Même périmètre que l'index : sous-arbre pour les chefs, entité propre pour les agents.
+        if ($perimetre = Auth::user()?->perimetreActivitesIds()) {
+            $query->whereIn('departement_id', $perimetre);
         }
 
         if ($request->filled('extrant_id')) {
@@ -140,7 +141,7 @@ class ActiviteController extends Controller
             ->when($exerciceId !== null, fn ($q) => $q->whereHas('objectif', fn ($oq) => $oq->where('exercice_id', $exerciceId)))
             ->ordered()
             ->get();
-        $departements = Departement::active()->ordered()->get();
+        $departements = $this->departementsVisibles();
         $filters = $request->only(['search', 'extrant_id', 'departement_id', 'statut_execution']);
 
         // Fenêtre de saisie de l'exécution : ouverte pour le dbcgoq en permanence,
@@ -381,6 +382,23 @@ class ActiviteController extends Controller
      * de la soumission). Si le département n'a pas de chef, on prévient les validateurs
      * centraux (permission validate_activites) pour que la soumission ne passe pas inaperçue.
      */
+    /**
+     * Départements proposés dans les filtres, restreints au périmètre de
+     * l'utilisateur (sous-arbre pour un chef, entité propre pour un agent).
+     *
+     * @return \Illuminate\Support\Collection<int, Departement>
+     */
+    private function departementsVisibles()
+    {
+        $query = Departement::active()->ordered();
+
+        if ($perimetre = Auth::user()?->perimetreActivitesIds()) {
+            $query->whereIn('id', $perimetre);
+        }
+
+        return $query->get();
+    }
+
     protected function notifierValidateurs(Activite $activite): void
     {
         $destinataires = User::query()

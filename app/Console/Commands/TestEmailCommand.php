@@ -6,6 +6,7 @@ use App\Models\Activite;
 use App\Models\User;
 use App\Notifications\ActiviteValidee;
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\Notification;
 
 class TestEmailCommand extends Command
 {
@@ -31,16 +32,22 @@ class TestEmailCommand extends Command
             return self::FAILURE;
         }
 
-        // Destinataire de test, non persisté : la notification n'utilise que le canal mail.
-        $destinataire = new User(['name' => 'Destinataire Test', 'email' => $email]);
-
         $this->line('Mailer : ' . config('mail.default'));
         $this->line('Hôte   : ' . config('mail.mailers.smtp.host') . ':' . config('mail.mailers.smtp.port'));
         $this->line('Envoi  : ' . config('mail.from.address') . ' → ' . $email);
         $this->line('Activité : ACT-' . $activite->id . ' — ' . $activite->nom_activite);
 
+        // Destinataire de test non persisté : on restreint l'envoi au seul canal « mail »
+        // (sendNow + ['mail']) pour ne pas toucher la table notifications, qui exige
+        // un notifiable persisté. Le template a juste besoin de la propriété « name ».
+        $destinataire = new User(['name' => 'Destinataire Test', 'email' => $email]);
+
         try {
-            $destinataire->notify(new ActiviteValidee($activite, 'E-mail de test envoyé via la commande mail:test.'));
+            Notification::sendNow(
+                $destinataire,
+                new ActiviteValidee($activite, 'E-mail de test envoyé via la commande mail:test.'),
+                ['mail']
+            );
         } catch (\Throwable $e) {
             $this->error('Échec de l\'envoi : ' . $e->getMessage());
 

@@ -72,6 +72,29 @@ class Departement extends Model
     }
 
     /**
+     * Identifiants du sous-arbre : l'entité elle-même + toutes ses
+     * descendantes (départements et services rattachés, à toute profondeur).
+     *
+     * @return array<int, int>
+     */
+    public function sousArbreIds(): array
+    {
+        $ids = [$this->id];
+        $frontiere = [$this->id];
+
+        while (! empty($frontiere)) {
+            $frontiere = self::query()
+                ->whereIn('parent_id', $frontiere)
+                ->pluck('id')
+                ->all();
+
+            $ids = array_merge($ids, $frontiere);
+        }
+
+        return $ids;
+    }
+
+    /**
      * Chaîne des ancêtres, de la racine jusqu'au parent direct.
      *
      * @return \Illuminate\Support\Collection<int, Departement>

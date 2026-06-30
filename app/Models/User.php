@@ -89,4 +89,31 @@ class User extends Authenticatable
 
         return Departement::query()->where('parent_id', $this->departement_id);
     }
+
+    /**
+     * Périmètre de visibilité des activités (par departement_id) :
+     * - un chef voit son entité ET toutes les entités situées en dessous (sous-arbre) ;
+     * - un agent ne voit que sa propre entité ;
+     * - les autres (dbcgoq, superadmin…) ne sont pas restreints → null.
+     *
+     * @return array<int, int>|null  null = aucune restriction
+     */
+    public function perimetreActivitesIds(): ?array
+    {
+        if ($this->departement_id === null) {
+            return null;
+        }
+
+        if ($this->isChef()) {
+            return $this->departement?->sousArbreIds()
+                ?? Departement::find($this->departement_id)?->sousArbreIds()
+                ?? [$this->departement_id];
+        }
+
+        if ($this->isAgent()) {
+            return [$this->departement_id];
+        }
+
+        return null;
+    }
 }
