@@ -35,7 +35,7 @@ test('un chef peut renseigner l\'exécution pendant le mi-parcours', function ()
     seedRolesAndPermissions();
     $dep = Departement::factory()->create();
     $chef = User::factory()->dansDepartement($dep)->create();
-    $chef->assignRole('chef_departement');
+    $chef->assignRole('chef');
 
     $exercice = Exercice::factory()->actif()->create([
         'date_debut_mi_parcours' => now()->subDay()->toDateString(),
@@ -57,7 +57,7 @@ test('un chef ne peut pas renseigner l\'exécution hors fenêtre', function () {
     seedRolesAndPermissions();
     $dep = Departement::factory()->create();
     $chef = User::factory()->dansDepartement($dep)->create();
-    $chef->assignRole('chef_departement');
+    $chef->assignRole('chef');
 
     $exercice = Exercice::factory()->actif()->create([
         'date_debut_mi_parcours' => now()->subDays(20)->toDateString(),
@@ -94,7 +94,7 @@ test('un chef peut renseigner l\'exécution pendant l\'évaluation', function ()
     seedRolesAndPermissions();
     $dep = Departement::factory()->create();
     $chef = User::factory()->dansDepartement($dep)->create();
-    $chef->assignRole('chef_departement');
+    $chef->assignRole('chef');
 
     $exercice = Exercice::factory()->actif()->create([
         'date_debut_evaluation' => now()->subDay()->toDateString(),
@@ -121,7 +121,7 @@ test('la commande notifie les chefs à l\'ouverture du mi-parcours', function ()
 
     $dep = Departement::factory()->create();
     $chef = User::factory()->dansDepartement($dep)->create();
-    $chef->assignRole('chef_departement');
+    $chef->assignRole('chef');
     $agent = User::factory()->create();
     $agent->assignRole('agent');
 
@@ -142,7 +142,7 @@ test('la commande n\'envoie pas deux fois la notification mi-parcours', function
     seedRolesAndPermissions();
 
     $chef = User::factory()->create();
-    $chef->assignRole('chef_departement');
+    $chef->assignRole('chef');
 
     Exercice::factory()->actif()->create([
         'date_debut_mi_parcours' => now()->subDay()->toDateString(),
@@ -160,7 +160,7 @@ test('la commande notifie l\'ouverture de l\'évaluation', function () {
     seedRolesAndPermissions();
 
     $chef = User::factory()->create();
-    $chef->assignRole('chef_departement');
+    $chef->assignRole('chef');
 
     $exercice = Exercice::factory()->actif()->create([
         'date_debut_evaluation' => now()->subDay()->toDateString(),
@@ -178,7 +178,7 @@ test('la commande ne notifie rien hors fenêtre', function () {
     seedRolesAndPermissions();
 
     $chef = User::factory()->create();
-    $chef->assignRole('chef_departement');
+    $chef->assignRole('chef');
 
     Exercice::factory()->actif()->create([
         'date_debut_mi_parcours' => now()->addDays(10)->toDateString(),

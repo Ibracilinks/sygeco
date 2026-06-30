@@ -36,3 +36,24 @@ test('un département est soft-deletable', function () {
     expect(Departement::find($dep->id))->toBeNull();
     expect(Departement::withTrashed()->find($dep->id))->not->toBeNull();
 });
+
+test('la hiérarchie parent/enfants relie les trois niveaux', function () {
+    $direction = Departement::factory()->direction()->create();
+    $departement = Departement::factory()->departement()->enfantDe($direction)->create();
+    $service = Departement::factory()->service()->enfantDe($departement)->create();
+
+    expect($service->parent->is($departement))->toBeTrue();
+    expect($departement->parent->is($direction))->toBeTrue();
+    expect($direction->enfants->pluck('id'))->toContain($departement->id);
+    expect($departement->enfants->pluck('id'))->toContain($service->id);
+});
+
+test('le scope ofType filtre par type d\'entité', function () {
+    Departement::factory()->direction()->create();
+    Departement::factory()->departement()->count(2)->create();
+    Departement::factory()->service()->create();
+
+    expect(Departement::ofType(Departement::TYPE_DIRECTION)->count())->toBe(1);
+    expect(Departement::ofType(Departement::TYPE_DEPARTEMENT)->count())->toBe(2);
+    expect(Departement::ofType(Departement::TYPE_SERVICE)->count())->toBe(1);
+});

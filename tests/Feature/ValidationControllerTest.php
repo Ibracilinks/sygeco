@@ -56,8 +56,32 @@ test('un chef ne peut pas valider une activité hors de son département', funct
     $dep = Departement::factory()->create();
     $autreDep = Departement::factory()->create();
     $chef = User::factory()->dansDepartement($dep)->create();
-    $chef->assignRole('chef_departement');
+    $chef->assignRole('chef');
     $activite = Activite::factory()->soumis()->pourDepartement($autreDep)->create();
+
+    $this->actingAs($chef)->post(route('validations.valider', $activite))->assertForbidden();
+});
+
+test('un chef valide les activités de ses entités enfants (flux montant)', function () {
+    seedRolesAndPermissions();
+    $direction = Departement::factory()->direction()->create();
+    $service = Departement::factory()->service()->enfantDe($direction)->create();
+    $chef = User::factory()->dansDepartement($direction)->create();
+    $chef->assignRole('chef');
+    $activite = Activite::factory()->soumis()->pourDepartement($service)->create();
+
+    $this->actingAs($chef)->post(route('validations.valider', $activite))
+        ->assertRedirect(route('validations.index'));
+
+    expect($activite->fresh()->statut)->toBe('valide');
+});
+
+test('un chef ne valide pas les activités de sa propre entité (flux montant)', function () {
+    seedRolesAndPermissions();
+    $direction = Departement::factory()->direction()->create();
+    $chef = User::factory()->dansDepartement($direction)->create();
+    $chef->assignRole('chef');
+    $activite = Activite::factory()->soumis()->pourDepartement($direction)->create();
 
     $this->actingAs($chef)->post(route('validations.valider', $activite))->assertForbidden();
 });

@@ -21,12 +21,12 @@ test('le mot de passe est haché automatiquement (cast)', function () {
 
 test('les helpers de rôle reflètent le rôle assigné', function () {
     $dbcgoq = userWithRole('dbcgoq');
-    $chef = userWithRole('chef_departement');
+    $chef = userWithRole('chef');
     $agent = userWithRole('agent');
 
     expect($dbcgoq->isDbcgoq())->toBeTrue();
-    expect($dbcgoq->isChefDepartement())->toBeFalse();
-    expect($chef->isChefDepartement())->toBeTrue();
+    expect($dbcgoq->isChef())->toBeFalse();
+    expect($chef->isChef())->toBeTrue();
     expect($agent->isAgent())->toBeTrue();
 });
 

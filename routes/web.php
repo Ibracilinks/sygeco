@@ -33,7 +33,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::delete('/{notification}', [NotificationController::class, 'destroy'])->name('destroy');
     });
 
-    Route::middleware(['role:dbcgoq'])->group(function () {
+    Route::middleware(['role:superadmin|dbcgoq'])->group(function () {
         Route::get('budget-analysis', [BudgetAnalysisController::class, 'index'])->name('budget.analysis');
         Route::get('journal', [JournalController::class, 'index'])->name('journal.index');
 
@@ -55,7 +55,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::resource('users', UserController::class)->except(['index', 'show']);
     });
 
-    Route::middleware(['role:dbcgoq'])->group(function () {
+    Route::middleware(['role:superadmin|dbcgoq|chef'])->group(function () {
         Route::prefix('validations')->name('validations.')->group(function () {
             Route::get('/', [ValidationController::class, 'index'])->name('index');
             Route::get('/{activite}', [ValidationController::class, 'show'])->name('show');
@@ -70,18 +70,18 @@ Route::middleware(['auth', 'verified'])->group(function () {
         });
     });
 
-    Route::middleware(['role:dbcgoq|chef_departement'])->group(function () {
+    Route::middleware(['role:superadmin|dbcgoq|chef'])->group(function () {
         Route::resource('objectifs', ObjectifController::class)->only(['index', 'show']);
         Route::resource('resultats', ResultatController::class)->only(['index', 'show']);
         Route::resource('extrants', ExtrantController::class)->only(['index', 'show']);
     });
 
-    Route::middleware(['role:dbcgoq'])->group(function () {
+    Route::middleware(['role:superadmin|dbcgoq'])->group(function () {
         Route::resource('departements', DepartementController::class)->only(['index', 'show']);
         Route::resource('users', UserController::class)->only(['index', 'show']);
     });
 
-    Route::middleware(['role:dbcgoq|chef_departement|agent'])->prefix('activites')->name('activites.')->group(function () {
+    Route::middleware(['role:superadmin|dbcgoq|chef|agent'])->prefix('activites')->name('activites.')->group(function () {
         Route::get('/', [ActiviteController::class, 'index'])->name('index');
         Route::get('/create', [ActiviteController::class, 'create'])->name('create');
         Route::post('/', [ActiviteController::class, 'store'])->name('store');

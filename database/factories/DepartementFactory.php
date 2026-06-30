@@ -41,4 +41,27 @@ class DepartementFactory extends Factory
     {
         return $this->state(fn () => ['code' => $code]);
     }
+
+    public function direction(): static
+    {
+        return $this->state(fn () => ['type' => Departement::TYPE_DIRECTION]);
+    }
+
+    public function departement(): static
+    {
+        return $this->state(fn () => ['type' => Departement::TYPE_DEPARTEMENT]);
+    }
+
+    public function service(): static
+    {
+        return $this->state(fn () => ['type' => Departement::TYPE_SERVICE]);
+    }
+
+    /**
+     * Rattache l'entité à une entité parente (du niveau supérieur).
+     */
+    public function enfantDe(Departement $parent): static
+    {
+        return $this->state(fn () => ['parent_id' => $parent->id]);
+    }
 }

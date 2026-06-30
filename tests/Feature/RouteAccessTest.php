@@ -8,7 +8,7 @@ uses(\Illuminate\Foundation\Testing\RefreshDatabase::class);
 |--------------------------------------------------------------------------
 | Ces routes de référentiel (objectifs, résultats, extrants, départements,
 | utilisateurs, exercices, budget, journal) sont réservées au rôle dbcgoq
-| (ou chef_departement en lecture pour certaines).
+| (ou chef en lecture pour certaines).
 */
 
 $routesDbcgoqOnly = [
@@ -36,7 +36,7 @@ test('le dbcgoq accède aux routes réservées', function (string $name) {
 })->with($routesDbcgoqOnly);
 
 test('un chef de département peut lister objectifs, résultats et extrants', function (string $name) {
-    $chef = userWithRole('chef_departement');
+    $chef = userWithRole('chef');
 
     $this->actingAs($chef)->get(route($name))->assertOk();
 })->with([

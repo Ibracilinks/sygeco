@@ -49,7 +49,9 @@ class DepartementController extends Controller
             ->orderBy('name')
             ->get();
 
-        return view('pages.departements.create', compact('users'));
+        $parents = $this->parentsCandidats();
+
+        return view('pages.departements.create', compact('users', 'parents'));
     }
 
     public function store(StoreDepartementRequest $request)
@@ -89,7 +91,12 @@ class DepartementController extends Controller
             ->orderBy('name')
             ->get();
 
-        return view('pages.departements.edit', compact('departement', 'users'));
+        // Une entité ne peut pas se rattacher à elle-même.
+        $parents = $this->parentsCandidats()
+            ->reject(fn (Departement $candidat) => $candidat->id === $departement->id)
+            ->values();
+
+        return view('pages.departements.edit', compact('departement', 'users', 'parents'));
     }
 
     public function update(UpdateDepartementRequest $request, Departement $departement)
@@ -113,6 +120,20 @@ class DepartementController extends Controller
 
         return redirect()->route('departements.index')
             ->with('success', 'Département supprimé.');
+    }
+
+    /**
+     * Entités pouvant servir de parent : directions et départements
+     * (un service est toujours une feuille, jamais un parent).
+     *
+     * @return \Illuminate\Support\Collection<int, Departement>
+     */
+    private function parentsCandidats()
+    {
+        return Departement::query()
+            ->whereIn('type', [Departement::TYPE_DIRECTION, Departement::TYPE_DEPARTEMENT])
+            ->ordered()
+            ->get(['id', 'nom', 'type']);
     }
 
     /**

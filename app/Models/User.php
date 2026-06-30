@@ -55,18 +55,38 @@ class User extends Authenticatable
     }
 
     // Vérification des rôles
+    public function isSuperadmin()
+    {
+        return $this->hasRole('superadmin');
+    }
+
     public function isDbcgoq()
     {
         return $this->hasRole('dbcgoq');
     }
 
-    public function isChefDepartement()
+    public function isChef()
     {
-        return $this->hasRole('chef_departement');
+        return $this->hasRole('chef');
     }
 
     public function isAgent()
     {
         return $this->hasRole('agent');
+    }
+
+    /**
+     * Entités dont l'utilisateur est le chef hiérarchique direct,
+     * c'est-à-dire les enfants de son entité de rattachement.
+     * Le flux d'approbation est montant : un chef valide les
+     * soumissions des entités qu'il chapeaute.
+     */
+    public function entitesSupervisees()
+    {
+        if (! $this->isChef() || $this->departement_id === null) {
+            return Departement::query()->whereRaw('1 = 0');
+        }
+
+        return Departement::query()->where('parent_id', $this->departement_id);
     }
 }

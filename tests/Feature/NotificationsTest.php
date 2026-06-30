@@ -24,11 +24,11 @@ test('la soumission notifie les chefs du même département, pas ceux des autres
     $autreDep = Departement::factory()->create();
 
     $chefAuteur = User::factory()->dansDepartement($dep)->create();
-    $chefAuteur->assignRole('chef_departement');
+    $chefAuteur->assignRole('chef');
     $coChef = User::factory()->dansDepartement($dep)->create();
-    $coChef->assignRole('chef_departement');
+    $coChef->assignRole('chef');
     $chefAutreDep = User::factory()->dansDepartement($autreDep)->create();
-    $chefAutreDep->assignRole('chef_departement');
+    $chefAutreDep->assignRole('chef');
 
     $activite = Activite::factory()->brouillon()->pourDepartement($dep)->create();
 
@@ -48,7 +48,7 @@ test('si le département n\'a pas d\'autre chef, le repli notifie les validateur
 
     $dep = Departement::factory()->create();
     $chef = User::factory()->dansDepartement($dep)->create();
-    $chef->assignRole('chef_departement');
+    $chef->assignRole('chef');
 
     $validateur = User::factory()->create();
     $validateur->assignRole('dbcgoq');
@@ -67,7 +67,7 @@ test('un agent ne reçoit pas la notification de soumission', function () {
 
     $dep = Departement::factory()->create();
     $chef = User::factory()->dansDepartement($dep)->create();
-    $chef->assignRole('chef_departement');
+    $chef->assignRole('chef');
 
     $agent = User::factory()->dansDepartement($dep)->create();
     $agent->assignRole('agent');
@@ -105,7 +105,7 @@ test('le payload database contient un message et une url vers l\'entité', funct
 
     // Un chef ouvre la fiche de l'activité...
     $chef = User::factory()->create();
-    $chef->assignRole('chef_departement');
+    $chef->assignRole('chef');
     $dataChef = (new ActiviteSoumiseNotification($activite))->toArray($chef);
 
     expect($dataChef)->toHaveKeys(['message', 'url', 'activite_id']);
@@ -123,7 +123,7 @@ test('le lien de soumission reçu par le chef pointe vers une page accessible (p
     seedRolesAndPermissions();
     $dep = \App\Models\Departement::factory()->create();
     $chef = User::factory()->dansDepartement($dep)->create();
-    $chef->assignRole('chef_departement');
+    $chef->assignRole('chef');
     $activite = Activite::factory()->soumis()->pourDepartement($dep)->create();
 
     $url = (new ActiviteSoumiseNotification($activite))->toArray($chef)['url'];
@@ -136,7 +136,7 @@ test('le lien d\'arbitrage pointe vers l\'activité concernée', function () {
     seedRolesAndPermissions();
     $dep = \App\Models\Departement::factory()->create();
     $auteur = User::factory()->dansDepartement($dep)->create();
-    $auteur->assignRole('chef_departement');
+    $auteur->assignRole('chef');
     $activite = Activite::factory()->pourDepartement($dep)->create();
 
     // Cas « modifiée » : lien vers la fiche de l'activité (accessible à l'auteur).
@@ -156,7 +156,7 @@ test('le lien des notifications d\'exercice est adapté au rôle', function () {
     $admin = User::factory()->create();
     $admin->assignRole('dbcgoq');
     $chef = User::factory()->create();
-    $chef->assignRole('chef_departement');
+    $chef->assignRole('chef');
 
     $notif = new \App\Notifications\MiParcoursOuvertNotification($exercice);
 

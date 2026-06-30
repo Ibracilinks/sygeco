@@ -113,7 +113,7 @@ class UserFactory extends Factory
     public function chefDepartement(): static
     {
         return $this->afterCreating(function (User $user) {
-            $role = Role::firstOrCreate(['name' => 'chef_departement']);
+            $role = Role::firstOrCreate(['name' => 'chef']);
             $user->assignRole($role);
         });
     }

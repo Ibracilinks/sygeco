@@ -13,9 +13,21 @@ class Departement extends Model
 
     protected $table = 'departements';
 
+    public const TYPE_DIRECTION = 'direction';
+    public const TYPE_DEPARTEMENT = 'departement';
+    public const TYPE_SERVICE = 'service';
+
+    public const TYPES = [
+        self::TYPE_DIRECTION,
+        self::TYPE_DEPARTEMENT,
+        self::TYPE_SERVICE,
+    ];
+
     protected $fillable = [
         'code',
         'nom',
+        'type',
+        'parent_id',
         'description',
         'responsable_id',
         'is_active',
@@ -25,6 +37,17 @@ class Departement extends Model
     protected $casts = [
         'is_active' => 'boolean',
     ];
+
+    // Relations hiérarchiques
+    public function parent()
+    {
+        return $this->belongsTo(self::class, 'parent_id');
+    }
+
+    public function enfants()
+    {
+        return $this->hasMany(self::class, 'parent_id');
+    }
 
     // Relations
     public function users()
@@ -72,5 +95,10 @@ class Departement extends Model
     public function scopeOrdered($query)
     {
         return $query->orderBy('ordre')->orderBy('nom');
+    }
+
+    public function scopeOfType($query, string $type)
+    {
+        return $query->where('type', $type);
     }
 }

@@ -58,14 +58,24 @@ class RoleAndPermissionSeeder extends Seeder
         Permission::create(['name' => 'validate_indicateurs']);
 
         // Création des rôles
+        // superadmin : équipe IT, accès technique complet
+        $roleSuperadmin = Role::create(['name' => 'superadmin']);
+        // dbcgoq : gère toutes les données métier de l'application
         $roleDbcgoq = Role::create(['name' => 'dbcgoq']);
-        $roleChefDept = Role::create(['name' => 'chef_departement']);
+        // chef : responsable d'une entité (direction, département ou service) ;
+        // le niveau découle du type de l'entité rattachée à l'utilisateur
+        $roleChef = Role::create(['name' => 'chef']);
         $roleAgent = Role::create(['name' => 'agent']);
 
         // Attribution des permissions
+        $roleSuperadmin->givePermissionTo(Permission::all());
         $roleDbcgoq->givePermissionTo(Permission::all());
 
-        $roleChefDept->givePermissionTo([
+        // Le chef valide les soumissions de ses entités enfants via le flux
+        // montant (middleware role:chef + ValidationController). La permission
+        // « validate_activites » reste réservée au validateur central (dbcgoq),
+        // car elle conditionne aussi l'accès permanent au suivi d'exécution.
+        $roleChef->givePermissionTo([
             'view_activites',
             'create_activites',
             'edit_activites',

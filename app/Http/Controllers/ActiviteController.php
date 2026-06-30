@@ -68,7 +68,7 @@ class ActiviteController extends Controller
         }
 
         // Si l'utilisateur est chef de département, filtrer par son département
-        if ((Auth::user()->hasRole('chef_departement') || Auth::user()->hasRole('agent')) && Auth::user()->departement_id) {
+        if ((Auth::user()->hasRole('chef') || Auth::user()->hasRole('agent')) && Auth::user()->departement_id) {
             $query->where('departement_id', Auth::user()->departement_id);
         }
 
@@ -104,7 +104,7 @@ class ActiviteController extends Controller
 
         $query = Activite::with(['extrant', 'departement'])->forExercice($exerciceId);
 
-        if ((Auth::user()->hasRole('chef_departement') || Auth::user()->hasRole('agent')) && Auth::user()->departement_id) {
+        if ((Auth::user()->hasRole('chef') || Auth::user()->hasRole('agent')) && Auth::user()->departement_id) {
             $query->where('departement_id', Auth::user()->departement_id);
         }
 
@@ -193,7 +193,7 @@ class ActiviteController extends Controller
             'commentaires' => 'nullable|string',
         ]);
 
-        if (Auth::user()->hasRole('chef_departement') && Auth::user()->departement_id) {
+        if (Auth::user()->hasRole('chef') && Auth::user()->departement_id) {
             $validated['departement_id'] = Auth::user()->departement_id;
         }
 
@@ -273,7 +273,7 @@ class ActiviteController extends Controller
             'commentaires' => 'nullable|string',
         ]);
 
-        if (Auth::user()->hasRole('chef_departement') && Auth::user()->departement_id) {
+        if (Auth::user()->hasRole('chef') && Auth::user()->departement_id) {
             $validated['departement_id'] = Auth::user()->departement_id;
         }
 
@@ -384,7 +384,7 @@ class ActiviteController extends Controller
     protected function notifierValidateurs(Activite $activite): void
     {
         $destinataires = User::query()
-            ->role('chef_departement')
+            ->role('chef')
             ->where('departement_id', $activite->departement_id)
             ->where('id', '!=', Auth::id())
             ->get();

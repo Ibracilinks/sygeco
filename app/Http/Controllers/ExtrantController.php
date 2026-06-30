@@ -207,7 +207,7 @@ class ExtrantController extends Controller
 
     private function isChefDepartement($user): bool
     {
-        return $user?->hasRole('chef_departement') && $user?->departement_id !== null;
+        return $user?->hasRole('chef') && $user?->departement_id !== null;
     }
 
     private function extrantHasDepartmentActivities(Extrant $extrant, int $departementId): bool

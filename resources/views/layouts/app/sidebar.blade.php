@@ -40,7 +40,7 @@
             </flux:sidebar.group>
 
             <!-- Organisation -->
-            @if ($currentUser->hasRole('dbcgoq'))
+            @if ($currentUser->hasAnyRole(['superadmin', 'dbcgoq']))
                 <flux:sidebar.group :heading="__('Organisation')" class="app-sidebar-group grid">
                     <flux:sidebar.item icon="building-office" href="{{ route('departements.index') }}"
                         :current="request()->routeIs('departements.*')">
@@ -56,14 +56,14 @@
 
             <!-- Planification Stratégique -->
             <flux:sidebar.group :heading="__('Planification Stratégique')" class="app-sidebar-group grid">
-                @if ($currentUser->hasRole('dbcgoq'))
+                @if ($currentUser->hasAnyRole(['superadmin', 'dbcgoq']))
                     <flux:sidebar.item icon="calendar-days" href="{{ route('exercices.index') }}"
                         :current="request()->routeIs('exercices.*')">
                         {{ __('Exercices') }}
                     </flux:sidebar.item>
                 @endif
 
-                @if ($currentUser->hasAnyRole(['dbcgoq', 'chef_departement']))
+                @if ($currentUser->hasAnyRole(['superadmin', 'dbcgoq', 'chef']))
                     <flux:sidebar.item icon="chart-pie" href="{{ route('objectifs.index') }}"
                         :current="request()->routeIs('objectifs.*')">
                         {{ __('Objectifs') }}
@@ -80,7 +80,7 @@
                     </flux:sidebar.item>
                 @endif
 
-                @if ($currentUser->hasRole('dbcgoq'))
+                @if ($currentUser->hasAnyRole(['superadmin', 'dbcgoq']))
                     <flux:sidebar.item icon="chart-pie" href="{{ route('budget.analysis') }}"
                         :current="request()->routeIs('budget.analysis')">
                         {{ __('Analyse Budgétaire') }}

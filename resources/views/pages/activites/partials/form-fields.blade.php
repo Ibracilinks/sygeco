@@ -17,7 +17,7 @@
 
     <div>
         <label for="departement_id" class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-200">Département *</label>
-        @if (auth()->user()->hasRole('chef_departement') && auth()->user()->departement_id)
+        @if (auth()->user()->hasRole('chef') && auth()->user()->departement_id)
             <input type="hidden" name="departement_id" value="{{ auth()->user()->departement_id }}">
             <div class="w-full rounded-lg border border-slate-300 bg-slate-100 px-3 py-2 text-sm text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200">
                 {{ auth()->user()->departement->nom ?? 'Votre département' }}

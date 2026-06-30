@@ -303,8 +303,10 @@ class ValidationController extends Controller
     {
         $query = Activite::query()->soumis();
 
-        if (Auth::user()?->hasRole('chef_departement') && Auth::user()?->departement_id) {
-            $query->where('departement_id', Auth::user()->departement_id);
+        $user = Auth::user();
+        if ($user?->isChef() && $user?->departement_id) {
+            // Flux montant : le chef ne voit que les soumissions des entités qu'il chapeaute.
+            $query->whereIn('departement_id', $user->entitesSupervisees()->pluck('id'));
         }
 
         if ($request->filled('departement_id')) {
@@ -334,8 +336,10 @@ class ValidationController extends Controller
     {
         $query = Departement::active()->ordered();
 
-        if (Auth::user()?->hasRole('chef_departement') && Auth::user()?->departement_id) {
-            $query->whereKey(Auth::user()->departement_id);
+        $user = Auth::user();
+        if ($user?->isChef() && $user?->departement_id) {
+            // Le chef filtre sur les entités enfants dont il valide les soumissions.
+            $query->where('parent_id', $user->departement_id);
         }
 
         return $query->get();
@@ -349,12 +353,18 @@ class ValidationController extends Controller
             return false;
         }
 
-        if ($user->hasRole('dbcgoq')) {
+        if ($user->hasRole('superadmin') || $user->hasRole('dbcgoq')) {
             return true;
         }
 
-        return $user->hasRole('chef_departement')
+        // Flux montant : le chef valide les activités des entités enfants de la sienne.
+        $entite = $activite->relationLoaded('departement')
+            ? $activite->departement
+            : $activite->departement()->first();
+
+        return $user->hasRole('chef')
             && $user->departement_id !== null
-            && (int) $user->departement_id === (int) $activite->departement_id;
+            && $entite?->parent_id !== null
+            && (int) $entite->parent_id === (int) $user->departement_id;
     }
 }

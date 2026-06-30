@@ -87,7 +87,7 @@ test('un chef de département voit son département forcé à la création', fun
     $dep = Departement::factory()->create();
     $autreDep = Departement::factory()->create();
     $chef = \App\Models\User::factory()->dansDepartement($dep)->create();
-    $chef->assignRole('chef_departement');
+    $chef->assignRole('chef');
     $extrant = Extrant::factory()->create();
 
     $this->actingAs($chef)->post(route('activites.store'), [
@@ -115,7 +115,7 @@ test('un chef peut soumettre une activité de son département', function () {
     seedRolesAndPermissions();
     $dep = Departement::factory()->create();
     $chef = \App\Models\User::factory()->dansDepartement($dep)->create();
-    $chef->assignRole('chef_departement');
+    $chef->assignRole('chef');
     $activite = Activite::factory()->brouillon()->pourDepartement($dep)->create();
 
     $this->actingAs($chef)->post(route('activites.soumettre', $activite))
@@ -129,7 +129,7 @@ test('un chef ne peut pas soumettre une activité d\'un autre département', fun
     $dep = Departement::factory()->create();
     $autreDep = Departement::factory()->create();
     $chef = \App\Models\User::factory()->dansDepartement($dep)->create();
-    $chef->assignRole('chef_departement');
+    $chef->assignRole('chef');
     $activite = Activite::factory()->brouillon()->pourDepartement($autreDep)->create();
 
     $this->actingAs($chef)->post(route('activites.soumettre', $activite))->assertForbidden();
