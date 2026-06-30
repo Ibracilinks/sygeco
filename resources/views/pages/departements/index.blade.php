@@ -33,7 +33,7 @@
             </div>
         </div>
 
-        <form method="GET" action="{{ route('departements.index') }}" class="grid grid-cols-1 gap-3 rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-900 md:grid-cols-4">
+        <form method="GET" action="{{ route('departements.index') }}" class="grid grid-cols-1 gap-3 rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-900 md:grid-cols-5">
             <input
                 type="text"
                 name="search"
@@ -41,6 +41,12 @@
                 placeholder="Rechercher par code, nom, description"
                 class="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 focus:border-slate-500 focus:outline-none dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
             >
+            <select name="type" class="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 focus:border-slate-500 focus:outline-none dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100">
+                <option value="">Tous les niveaux</option>
+                @foreach (\App\Models\Departement::TYPE_LABELS as $valeur => $libelle)
+                    <option value="{{ $valeur }}" @selected(($filters['type'] ?? '') === $valeur)>{{ $libelle }}</option>
+                @endforeach
+            </select>
             <select name="status" class="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 focus:border-slate-500 focus:outline-none dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100">
                 <option value="">Tous les statuts</option>
                 <option value="active" @selected(($filters['status'] ?? '') === 'active')>Actifs</option>
@@ -73,11 +79,28 @@
             </div>
         @endif
 
+        @if ($arbre->isNotEmpty())
+            <details class="group rounded-xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900" open>
+                <summary class="flex cursor-pointer list-none items-center justify-between px-5 py-3">
+                    <span class="text-sm font-semibold text-slate-900 dark:text-white">Organigramme</span>
+                    <span class="text-xs text-slate-500 transition group-open:rotate-180 dark:text-slate-400">▾</span>
+                </summary>
+                <div class="border-t border-slate-200 px-5 py-4 dark:border-slate-700">
+                    <ul class="space-y-0.5">
+                        @foreach ($arbre as $racine)
+                            @include('pages.departements.partials.arbre-noeud', ['noeud' => $racine, 'niveau' => 0])
+                        @endforeach
+                    </ul>
+                </div>
+            </details>
+        @endif
+
         <div class="overflow-hidden rounded-xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900">
             <table class="min-w-full divide-y divide-slate-200 dark:divide-slate-700">
                 <thead class="bg-slate-50 dark:bg-slate-950">
                     <tr>
-                        <th class="px-5 py-3 text-left text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">Département</th>
+                        <th class="px-5 py-3 text-left text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">Entité</th>
+                        <th class="px-5 py-3 text-left text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">Type / Rattachement</th>
                         <th class="px-5 py-3 text-left text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">Responsable</th>
                         <th class="px-5 py-3 text-left text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">Données</th>
                         <th class="px-5 py-3 text-left text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">Statut</th>
@@ -96,6 +119,17 @@
                                 @if (filled($departement->description))
                                     <p class="mt-2 max-w-md text-xs text-slate-600 dark:text-slate-300">{{ Str::limit($departement->description, 90) }}</p>
                                 @endif
+                            </td>
+                            <td class="px-5 py-4 text-sm text-slate-700 dark:text-slate-200">
+                                @include('pages.departements.partials.type-badge', ['type' => $departement->type])
+                                <div class="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                                    @if ($departement->parent)
+                                        Rattaché à
+                                        <a href="{{ route('departements.show', $departement->parent) }}" class="font-medium text-slate-700 hover:underline dark:text-slate-200">{{ $departement->parent->nom }}</a>
+                                    @else
+                                        Entité racine
+                                    @endif
+                                </div>
                             </td>
                             <td class="px-5 py-4 text-sm text-slate-700 dark:text-slate-200">
                                 @if ($departement->responsable)
@@ -130,7 +164,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="5" class="px-5 py-10 text-center text-sm text-slate-500 dark:text-slate-400">
+                            <td colspan="6" class="px-5 py-10 text-center text-sm text-slate-500 dark:text-slate-400">
                                 Aucun département trouvé avec les filtres actuels.
                             </td>
                         </tr>

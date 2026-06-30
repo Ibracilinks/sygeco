@@ -63,3 +63,30 @@ test('un département sans parent est refusé', function () {
             'type' => Departement::TYPE_DEPARTEMENT,
         ])->assertSessionHasErrors('parent_id');
 });
+
+test('l\'index affiche l\'organigramme jusqu\'aux services', function () {
+    $admin = userWithRole('dbcgoq');
+    $direction = Departement::factory()->direction()->create(['nom' => 'Direction Alpha']);
+    $departement = Departement::factory()->departement()->enfantDe($direction)->create(['nom' => 'Département Beta']);
+    $service = Departement::factory()->service()->enfantDe($departement)->create(['nom' => 'Service Gamma']);
+
+    $this->actingAs($admin)->get(route('departements.index'))
+        ->assertOk()
+        ->assertSee('Organigramme')
+        ->assertSee('Direction Alpha')
+        ->assertSee('Service Gamma');
+});
+
+test('la fiche affiche le fil d\'ariane et les sous-entités', function () {
+    $admin = userWithRole('dbcgoq');
+    $direction = Departement::factory()->direction()->create(['nom' => 'Direction Alpha']);
+    $departement = Departement::factory()->departement()->enfantDe($direction)->create(['nom' => 'Département Beta']);
+    $service = Departement::factory()->service()->enfantDe($departement)->create(['nom' => 'Service Gamma']);
+
+    // Fiche du département : montre la direction parente (ariane) et le service enfant.
+    $this->actingAs($admin)->get(route('departements.show', $departement))
+        ->assertOk()
+        ->assertSee('Direction Alpha')
+        ->assertSee('Sous-entités')
+        ->assertSee('Service Gamma');
+});

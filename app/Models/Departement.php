@@ -23,6 +23,12 @@ class Departement extends Model
         self::TYPE_SERVICE,
     ];
 
+    public const TYPE_LABELS = [
+        self::TYPE_DIRECTION => 'Direction',
+        self::TYPE_DEPARTEMENT => 'Département',
+        self::TYPE_SERVICE => 'Service',
+    ];
+
     protected $fillable = [
         'code',
         'nom',
@@ -46,7 +52,41 @@ class Departement extends Model
 
     public function enfants()
     {
-        return $this->hasMany(self::class, 'parent_id');
+        return $this->hasMany(self::class, 'parent_id')->ordered();
+    }
+
+    /**
+     * Sous-arbre complet, chargé récursivement pour l'affichage de l'organigramme.
+     */
+    public function enfantsRecursifs()
+    {
+        return $this->enfants()->with('enfantsRecursifs');
+    }
+
+    /**
+     * Libellé lisible du type (Direction / Département / Service).
+     */
+    public function typeLibelle(): string
+    {
+        return self::TYPE_LABELS[$this->type] ?? ucfirst((string) $this->type);
+    }
+
+    /**
+     * Chaîne des ancêtres, de la racine jusqu'au parent direct.
+     *
+     * @return \Illuminate\Support\Collection<int, Departement>
+     */
+    public function ancetres(): \Illuminate\Support\Collection
+    {
+        $chaine = collect();
+        $courant = $this->parent;
+
+        while ($courant) {
+            $chaine->prepend($courant);
+            $courant = $courant->parent;
+        }
+
+        return $chaine;
     }
 
     // Relations

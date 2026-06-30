@@ -16,12 +16,13 @@ class DepartementController extends Controller
         $filters = [
             'search' => trim((string) $request->string('search')),
             'status' => (string) $request->string('status'),
+            'type' => (string) $request->string('type'),
             'sort' => (string) $request->string('sort', 'ordre'),
             'direction' => (string) $request->string('direction', 'asc'),
         ];
 
         $query = Departement::query()
-            ->with(['responsable:id,name,email'])
+            ->with(['responsable:id,name,email', 'parent:id,nom,type'])
             ->withCount(['users', 'activites']);
 
         $this->applyFilters($query, $filters);
@@ -39,7 +40,14 @@ class DepartementController extends Controller
             'avec_responsable' => (clone $summaryQuery)->whereNotNull('responsable_id', 'and')->count('*'),
         ];
 
-        return view('pages.departements.index', compact('departements', 'filters', 'summary'));
+        // Organigramme complet (racines = directions), chargé récursivement.
+        $arbre = Departement::query()
+            ->whereNull('parent_id')
+            ->with('enfantsRecursifs')
+            ->ordered()
+            ->get();
+
+        return view('pages.departements.index', compact('departements', 'filters', 'summary', 'arbre'));
     }
 
     public function create()
@@ -72,8 +80,10 @@ class DepartementController extends Controller
             ->load([
                 'responsable:id,name,email,telephone',
                 'users:id,name,email,departement_id',
+                'parent.parent',
+                'enfants:id,nom,code,type,parent_id,is_active',
             ])
-            ->loadCount(['users', 'activites']);
+            ->loadCount(['users', 'activites', 'enfants']);
 
         $recentActivites = $departement->activites()
             ->select('id', 'nom_activite', 'statut', 'cout', 'created_at')
@@ -137,7 +147,7 @@ class DepartementController extends Controller
     }
 
     /**
-     * @param array{search: string, status: string, sort?: string, direction?: string} $filters
+     * @param array{search: string, status: string, type?: string, sort?: string, direction?: string} $filters
      */
     private function applyFilters(Builder $query, array $filters): void
     {
@@ -158,6 +168,10 @@ class DepartementController extends Controller
 
         if ($filters['status'] === 'inactive') {
             $query->where('is_active', false);
+        }
+
+        if (in_array($filters['type'] ?? '', Departement::TYPES, true)) {
+            $query->where('type', $filters['type']);
         }
     }
 

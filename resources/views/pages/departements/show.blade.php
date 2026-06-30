@@ -2,7 +2,20 @@
     <div class="flex h-full w-full flex-1 flex-col gap-5 rounded-xl">
         <div class="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
             <div>
-                <h1 class="text-2xl font-semibold text-slate-900 dark:text-white">{{ $departement->nom }}</h1>
+                @php $ancetres = $departement->ancetres(); @endphp
+                @if ($ancetres->isNotEmpty())
+                    <nav class="mb-1 flex flex-wrap items-center gap-1 text-xs text-slate-500 dark:text-slate-400">
+                        @foreach ($ancetres as $ancetre)
+                            <a href="{{ route('departements.show', $ancetre) }}" class="hover:underline">{{ $ancetre->nom }}</a>
+                            <span class="text-slate-300 dark:text-slate-600">›</span>
+                        @endforeach
+                        <span class="text-slate-700 dark:text-slate-300">{{ $departement->nom }}</span>
+                    </nav>
+                @endif
+                <div class="flex flex-wrap items-center gap-2">
+                    <h1 class="text-2xl font-semibold text-slate-900 dark:text-white">{{ $departement->nom }}</h1>
+                    @include('pages.departements.partials.type-badge', ['type' => $departement->type])
+                </div>
                 <p class="font-mono text-sm text-slate-500 dark:text-slate-400">{{ $departement->code }}</p>
             </div>
             <div class="flex gap-2">
@@ -81,6 +94,34 @@
                 </div>
             </div>
         </div>
+
+        @if ($departement->type !== \App\Models\Departement::TYPE_SERVICE)
+            <div class="rounded-xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900">
+                <div class="border-b border-slate-200 px-6 py-4 dark:border-slate-700">
+                    <h2 class="text-lg font-semibold text-slate-900 dark:text-white">
+                        Sous-entités ({{ $departement->enfants_count }})
+                    </h2>
+                </div>
+                <div class="p-6">
+                    @if ($departement->enfants->isEmpty())
+                        <p class="text-sm text-slate-500 dark:text-slate-400">Aucune entité rattachée pour le moment.</p>
+                    @else
+                        <ul class="divide-y divide-slate-200 dark:divide-slate-700">
+                            @foreach ($departement->enfants as $enfant)
+                                <li class="flex flex-wrap items-center gap-2 py-2">
+                                    <span class="font-mono text-xs text-slate-400 dark:text-slate-500">{{ $enfant->code }}</span>
+                                    <a href="{{ route('departements.show', $enfant) }}" class="text-sm font-medium text-slate-800 hover:underline dark:text-slate-100">{{ $enfant->nom }}</a>
+                                    @include('pages.departements.partials.type-badge', ['type' => $enfant->type])
+                                    @unless ($enfant->is_active)
+                                        <span class="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold text-amber-800 dark:bg-amber-900/40 dark:text-amber-200">Inactif</span>
+                                    @endunless
+                                </li>
+                            @endforeach
+                        </ul>
+                    @endif
+                </div>
+            </div>
+        @endif
 
         <div class="rounded-xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900">
             <div class="border-b border-slate-200 px-6 py-4 dark:border-slate-700">
