@@ -22,14 +22,14 @@
         @if ($periodeSuivi === 'mi_parcours')
             <div class="rounded-lg border border-sky-200 bg-sky-50 p-4 dark:border-sky-800 dark:bg-sky-950/40">
                 <p class="text-sm font-medium text-sky-800 dark:text-sky-200">
-                    🟢 Période de suivi à mi-parcours ouverte@if ($exercice?->date_fin_mi_parcours) — jusqu'au {{ $exercice->date_fin_mi_parcours->format('d/m/Y') }}@endif.
+                    🟢 Période de suivi à mi-parcours ouverte{{ $exercice?->date_fin_mi_parcours ? ' — jusqu\'au ' . $exercice->date_fin_mi_parcours->format('d/m/Y') : '' }}.
                     Renseignez l'état d'exécution de vos activités.
                 </p>
             </div>
         @elseif ($periodeSuivi === 'evaluation')
             <div class="rounded-lg border border-indigo-200 bg-indigo-50 p-4 dark:border-indigo-800 dark:bg-indigo-950/40">
                 <p class="text-sm font-medium text-indigo-800 dark:text-indigo-200">
-                    🟢 Période d'évaluation de fin d'exercice ouverte@if ($exercice?->date_fin_evaluation) — jusqu'au {{ $exercice->date_fin_evaluation->format('d/m/Y') }}@endif.
+                    🟢 Période d'évaluation de fin d'exercice ouverte{{ $exercice?->date_fin_evaluation ? ' — jusqu\'au ' . $exercice->date_fin_evaluation->format('d/m/Y') : '' }}.
                     Finalisez l'état d'exécution de vos activités.
                 </p>
             </div>
