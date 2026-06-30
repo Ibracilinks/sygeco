@@ -6,6 +6,7 @@ use App\Http\Requests\StoreUserRequest;
 use App\Http\Requests\UpdateUserRequest;
 use App\Models\User;
 use App\Models\Departement;
+use App\Notifications\BienvenueUtilisateurNotification;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -84,8 +85,11 @@ class UserController extends Controller
         $roleNames = Role::whereIn('id', $validated['roles'])->pluck('name')->toArray();
         $user->syncRoles($roleNames);
 
+        // Mail de bienvenue avec les identifiants (mot de passe défini par l'administrateur).
+        $user->notify(new BienvenueUtilisateurNotification($validated['password']));
+
         return redirect()->route('users.index')
-            ->with('success', 'Utilisateur créé avec succès.');
+            ->with('success', 'Utilisateur créé et notifié par e-mail.');
     }
 
     public function show(User $user)

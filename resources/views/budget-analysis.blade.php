@@ -223,12 +223,14 @@
                     </h3>
                     <div class="space-y-2">
                         @forelse(array_slice($budgetAlerts['high_cost_activities'], 0, 3) as $activity)
-                            <div class="p-2 bg-purple-50 dark:bg-purple-900/20 rounded">
-                                <p class="text-sm dark:text-white truncate">{{ $activity['nom_activite'] }}</p>
+                            <a href="{{ route('activites.show', $activity['id']) }}" wire:navigate
+                                title="{{ $activity['nom_activite'] }}"
+                                class="group block p-2 bg-purple-50 dark:bg-purple-900/20 rounded transition hover:bg-purple-100 dark:hover:bg-purple-900/40 hover:ring-1 hover:ring-purple-300 dark:hover:ring-purple-700">
+                                <p class="text-sm dark:text-white truncate group-hover:whitespace-normal group-hover:overflow-visible">{{ $activity['nom_activite'] }}</p>
                                 <p class="text-sm font-medium text-purple-600">
                                     {{ number_format($activity['cout'] / 1000000, 1) }}M FCFA
                                 </p>
-                            </div>
+                            </a>
                         @empty
                             <p class="text-sm text-slate-500">Aucune activité coûteuse détectée</p>
                         @endforelse
