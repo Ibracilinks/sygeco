@@ -22,6 +22,13 @@ test('le dbcgoq peut lister les exercices', function () {
     $this->actingAs($admin)->get(route('exercices.index'))->assertOk();
 });
 
+test('le formulaire de création d\'exercice est accessible (pas de 404)', function () {
+    $admin = userWithRole('dbcgoq');
+
+    // Régression : « /exercices/create » ne doit pas être capturé par le joker {exercice}.
+    $this->actingAs($admin)->get(route('exercices.create'))->assertOk();
+});
+
 test('le dbcgoq peut créer un exercice', function () {
     $admin = userWithRole('dbcgoq');
 
