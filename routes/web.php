@@ -37,10 +37,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('budget-analysis', [BudgetAnalysisController::class, 'index'])->name('budget.analysis');
         Route::get('journal', [JournalController::class, 'index'])->name('journal.index');
 
-        Route::resource('exercices', ExerciceController::class)->only(['index', 'show']);
+        // Ressource complète en un seul enregistrement : Laravel place la route `create`
+        // (GET exercices/create) AVANT `show` (GET exercices/{exercice}), évitant que
+        // « /exercices/create » soit capturé par le joker {exercice} (bug 404 précédent).
+        Route::resource('exercices', ExerciceController::class);
         Route::post('exercices/{exercice}/activate', [ExerciceController::class, 'activate'])->name('exercices.activate');
         Route::get('exercices/{exercice}/export', [ExerciceController::class, 'export'])->name('exercices.export');
-        Route::resource('exercices', ExerciceController::class)->except(['index', 'show']);
 
         Route::post('objectifs/{objectif}/toggle-statut', [ObjectifController::class, 'toggleStatut'])->name('objectifs.toggle-statut');
         Route::resource('objectifs', ObjectifController::class)->except(['index', 'show']);
