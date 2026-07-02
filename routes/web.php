@@ -87,6 +87,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('/', [ActiviteController::class, 'store'])->name('store');
         Route::get('/export', [ActiviteController::class, 'export'])->name('export');
         Route::get('/suivi', [ActiviteController::class, 'suivi'])->name('suivi');
+        Route::post('/non-programmee', [ActiviteController::class, 'storeNonProgrammee'])->name('non-programmee.store');
         Route::get('/{activite}', [ActiviteController::class, 'show'])->name('show');
         Route::get('/{activite}/edit', [ActiviteController::class, 'edit'])->name('edit');
         Route::put('/{activite}', [ActiviteController::class, 'update'])->name('update');

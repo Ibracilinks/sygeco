@@ -5,6 +5,12 @@
                 <h1 class="text-2xl font-semibold text-slate-900 dark:text-white">Suivi des activités</h1>
                 <p class="text-sm text-slate-500 dark:text-slate-400">État d'avancement (réalisé / en cours / non réalisé) et observations — exercice en contexte.</p>
             </div>
+            @can('edit_activites')
+                <button type="button" onclick="document.getElementById('nonProgrammeeModal').classList.remove('hidden')"
+                    class="inline-flex items-center gap-2 rounded-lg bg-slate-800 px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-700 dark:bg-slate-200 dark:text-slate-900 dark:hover:bg-white">
+                    + Activité non programmée
+                </button>
+            @endcan
         </div>
 
         @if (session('success'))
@@ -114,7 +120,12 @@
                                 <a href="{{ route('activites.show', $activite) }}" class="text-sm font-semibold text-slate-900 transition hover:text-sky-700 hover:underline dark:text-white dark:hover:text-sky-300">
                                     {{ Str::limit($activite->nom_activite, 90) }}
                                 </a>
-                                <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">{{ $activite->extrant->code ?? '-' }} • {{ $activite->departement->nom ?? '-' }}</p>
+                                <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                                    {{ $activite->extrant->code ?? '—' }} • {{ $activite->departement->nom ?? '-' }}
+                                    @if ($activite->non_programmee)
+                                        <span class="ml-1 inline-flex items-center rounded-full bg-purple-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-purple-800 dark:bg-purple-900/40 dark:text-purple-200">Non programmée</span>
+                                    @endif
+                                </p>
                                 <p class="mt-2 text-xs font-medium text-sky-700 dark:text-sky-300">Voir le détail, les observations et les pièces jointes</p>
                             </td>
                             <td class="px-5 py-4">
@@ -157,4 +168,85 @@
 
         <div class="mt-2">{{ $activites->links() }}</div>
     </div>
+
+    @can('edit_activites')
+        {{-- Modale : création d'une activité non programmée (hors PTA) --}}
+        <div id="nonProgrammeeModal" class="fixed inset-0 z-50 hidden overflow-y-auto bg-black/40 p-4">
+            <div class="mx-auto my-10 max-w-2xl rounded-2xl bg-white p-6 shadow-xl dark:bg-zinc-900">
+                <div class="flex items-start justify-between gap-4">
+                    <div>
+                        <h2 class="text-xl font-semibold dark:text-white">Nouvelle activité non programmée</h2>
+                        <p class="mt-1 text-sm text-zinc-500 dark:text-zinc-400">Activité hors plan de travail annuel, rattachée à l'exercice en cours{{ $exercice ? ' (' . $exercice->annee . ')' : '' }}.</p>
+                    </div>
+                    <button type="button" onclick="document.getElementById('nonProgrammeeModal').classList.add('hidden')"
+                        class="text-zinc-500 hover:text-zinc-800 dark:hover:text-white">✕</button>
+                </div>
+
+                <form action="{{ route('activites.non-programmee.store') }}" method="POST" class="mt-6 grid grid-cols-1 gap-4 md:grid-cols-2">
+                    @csrf
+                    <div class="md:col-span-2">
+                        <label class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-200">Intitulé de l'activité *</label>
+                        <input type="text" name="nom_activite" required
+                            class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 focus:border-slate-500 focus:outline-none dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100">
+                    </div>
+
+                    @unless (auth()->user()->hasRole('chef'))
+                        <div>
+                            <label class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-200">Structure *</label>
+                            <select name="departement_id" required
+                                class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 focus:border-slate-500 focus:outline-none dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100">
+                                <option value="">— Sélectionner —</option>
+                                @foreach ($departements as $departement)
+                                    <option value="{{ $departement->id }}">{{ $departement->nom }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                    @else
+                        <input type="hidden" name="departement_id" value="{{ auth()->user()->departement_id }}">
+                    @endunless
+
+                    <div>
+                        <label class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-200">Coût (FCFA) *</label>
+                        <input type="number" name="cout" min="0" step="1" required
+                            class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 focus:border-slate-500 focus:outline-none dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100">
+                    </div>
+
+                    <div>
+                        <label class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-200">État d'exécution</label>
+                        <select name="statut_execution"
+                            class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 focus:border-slate-500 focus:outline-none dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100">
+                            @foreach (\App\Models\Activite::STATUTS_EXECUTION as $val => $label)
+                                <option value="{{ $val }}" @selected($val === 'realise')>{{ $label }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-200">Indicateur (facultatif)</label>
+                        <input type="text" name="indicateur_objectivement_verifiable"
+                            class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 focus:border-slate-500 focus:outline-none dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100">
+                    </div>
+
+                    <div class="md:col-span-2">
+                        <label class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-200">Moyen de vérification (facultatif)</label>
+                        <input type="text" name="moyen_verification"
+                            class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 focus:border-slate-500 focus:outline-none dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100">
+                    </div>
+
+                    <div class="md:col-span-2">
+                        <label class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-200">Observations (facultatif)</label>
+                        <textarea name="commentaires" rows="2"
+                            class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 focus:border-slate-500 focus:outline-none dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"></textarea>
+                    </div>
+
+                    <div class="md:col-span-2 flex items-center justify-end gap-2 pt-2">
+                        <button type="button" onclick="document.getElementById('nonProgrammeeModal').classList.add('hidden')"
+                            class="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-white">Annuler</button>
+                        <button type="submit"
+                            class="rounded-lg bg-slate-800 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700 dark:bg-slate-200 dark:text-slate-900">Enregistrer</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    @endcan
 </x-layouts::app>
