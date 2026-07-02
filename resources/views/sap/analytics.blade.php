@@ -215,13 +215,13 @@
         <span class="sac-logo">SAP</span>
         <span class="sac-product">Analytics Cloud <small>· {{ config('app.name') }}</small></span>
         <div class="sac-search">
-            <input type="search" placeholder="Rechercher des histoires, modèles, dimensions…" disabled>
+            <input type="search" placeholder="Rechercher un objectif, un extrant, une activité…" disabled>
         </div>
         <div class="sac-shell-actions">
             <a class="sac-back" href="{{ route('dashboard') }}">← Retour à l'application</a>
-            <button class="sac-icon-btn" title="Notifications" aria-label="Notifications">
+            <a class="sac-icon-btn" href="{{ route('notifications.index') }}" title="Notifications" aria-label="Notifications">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg>
-            </button>
+            </a>
             <span class="sac-avatar">{{ auth()->user()?->initials() }}</span>
         </div>
     </header>
@@ -322,10 +322,10 @@
                 </div>
 
                 <div class="sac-tile col-6">
-                    <div class="sac-tile-head"><h3>Budget par département</h3><span class="sub">Top 8 · M FCFA</span></div>
+                    <div class="sac-tile-head"><h3>Budget par structure</h3><span class="sub">Top 8 · M FCFA</span></div>
                     <div class="sac-tile-body">
                         <table class="sac-table">
-                            <thead><tr><th>Département</th><th class="num">Budget (M FCFA)</th></tr></thead>
+                            <thead><tr><th>Structure</th><th class="num">Budget (M FCFA)</th></tr></thead>
                             <tbody>
                             @forelse (($tables['budget_departements'] ?? []) as $row)
                                 <tr><td>{{ $row['nom'] }}</td><td class="num">{{ number_format($row['budget_millions'] ?? 0, 1, ',', ' ') }}</td></tr>
@@ -375,10 +375,10 @@
                 </div>
 
                 <div class="sac-tile col-7">
-                    <div class="sac-tile-head"><h3>Taux de soumission par département</h3><span class="sub">Activités soumises</span></div>
+                    <div class="sac-tile-head"><h3>Taux de soumission par structure</h3><span class="sub">Activités soumises</span></div>
                     <div class="sac-tile-body">
                         <table class="sac-table">
-                            <thead><tr><th>Département</th><th class="num">Total</th><th class="num">Soumises</th><th>Avancement</th></tr></thead>
+                            <thead><tr><th>Structure</th><th class="num">Total</th><th class="num">Soumises</th><th>Avancement</th></tr></thead>
                             <tbody>
                             @forelse (($tables['soumission_departements'] ?? []) as $row)
                                 <tr>
@@ -400,10 +400,10 @@
                     </div>
                 </div>
                 <div class="sac-tile col-5">
-                    <div class="sac-tile-head"><h3>Départements en retard</h3><span class="sub">Brouillons non soumis</span></div>
+                    <div class="sac-tile-head"><h3>Structures en retard</h3><span class="sub">Brouillons non soumis</span></div>
                     <div class="sac-tile-body">
                         <table class="sac-table">
-                            <thead><tr><th>Département</th><th class="num">Brouillons</th><th>Statut</th></tr></thead>
+                            <thead><tr><th>Structure</th><th class="num">Brouillons</th><th>Statut</th></tr></thead>
                             <tbody>
                             @forelse (($tables['departements_en_retard'] ?? []) as $row)
                                 <tr>

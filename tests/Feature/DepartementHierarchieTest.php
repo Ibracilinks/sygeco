@@ -22,20 +22,23 @@ test('on crée un service rattaché à un département', function () {
     expect($service->parent->is($departement))->toBeTrue();
 });
 
-test('un service rattaché à une direction est refusé (incohérence de niveau)', function () {
+test('un service rattaché directement à une direction est accepté (service rattaché)', function () {
     $admin = userWithRole('dbcgoq');
     $direction = Departement::factory()->direction()->create();
 
     $this->actingAs($admin)
         ->from(route('departements.create'))
         ->post(route('departements.store'), [
-            'code' => 'SRV_KO',
-            'nom' => 'Service mal rattaché',
+            'code' => 'SRV_RATTACHE',
+            'nom' => 'Service rattaché à la DG',
             'type' => Departement::TYPE_SERVICE,
             'parent_id' => $direction->id,
-        ])->assertSessionHasErrors('parent_id');
+        ])->assertRedirect(route('departements.index'));
 
-    expect(Departement::where('code', 'SRV_KO')->exists())->toBeFalse();
+    $service = Departement::where('code', 'SRV_RATTACHE')->first();
+    expect($service)->not->toBeNull();
+    expect($service->type)->toBe(Departement::TYPE_SERVICE);
+    expect($service->parent->is($direction))->toBeTrue();
 });
 
 test('une direction avec un parent est refusée', function () {

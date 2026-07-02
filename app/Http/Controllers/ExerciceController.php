@@ -75,8 +75,9 @@ class ExerciceController extends Controller
             'budget_total' => (float) Activite::forExercice($exercice->id)->sum('cout'),
             'activites_par_statut' => [
                 'brouillon' => Activite::forExercice($exercice->id)->where('statut', 'brouillon')->count(),
-                'soumis' => Activite::forExercice($exercice->id)->where('statut', 'soumis')->count(),
+                'en_attente' => Activite::forExercice($exercice->id)->where('statut', 'en_attente')->count(),
                 'valide' => Activite::forExercice($exercice->id)->where('statut', 'valide')->count(),
+                'rejete' => Activite::forExercice($exercice->id)->where('statut', 'rejete')->count(),
             ],
             'execution' => [
                 'non_realise' => Activite::forExercice($exercice->id)->where('statut_execution', 'non_realise')->count(),

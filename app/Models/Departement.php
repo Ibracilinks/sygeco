@@ -25,7 +25,7 @@ class Departement extends Model
 
     public const TYPE_LABELS = [
         self::TYPE_DIRECTION => 'Direction',
-        self::TYPE_DEPARTEMENT => 'Département',
+        self::TYPE_DEPARTEMENT => 'Direction Centrale',
         self::TYPE_SERVICE => 'Service',
     ];
 

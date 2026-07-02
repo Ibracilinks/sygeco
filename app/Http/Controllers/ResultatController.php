@@ -146,8 +146,9 @@ class ResultatController extends Controller
 
         $activitesParStatut = [
             'brouillon' => 0,
-            'soumis' => 0,
+            'en_attente' => 0,
             'valide' => 0,
+            'rejete' => 0,
         ];
 
         foreach ($activites as $activite) {

@@ -23,8 +23,9 @@ trait ValidatesDepartementHierarchie
     /**
      * Vérifie la cohérence niveau ↔ parent :
      * - une direction n'a pas de parent ;
-     * - un département se rattache à une direction ;
-     * - un service se rattache à un département.
+     * - une direction centrale se rattache à une direction ;
+     * - un service se rattache à une direction centrale, ou directement à une
+     *   direction générale (service rattaché).
      */
     protected function validerCoherenceHierarchie(Validator $validator): void
     {
@@ -48,17 +49,21 @@ trait ValidatesDepartementHierarchie
 
             $parent = Departement::find($parentId);
 
-            $typeParentAttendu = $type === Departement::TYPE_SERVICE
-                ? Departement::TYPE_DEPARTEMENT
-                : Departement::TYPE_DIRECTION;
+            if (! $parent) {
+                return;
+            }
 
-            if ($parent && $parent->type !== $typeParentAttendu) {
-                $libelles = [
-                    Departement::TYPE_DIRECTION => 'une direction',
-                    Departement::TYPE_DEPARTEMENT => 'un département',
-                ];
+            // Types de parent autorisés selon le niveau de l'entité.
+            $typesParentAutorises = $type === Departement::TYPE_SERVICE
+                ? [Departement::TYPE_DEPARTEMENT, Departement::TYPE_DIRECTION] // service ou service rattaché
+                : [Departement::TYPE_DIRECTION];
 
-                $validator->errors()->add('parent_id', 'Le parent doit être ' . $libelles[$typeParentAttendu] . '.');
+            if (! in_array($parent->type, $typesParentAutorises, true)) {
+                $message = $type === Departement::TYPE_SERVICE
+                    ? 'Un service doit être rattaché à une direction centrale, ou directement à une direction (service rattaché).'
+                    : 'Une direction centrale doit être rattachée à une direction.';
+
+                $validator->errors()->add('parent_id', $message);
             }
         });
     }

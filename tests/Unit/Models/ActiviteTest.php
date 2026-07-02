@@ -14,14 +14,14 @@ uses(\Illuminate\Foundation\Testing\RefreshDatabase::class);
 |--------------------------------------------------------------------------
 */
 
-test('un brouillon peut être soumis et passe au statut soumis', function () {
+test('un brouillon peut être soumis et passe au statut en attente', function () {
     $activite = Activite::factory()->brouillon()->create();
 
     expect($activite->peutEtreSoumis())->toBeTrue();
     expect($activite->soumettre())->toBeTrue();
 
     expect($activite->fresh())
-        ->statut->toBe('soumis')
+        ->statut->toBe('en_attente')
         ->date_soumission->not->toBeNull();
 });
 
@@ -63,7 +63,7 @@ test('un brouillon ne peut pas être validé directement', function () {
     expect($activite->valider())->toBeFalse();
 });
 
-test('refuser une activité soumise la renvoie en brouillon avec un motif', function () {
+test('refuser une activité soumise la passe au statut rejeté avec un motif', function () {
     $user = User::factory()->create();
     $this->actingAs($user);
 
@@ -72,7 +72,7 @@ test('refuser une activité soumise la renvoie en brouillon avec un motif', func
     expect($activite->refuser('Budget non justifié et incohérent'))->toBeTrue();
 
     expect($activite->fresh())
-        ->statut->toBe('brouillon')
+        ->statut->toBe('rejete')
         ->motif_refus->toBe('Budget non justifié et incohérent')
         ->refuse_par->toBe($user->id)
         ->refuse_le->not->toBeNull();
@@ -97,7 +97,7 @@ test('soumettre après un refus efface le motif de refus', function () {
     $activite->soumettre();
 
     expect($activite->fresh())
-        ->statut->toBe('soumis')
+        ->statut->toBe('en_attente')
         ->motif_refus->toBeNull()
         ->refuse_par->toBeNull();
 });
@@ -164,19 +164,17 @@ test('getCoutFormate formate le coût avec séparateur et FCFA', function () {
     expect($activite->cout_formate)->toBe('1 234 567 FCFA');
 });
 
-test('getStatutLabel reflète l\'état refusé d\'un brouillon', function () {
-    $refuse = Activite::factory()->brouillon()->create(['motif_refus' => 'refusé']);
-    $brouillon = Activite::factory()->brouillon()->create(['motif_refus' => null]);
-
-    expect($refuse->statut_label)->toContain('Refusé');
-    expect($brouillon->statut_label)->toContain('Brouillon');
+test('getStatutLabel reflète les statuts de la machine à états', function () {
+    expect(Activite::factory()->rejete()->create()->statut_label)->toContain('Rejeté');
+    expect(Activite::factory()->brouillon()->create()->statut_label)->toContain('Brouillon');
+    expect(Activite::factory()->enAttente()->create()->statut_label)->toContain('En attente');
     expect(Activite::factory()->valide()->create()->statut_label)->toContain('Validé');
 });
 
-test('getStatutColor renvoie rouge pour un brouillon refusé', function () {
-    expect(Activite::factory()->brouillon()->create(['motif_refus' => 'x'])->statut_color)->toBe('red');
-    expect(Activite::factory()->brouillon()->create(['motif_refus' => null])->statut_color)->toBe('gray');
-    expect(Activite::factory()->soumis()->create()->statut_color)->toBe('yellow');
+test('getStatutColor renvoie une couleur par statut', function () {
+    expect(Activite::factory()->rejete()->create()->statut_color)->toBe('red');
+    expect(Activite::factory()->brouillon()->create()->statut_color)->toBe('gray');
+    expect(Activite::factory()->enAttente()->create()->statut_color)->toBe('yellow');
     expect(Activite::factory()->valide()->create()->statut_color)->toBe('green');
 });
 

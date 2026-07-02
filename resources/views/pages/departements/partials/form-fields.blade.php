@@ -28,7 +28,7 @@
             name="nom"
             value="{{ old('nom', $departement?->nom) }}"
             class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-800 focus:border-slate-500 focus:outline-none dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
-            placeholder="Nom du departement"
+            placeholder="Nom de l'entité"
         >
         @error('nom')
             <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
@@ -45,7 +45,7 @@
                     class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-800 focus:border-slate-500 focus:outline-none dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
                 >
                     <option value="{{ \App\Models\Departement::TYPE_DIRECTION }}">Direction</option>
-                    <option value="{{ \App\Models\Departement::TYPE_DEPARTEMENT }}">Département</option>
+                    <option value="{{ \App\Models\Departement::TYPE_DEPARTEMENT }}">Direction Centrale</option>
                     <option value="{{ \App\Models\Departement::TYPE_SERVICE }}">Service</option>
                 </select>
                 @error('type')
@@ -56,7 +56,7 @@
             <div x-show="type !== '{{ \App\Models\Departement::TYPE_DIRECTION }}'" x-cloak>
                 <label class="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-200">
                     Rattaché à
-                    <span x-text="type === '{{ \App\Models\Departement::TYPE_SERVICE }}' ? '(département)' : '(direction)'"
+                    <span x-text="type === '{{ \App\Models\Departement::TYPE_SERVICE }}' ? '(direction centrale ou direction générale)' : '(direction)'"
                           class="text-slate-400"></span>
                     *
                 </label>
@@ -68,7 +68,7 @@
                     @foreach ($parents as $parent)
                         <option
                             value="{{ $parent->id }}"
-                            x-show="(type === '{{ \App\Models\Departement::TYPE_DEPARTEMENT }}' && '{{ $parent->type }}' === '{{ \App\Models\Departement::TYPE_DIRECTION }}') || (type === '{{ \App\Models\Departement::TYPE_SERVICE }}' && '{{ $parent->type }}' === '{{ \App\Models\Departement::TYPE_DEPARTEMENT }}')"
+                            x-show="(type === '{{ \App\Models\Departement::TYPE_DEPARTEMENT }}' && '{{ $parent->type }}' === '{{ \App\Models\Departement::TYPE_DIRECTION }}') || (type === '{{ \App\Models\Departement::TYPE_SERVICE }}' && ('{{ $parent->type }}' === '{{ \App\Models\Departement::TYPE_DEPARTEMENT }}' || '{{ $parent->type }}' === '{{ \App\Models\Departement::TYPE_DIRECTION }}'))"
                             @selected((string) $parentCourant === (string) $parent->id)
                         >
                             {{ $parent->nom }}
@@ -88,7 +88,7 @@
             name="description"
             rows="4"
             class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-800 focus:border-slate-500 focus:outline-none dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
-            placeholder="Description fonctionnelle du departement"
+            placeholder="Description fonctionnelle de l'entité"
         >{{ old('description', $departement?->description) }}</textarea>
         @error('description')
             <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
@@ -137,7 +137,7 @@
                 @checked(old('is_active', $departement?->is_active ?? true))
                 class="rounded border-slate-300 text-slate-700 focus:ring-slate-500 dark:border-slate-700"
             >
-            Departement actif
+            Entité active
         </label>
     </div>
 </div>

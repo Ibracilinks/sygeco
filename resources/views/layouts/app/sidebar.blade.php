@@ -44,7 +44,7 @@
                 <flux:sidebar.group :heading="__('Organisation')" class="app-sidebar-group grid">
                     <flux:sidebar.item icon="building-office" href="{{ route('departements.index') }}"
                         :current="request()->routeIs('departements.*')">
-                        {{ __('Départements') }}
+                        {{ __('Directions Centrales') }}
                     </flux:sidebar.item>
 
                     <flux:sidebar.item icon="users" href="{{ route('users.index') }}"
@@ -94,7 +94,7 @@
                     <flux:sidebar.item icon="check-badge" href="{{ route('validations.index') }}"
                         :current="request()->routeIs('validations.*')">
                         {{ __('Validations') }}
-                        @php $nbEnAttente = App\Models\Activite::where('statut', 'soumis')->count(); @endphp
+                        @php $nbEnAttente = App\Models\Activite::where('statut', 'en_attente')->count(); @endphp
                         @if ($nbEnAttente > 0)
                             <flux:badge class="ml-auto">{{ $nbEnAttente }}</flux:badge>
                         @endif

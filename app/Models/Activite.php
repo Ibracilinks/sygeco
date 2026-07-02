@@ -16,6 +16,8 @@ class Activite extends Model
 
     protected $fillable = [
         'extrant_id',
+        'exercice_id',
+        'non_programmee',
         'departement_id',
         'nom_activite',
         'indicateur_objectivement_verifiable',
@@ -43,6 +45,7 @@ class Activite extends Model
 
     protected $casts = [
         'cout' => 'decimal:2',
+        'non_programmee' => 'boolean',
         'date_saisie' => 'date',
         'date_soumission' => 'datetime',
         'date_validation' => 'datetime',
@@ -83,7 +86,21 @@ class Activite extends Model
      */
     public function exercice(): ?Exercice
     {
+        // Une activité non programmée est rattachée directement à un exercice ;
+        // une activité planifiée l'est via son extrant → objectif.
+        if ($this->exercice_id) {
+            return $this->exerciceDirect ?? Exercice::find($this->exercice_id);
+        }
+
         return $this->extrant?->objectif?->exercice;
+    }
+
+    /**
+     * Rattachement direct à l'exercice (activités non programmées).
+     */
+    public function exerciceDirect()
+    {
+        return $this->belongsTo(Exercice::class, 'exercice_id');
     }
 
     public function scopeByStatutExecution($query, $statut)
@@ -137,8 +154,11 @@ class Activite extends Model
             return $query;
         }
 
-        return $query->whereHas('extrant.objectif', function ($q) use ($exerciceId) {
-            $q->where('exercice_id', $exerciceId);
+        // Activités planifiées (via extrant → objectif) OU non programmées (lien direct à l'exercice).
+        return $query->where(function ($outer) use ($exerciceId) {
+            $outer->whereHas('extrant.objectif', function ($q) use ($exerciceId) {
+                $q->where('exercice_id', $exerciceId);
+            })->orWhere('exercice_id', $exerciceId);
         });
     }
 
@@ -149,7 +169,18 @@ class Activite extends Model
 
     public function scopeSoumis($query)
     {
-        return $query->where('statut', 'soumis');
+        // « Soumis » = en attente de validation (nom de scope conservé pour compatibilité).
+        return $query->where('statut', 'en_attente');
+    }
+
+    public function scopeEnAttente($query)
+    {
+        return $query->where('statut', 'en_attente');
+    }
+
+    public function scopeRejete($query)
+    {
+        return $query->where('statut', 'rejete');
     }
 
     public function scopeValide($query)
@@ -181,28 +212,22 @@ class Activite extends Model
 
     public function getStatutLabelAttribute()
     {
-        if ($this->statut === 'brouillon' && $this->motif_refus) {
-            return '❌ Refusé';
-        }
-
         return match ($this->statut) {
             'brouillon' => '📝 Brouillon',
-            'soumis' => '⏳ Soumis',
+            'en_attente', 'soumis' => '⏳ En attente de validation',
             'valide' => '✅ Validé',
+            'rejete' => '❌ Rejeté',
             default => $this->statut
         };
     }
 
     public function getStatutColorAttribute()
     {
-        if ($this->statut === 'brouillon' && $this->motif_refus) {
-            return 'red';
-        }
-
         return match ($this->statut) {
             'brouillon' => 'gray',
-            'soumis' => 'yellow',
+            'en_attente', 'soumis' => 'yellow',
             'valide' => 'green',
+            'rejete' => 'red',
             default => 'gray'
         };
     }
@@ -237,17 +262,18 @@ class Activite extends Model
 
     public function peutEtreModifie()
     {
-        return $this->statut === 'brouillon';
+        // Une activité rejetée peut être corrigée puis re-soumise.
+        return in_array($this->statut, ['brouillon', 'rejete'], true);
     }
 
     public function peutEtreSoumis()
     {
-        return $this->statut === 'brouillon';
+        return in_array($this->statut, ['brouillon', 'rejete'], true);
     }
 
     public function peutEtreValide()
     {
-        return $this->statut === 'soumis';
+        return $this->statut === 'en_attente';
     }
 
     public function soumettre()
@@ -256,15 +282,17 @@ class Activite extends Model
             return false;
         }
 
+        $ancienStatut = $this->statut;
+
         $this->update([
-            'statut' => 'soumis',
+            'statut' => 'en_attente',
             'date_soumission' => now(),
             'motif_refus' => null,
             'refuse_le' => null,
             'refuse_par' => null,
         ]);
 
-        $this->logHistorique('soumission', 'brouillon', 'soumis');
+        $this->logHistorique('soumission', $ancienStatut, 'en_attente');
 
         return true;
     }
@@ -281,7 +309,7 @@ class Activite extends Model
             'valide_par' => Auth::id(),
         ]);
 
-        $this->logHistorique('validation', 'soumis', 'valide', $commentaire);
+        $this->logHistorique('validation', 'en_attente', 'valide', $commentaire);
 
         return true;
     }
@@ -293,15 +321,50 @@ class Activite extends Model
         }
 
         $this->update([
-            'statut' => 'brouillon',
+            'statut' => 'rejete',
             'motif_refus' => $motif,
             'refuse_le' => now(),
             'refuse_par' => Auth::id(),
         ]);
 
-        $this->logHistorique('refus', 'soumis', 'brouillon', $motif);
+        $this->logHistorique('refus', 'en_attente', 'rejete', $motif);
 
         return true;
+    }
+
+    /**
+     * Destinataires à notifier lors d'un changement de budget (coût) de l'activité :
+     * le chef du service concerné (responsable de la structure de l'activité) et le
+     * directeur de la Direction Centrale de rattachement.
+     *
+     * @return \Illuminate\Support\Collection<int, \App\Models\User>
+     */
+    public function destinatairesChangementBudget(): \Illuminate\Support\Collection
+    {
+        $structure = $this->departement;
+
+        if (! $structure) {
+            return collect();
+        }
+
+        $destinataires = collect();
+
+        // Chef de service : responsable de la structure porteuse de l'activité.
+        if ($structure->responsable) {
+            $destinataires->push($structure->responsable);
+        }
+
+        // Directeur de la Direction Centrale : la structure elle-même si c'en est une,
+        // sinon la Direction Centrale la plus proche parmi ses ancêtres.
+        $directionCentrale = $structure->type === Departement::TYPE_DEPARTEMENT
+            ? $structure
+            : $structure->ancetres()->firstWhere('type', Departement::TYPE_DEPARTEMENT);
+
+        if ($directionCentrale && $directionCentrale->responsable) {
+            $destinataires->push($directionCentrale->responsable);
+        }
+
+        return $destinataires->filter()->unique('id')->values();
     }
 
     /**

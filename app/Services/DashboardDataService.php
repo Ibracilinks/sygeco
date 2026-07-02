@@ -201,16 +201,18 @@ class DashboardDataService
         return Cache::remember("dashboard_evolution_mensuelle_{$this->annee}", 3600, function () {
             $data = [];
 
-            for ($i = 11; $i >= 0; $i--) {
-                $date = Carbon::now()->subMonths($i);
-                $mois = $date->format('M Y');
+            // Les 12 mois calendaires de l'exercice sélectionné (janvier → décembre),
+            // afin que la courbe reste cohérente avec l'année d'exercice choisie
+            // (et ne déborde plus sur l'année suivante comme avec une fenêtre glissante).
+            for ($mois = 1; $mois <= 12; $mois++) {
+                $date = Carbon::create($this->annee, $mois, 1);
 
                 $stats = DB::table('activites')
                     ->join('extrants', 'activites.extrant_id', '=', 'extrants.id')
                     ->join('objectifs', 'extrants.objectif_id', '=', 'objectifs.id')
                     ->where('objectifs.annee', $this->annee)
-                    ->whereMonth('activites.created_at', $date->month)
-                    ->whereYear('activites.created_at', $date->year)
+                    ->whereMonth('activites.created_at', $mois)
+                    ->whereYear('activites.created_at', $this->annee)
                     ->selectRaw('
                         COUNT(activites.id) as nb_activites,
                         COALESCE(SUM(activites.cout), 0) as budget
@@ -218,9 +220,9 @@ class DashboardDataService
                     ->first();
 
                 $data[] = [
-                    'mois' => $mois,
-                    'nb_activites' => $stats->nb_activites,
-                    'budget' => $stats->budget,
+                    'mois' => $date->format('M Y'),
+                    'nb_activites' => (int) $stats->nb_activites,
+                    'budget' => (float) $stats->budget,
                 ];
             }
 
@@ -276,7 +278,7 @@ class DashboardDataService
                 ->toArray();
 
             // Ensure all statuts are present
-            $statuts = ['brouillon' => 0, 'soumis' => 0, 'valide' => 0];
+            $statuts = ['brouillon' => 0, 'en_attente' => 0, 'valide' => 0, 'rejete' => 0];
             foreach ($result as $statut => $count) {
                 if (isset($statuts[$statut])) {
                     $statuts[$statut] = $count;
@@ -285,8 +287,9 @@ class DashboardDataService
 
             return [
                 'Brouillon' => $statuts['brouillon'],
-                'Soumis' => $statuts['soumis'],
-                'Valide' => $statuts['valide'],
+                'En attente' => $statuts['en_attente'],
+                'Validé' => $statuts['valide'],
+                'Rejeté' => $statuts['rejete'],
             ];
         });
     }
@@ -378,7 +381,7 @@ class DashboardDataService
             ->ordered()
             ->withCount([
                 'activites as total_activites' => fn ($q) => $q->forExercice($exerciceId),
-                'activites as activites_soumises' => fn ($q) => $q->forExercice($exerciceId)->whereIn('statut', ['soumis', 'valide']),
+                'activites as activites_soumises' => fn ($q) => $q->forExercice($exerciceId)->whereIn('statut', ['en_attente', 'valide']),
             ])
             ->get()
             ->map(fn ($d) => [

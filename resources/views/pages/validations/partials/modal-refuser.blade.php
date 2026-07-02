@@ -2,8 +2,8 @@
     <div class="mx-auto my-12 max-w-xl rounded-2xl bg-white p-6 shadow-xl dark:bg-zinc-900">
         <div class="flex items-start justify-between gap-4">
             <div>
-                <h2 id="refuserModalTitle" class="text-xl font-semibold dark:text-white">Refuser l'activité</h2>
-                <p class="text-sm text-zinc-500 dark:text-zinc-400 mt-1">Indiquez un motif de refus et choisissez si vous
+                <h2 id="refuserModalTitle" class="text-xl font-semibold dark:text-white">Rejeter l'activité</h2>
+                <p class="text-sm text-zinc-500 dark:text-zinc-400 mt-1">Indiquez un motif de rejet et choisissez si vous
                     souhaitez notifier l'utilisateur.</p>
             </div>
             <button type="button" onclick="closeModal('refuserModal')"
@@ -15,7 +15,7 @@
         <form id="refuserForm" method="POST" class="mt-6 space-y-4">
             @csrf
             <div>
-                <label class="text-sm font-medium text-zinc-700 dark:text-zinc-200">Motif du refus</label>
+                <label class="text-sm font-medium text-zinc-700 dark:text-zinc-200">Motif du rejet</label>
                 <textarea name="motif_refus" rows="4" required
                     class="mt-2 w-full rounded-lg border border-neutral-300 bg-white px-4 py-3 text-sm text-zinc-800 outline-none transition focus:border-red-500 dark:border-neutral-700 dark:bg-zinc-800 dark:text-white"></textarea>
             </div>
@@ -38,7 +38,7 @@
                 </button>
                 <button type="submit"
                     class="rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700">
-                    Confirmer le refus
+                    Confirmer le rejet
                 </button>
             </div>
         </form>

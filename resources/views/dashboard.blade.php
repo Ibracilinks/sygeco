@@ -31,7 +31,7 @@
             <x-charts.kpi-card title="Objectifs" :value="$kpis['objectifs']" trend="up" color="blue" icon="document-text" />
             <x-charts.kpi-card title="Extrants" :value="$kpis['extrants']" trend="up" color="green" icon="folder" />
             <x-charts.kpi-card title="Activites" :value="$kpis['activites']" trend="up" color="purple" icon="clipboard-document-list" />
-            <x-charts.kpi-card title="Budget total" :value="$kpis['budget_total']" unit="M FCFA" trend="up" color="yellow" icon="currency-dollar" divisor="1000000" decimals="1" />
+            <x-charts.kpi-card title="Budget total" :value="$kpis['budget_total']" unit="M FCFA" trend="up" color="yellow" icon="banknotes" divisor="1000000" decimals="1" />
         </section>
 
         <section class="grid grid-cols-1 gap-4 xl:grid-cols-3">
@@ -263,7 +263,7 @@
                     ], $tables['top_activites']),
                 ],
                 [
-                    'title' => 'Soumission par département',
+                    'title' => 'Soumission par structure',
                     'empty' => 'Aucune donnée de soumission disponible.',
                     'rows' => array_map(fn ($row) => [
                         'label' => $row['nom'],
@@ -271,8 +271,8 @@
                     ], $tables['soumission_departements']),
                 ],
                 [
-                    'title' => 'Départements en retard',
-                    'empty' => 'Aucun département en retard sur cet exercice.',
+                    'title' => 'Structures en retard',
+                    'empty' => 'Aucune structure en retard sur cet exercice.',
                     'rows' => array_map(fn ($r) => [
                         'label' => $r['nom'],
                         'value' => $r['nb_brouillon'] . ' brouillon(s)',

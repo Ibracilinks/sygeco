@@ -31,7 +31,7 @@
         <!-- Section 1: Vue d'ensemble budgétaire -->
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <x-charts.kpi-card title="Budget Total" :value="$budgetOverview['total_budget']" unit="M FCFA" trend="up" color="blue"
-                icon="currency-dollar" divisor="1000000" decimals="1" />
+                icon="banknotes" divisor="1000000" decimals="1" />
 
             <x-charts.kpi-card title="Coût Moyen par Activité" :value="$budgetOverview['average_cost_per_activity']" unit="FCFA" trend="neutral"
                 color="green" icon="calculator" decimals="0" />
@@ -94,12 +94,12 @@
             </div>
         </div>
 
-        <!-- Section 3: Analyse par Département -->
+        <!-- Section 3: Analyse par structure -->
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <!-- Dépenses par Département -->
+            <!-- Dépenses par structure -->
             <div class="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-6">
                 <div class="border-b border-slate-200 dark:border-slate-700 pb-4 mb-4">
-                    <h2 class="text-lg font-semibold dark:text-white">Dépenses par Département</h2>
+                    <h2 class="text-lg font-semibold dark:text-white">Dépenses par structure</h2>
                     <p class="text-sm text-slate-500 dark:text-slate-400">Répartition budgétaire</p>
                 </div>
                 <div id="chart-depenses-departement">
@@ -116,10 +116,10 @@
                 </div>
             </div>
 
-            <!-- Efficacité par Département -->
+            <!-- Efficacité par structure -->
             <div class="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-6">
                 <div class="border-b border-slate-200 dark:border-slate-700 pb-4 mb-4">
-                    <h2 class="text-lg font-semibold dark:text-white">Efficacité par Département</h2>
+                    <h2 class="text-lg font-semibold dark:text-white">Efficacité par structure</h2>
                     <p class="text-sm text-slate-500 dark:text-slate-400">Taux d'efficacité budgétaire</p>
                 </div>
                 <div id="chart-efficacite-departement">
@@ -181,7 +181,7 @@
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <!-- Départements en dépassement -->
+                <!-- Structures en dépassement -->
                 <div>
                     <h3 class="text-sm font-medium text-red-600 dark:text-red-400 mb-3">🚨 Dépassements Budgetaires</h3>
                     <div class="space-y-2">
@@ -330,8 +330,8 @@
             'charts' => [
                 ['containerId' => 'chart-budget-objectif', 'title' => 'Budget vs Réel par Objectif'],
                 ['containerId' => 'chart-evolution-mensuelle', 'title' => 'Évolution Mensuelle des Dépenses'],
-                ['containerId' => 'chart-depenses-departement', 'title' => 'Dépenses par Département'],
-                ['containerId' => 'chart-efficacite-departement', 'title' => 'Efficacité par Département'],
+                ['containerId' => 'chart-depenses-departement', 'title' => 'Dépenses par structure'],
+                ['containerId' => 'chart-efficacite-departement', 'title' => 'Efficacité par structure'],
                 ['containerId' => 'chart-repartition-trimestre', 'title' => 'Répartition Trimestrielle'],
                 ['containerId' => 'chart-performance-trimestre', 'title' => 'Performance Trimestrielle'],
                 ['containerId' => 'chart-tendances-annuelles', 'title' => 'Tendances Annuelles'],

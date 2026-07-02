@@ -1,7 +1,7 @@
-<x-layouts::app title="Modifier un Département">
+<x-layouts::app title="Modifier une entité">
     <div class="flex h-full w-full flex-1 flex-col gap-5 rounded-xl">
         <div>
-            <h1 class="text-2xl font-semibold text-slate-900 dark:text-white">Modifier le département</h1>
+            <h1 class="text-2xl font-semibold text-slate-900 dark:text-white">Modifier l'entité</h1>
             <p class="text-sm text-slate-500 dark:text-slate-400">{{ $departement->nom }} ({{ $departement->code }})</p>
         </div>
 

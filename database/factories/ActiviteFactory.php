@@ -14,7 +14,7 @@ class ActiviteFactory extends Factory
 
     public function definition(): array
     {
-        $statuts = ['brouillon', 'soumis', 'valide'];
+        $statuts = ['brouillon', 'en_attente', 'valide', 'rejete'];
         $trimestres = ['non', 'oui'];
 
         // Générer des trimestres aléatoires (au moins 1 trimestre sélectionné)
@@ -62,12 +62,22 @@ class ActiviteFactory extends Factory
     }
 
     /**
-     * Indiquer que l'activité est soumise.
+     * Indiquer que l'activité est soumise (= en attente de validation).
      */
     public function soumis(): static
     {
         return $this->state(fn(array $attributes) => [
-            'statut' => 'soumis',
+            'statut' => 'en_attente',
+        ]);
+    }
+
+    /**
+     * Indiquer que l'activité est en attente de validation.
+     */
+    public function enAttente(): static
+    {
+        return $this->state(fn(array $attributes) => [
+            'statut' => 'en_attente',
         ]);
     }
 
@@ -78,6 +88,18 @@ class ActiviteFactory extends Factory
     {
         return $this->state(fn(array $attributes) => [
             'statut' => 'valide',
+        ]);
+    }
+
+    /**
+     * Indiquer que l'activité est rejetée.
+     */
+    public function rejete(): static
+    {
+        return $this->state(fn(array $attributes) => [
+            'statut' => 'rejete',
+            'motif_refus' => $this->faker->sentence(),
+            'refuse_le' => now(),
         ]);
     }
 

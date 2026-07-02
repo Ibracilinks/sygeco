@@ -7,6 +7,7 @@ use App\Models\ActivitePieceJointe;
 use App\Models\Departement;
 use App\Models\Extrant;
 use App\Models\User;
+use App\Notifications\ActiviteCoutModifieNotification;
 use App\Notifications\ActiviteRefusee;
 use App\Notifications\ActiviteSoumiseNotification;
 use App\Notifications\ActiviteValidee;
@@ -76,8 +77,9 @@ class ActiviteController extends Controller
         $summary = [
             'total' => (clone $summaryQuery)->count(),
             'brouillon' => (clone $summaryQuery)->where('statut', 'brouillon')->count(),
-            'soumis' => (clone $summaryQuery)->where('statut', 'soumis')->count(),
+            'en_attente' => (clone $summaryQuery)->where('statut', 'en_attente')->count(),
             'valide' => (clone $summaryQuery)->where('statut', 'valide')->count(),
+            'rejete' => (clone $summaryQuery)->where('statut', 'rejete')->count(),
         ];
 
         $activites = $query->orderBy('date_saisie', 'desc')->paginate(15)->withQueryString();
@@ -89,7 +91,7 @@ class ActiviteController extends Controller
             ->ordered()
             ->get();
         $departements = $this->departementsVisibles();
-        $statuts = ['brouillon', 'soumis', 'valide'];
+        $statuts = ['brouillon', 'en_attente', 'valide', 'rejete'];
         $filters = $request->only(['search', 'extrant_id', 'departement_id', 'statut', 'trimestre', 'statut_execution']);
 
         return view('pages.activites.index', compact('activites', 'extrants', 'departements', 'statuts', 'summary', 'filters'));
@@ -219,6 +221,65 @@ class ActiviteController extends Controller
     }
 
     /**
+     * Enregistrement d'une activité NON PROGRAMMÉE depuis le suivi-évaluation.
+     * Formulaire allégé : pas d'extrant, rattachement direct à l'exercice actif.
+     */
+    public function storeNonProgrammee(Request $request)
+    {
+        if (! Auth::user()->can('edit_activites')) {
+            abort(403);
+        }
+
+        $exerciceId = ActiveExercice::id();
+
+        if (! $exerciceId) {
+            return back()->with('error', "Aucun exercice actif : impossible d'enregistrer une activité non programmée.");
+        }
+
+        $validated = $request->validate([
+            'departement_id' => 'required|exists:departements,id',
+            'nom_activite' => 'required|string',
+            'cout' => 'required|numeric|min:0',
+            'indicateur_objectivement_verifiable' => 'nullable|string',
+            'moyen_verification' => 'nullable|string',
+            'statut_execution' => ['nullable', Rule::in(array_keys(Activite::STATUTS_EXECUTION))],
+            'trimestre_1' => 'nullable|in:on,oui',
+            'trimestre_2' => 'nullable|in:on,oui',
+            'trimestre_3' => 'nullable|in:on,oui',
+            'trimestre_4' => 'nullable|in:on,oui',
+            'commentaires' => 'nullable|string',
+        ]);
+
+        if (Auth::user()->hasRole('chef') && Auth::user()->departement_id) {
+            $validated['departement_id'] = Auth::user()->departement_id;
+        }
+
+        $activite = new Activite();
+        $activite->extrant_id = null;
+        $activite->exercice_id = $exerciceId;
+        $activite->non_programmee = true;
+        $activite->departement_id = $validated['departement_id'];
+        $activite->nom_activite = $validated['nom_activite'];
+        $activite->indicateur_objectivement_verifiable = $validated['indicateur_objectivement_verifiable'] ?? 'Non spécifié (activité non programmée)';
+        $activite->moyen_verification = $validated['moyen_verification'] ?? 'Non spécifié (activité non programmée)';
+        $activite->cout = $validated['cout'];
+        $activite->trimestre_1 = isset($validated['trimestre_1']) ? 'oui' : 'non';
+        $activite->trimestre_2 = isset($validated['trimestre_2']) ? 'oui' : 'non';
+        $activite->trimestre_3 = isset($validated['trimestre_3']) ? 'oui' : 'non';
+        $activite->trimestre_4 = isset($validated['trimestre_4']) ? 'oui' : 'non';
+        // Recorded post-hoc : validée directement si l'utilisateur peut valider, sinon soumise au circuit.
+        $activite->statut = Auth::user()->can('validate_activites') ? 'valide' : 'en_attente';
+        $activite->statut_execution = $validated['statut_execution'] ?? 'realise';
+        $activite->saisi_par = Auth::id();
+        $activite->date_saisie = now();
+        $activite->commentaires = $validated['commentaires'] ?? null;
+        $activite->save();
+
+        return redirect()->route('activites.suivi')
+            ->with('success', 'Activité non programmée enregistrée dans le suivi.');
+    }
+
+    /**
      * Détail d'une activité
      */
     public function show(Activite $activite)
@@ -278,6 +339,8 @@ class ActiviteController extends Controller
             $validated['departement_id'] = Auth::user()->departement_id;
         }
 
+        $ancienCout = (float) $activite->cout;
+
         $activite->update([
             'extrant_id' => $validated['extrant_id'],
             'departement_id' => $validated['departement_id'],
@@ -292,8 +355,25 @@ class ActiviteController extends Controller
             'commentaires' => $validated['commentaires'] ?? null,
         ]);
 
+        $this->notifierChangementCout($activite, $ancienCout, (float) $validated['cout'], 'edition');
+
         return redirect()->route('activites.index')
             ->with('success', 'Activité mise à jour.');
+    }
+
+    /**
+     * Notifie le directeur de la Direction Centrale et le chef de service concernés
+     * lorsqu'un coût d'activité change réellement.
+     */
+    private function notifierChangementCout(Activite $activite, float $ancienCout, float $nouveauCout, string $contexte, ?string $motif = null): void
+    {
+        if ($ancienCout === $nouveauCout) {
+            return;
+        }
+
+        foreach ($activite->destinatairesChangementBudget() as $destinataire) {
+            $destinataire->notify(new ActiviteCoutModifieNotification($activite, $ancienCout, $nouveauCout, $contexte, $motif));
+        }
     }
 
     /**

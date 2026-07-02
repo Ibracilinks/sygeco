@@ -6,6 +6,7 @@ use App\Models\Activite;
 use App\Models\Departement;
 use App\Models\Extrant;
 use App\Notifications\ActiviteArbitrageNotification;
+use App\Notifications\ActiviteCoutModifieNotification;
 use App\Notifications\ActiviteRefusee;
 use App\Notifications\ActiviteValidee;
 use Illuminate\Http\Request;
@@ -36,7 +37,7 @@ class ValidationController extends Controller
             abort(403);
         }
 
-        if ($activite->statut !== 'soumis') {
+        if ($activite->statut !== 'en_attente') {
             return redirect()->route('validations.index')
                 ->with('error', 'Cette activité n\'est pas en attente de validation.');
         }
@@ -126,7 +127,7 @@ class ValidationController extends Controller
      */
     public function arbitrerModifier(Request $request, Activite $activite)
     {
-        if (! $this->canValidate($activite) || $activite->statut !== 'soumis') {
+        if (! $this->canValidate($activite) || $activite->statut !== 'en_attente') {
             abort(403);
         }
 
@@ -134,12 +135,23 @@ class ValidationController extends Controller
             'motif' => 'nullable|string|max:1000',
         ]);
 
+        $ancienCout = (float) $activite->cout;
+
         $activite->arbitrerModification(
             collect($validated)->except('motif')->all(),
             $validated['motif'] ?? null
         );
 
         $this->notifierArbitrage($activite->saisiePar, 'modifiee', $activite->nom_activite, $validated['motif'] ?? null, null, $activite);
+
+        // Le directeur de la Direction Centrale et le chef de service sont informés
+        // de tout changement de budget décidé lors de l'arbitrage.
+        $nouveauCout = (float) $activite->fresh()->cout;
+        if ($ancienCout !== $nouveauCout) {
+            foreach ($activite->destinatairesChangementBudget() as $destinataire) {
+                $destinataire->notify(new ActiviteCoutModifieNotification($activite, $ancienCout, $nouveauCout, 'arbitrage', $validated['motif'] ?? null));
+            }
+        }
 
         return redirect()->route('validations.index')
             ->with('success', 'Activité modifiée et l\'auteur a été notifié.');
@@ -150,7 +162,7 @@ class ValidationController extends Controller
      */
     public function arbitrerSupprimer(Request $request, Activite $activite)
     {
-        if (! $this->canValidate($activite) || $activite->statut !== 'soumis') {
+        if (! $this->canValidate($activite) || $activite->statut !== 'en_attente') {
             abort(403);
         }
 
@@ -204,7 +216,7 @@ class ValidationController extends Controller
                 'trimestre_2' => $validated['trimestre_2'],
                 'trimestre_3' => $validated['trimestre_3'],
                 'trimestre_4' => $validated['trimestre_4'],
-                'statut' => 'soumis',
+                'statut' => 'en_attente',
                 'saisi_par' => $premiere->saisi_par,
                 'date_saisie' => now(),
                 'date_soumission' => now(),

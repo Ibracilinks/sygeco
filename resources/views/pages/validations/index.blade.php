@@ -35,7 +35,7 @@
 
         <form id="filterForm" method="GET" action="{{ route('validations.index') }}" class="grid grid-cols-1 gap-3 rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-900 md:grid-cols-6">
             <select name="departement_id" class="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 focus:border-slate-500 focus:outline-none dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100">
-                <option value="">Tous départements</option>
+                <option value="">Toutes structures</option>
                 @foreach ($departements as $departement)
                     <option value="{{ $departement->id }}" @selected((string) request('departement_id') === (string) $departement->id)>{{ $departement->nom }}</option>
                 @endforeach
@@ -73,7 +73,7 @@
                     <tr>
                         <th class="px-5 py-3 text-left"><input type="checkbox" id="selectAll" class="rounded border-slate-300" onchange="toggleAll(this)"></th>
                         <th class="px-5 py-3 text-left text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">Activité</th>
-                        <th class="px-5 py-3 text-left text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">Département</th>
+                        <th class="px-5 py-3 text-left text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">Structure</th>
                         <th class="px-5 py-3 text-left text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">Extrant</th>
                         <th class="px-5 py-3 text-left text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">Soumise le</th>
                         <th class="px-5 py-3 text-left text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">Coût</th>
@@ -313,7 +313,7 @@
                 '<p class="text-sm font-medium text-slate-700 dark:text-slate-200">Chronogramme</p>' +
                 '<div class="mt-2 flex flex-wrap gap-3">' + trims + '</div></div>';
 
-            // Extrant et département : sélection parmi les sources
+            // Extrant et structure : sélection parmi les sources
             const exMap = {}, depMap = {};
             sources.forEach((s) => { exMap[s.extrant_id] = s.extrant_code; depMap[s.departement_id] = s.departement_nom; });
             const exOpts = Object.keys(exMap).map((id, i) => '<option value="' + id + '" ' + (i === 0 ? 'selected' : '') + '>' + escHtml(exMap[id]) + '</option>').join('');
@@ -324,7 +324,7 @@
                 '<p class="text-sm font-medium text-slate-700 dark:text-slate-200">Extrant</p>' +
                 '<select name="extrant_id" class="arb-input mt-2">' + exOpts + '</select></div>' +
                 '<div class="rounded-lg border border-slate-200 p-3 dark:border-slate-700">' +
-                '<p class="text-sm font-medium text-slate-700 dark:text-slate-200">Département responsable</p>' +
+                '<p class="text-sm font-medium text-slate-700 dark:text-slate-200">Structure responsable</p>' +
                 '<select name="departement_id" class="arb-input mt-2">' + depOpts + '</select></div>' +
                 '</div>';
 

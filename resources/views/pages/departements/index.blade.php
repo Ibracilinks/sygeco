@@ -1,15 +1,15 @@
-<x-layouts::app title="Départements">
+<x-layouts::app title="Directions Centrales">
     <div class="flex h-full w-full flex-1 flex-col gap-5 rounded-xl">
 
         <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
             <div>
-                <h1 class="text-2xl font-semibold text-slate-900 dark:text-white">Départements</h1>
-                <p class="text-sm text-slate-500 dark:text-slate-400">Gouvernance, responsables et charge opérationnelle par département.</p>
+                <h1 class="text-2xl font-semibold text-slate-900 dark:text-white">Directions Centrales</h1>
+                <p class="text-sm text-slate-500 dark:text-slate-400">Gouvernance, responsables et charge opérationnelle des structures (directions, directions centrales, services).</p>
             </div>
             @can('create_departements')
                 <a href="{{ route('departements.create') }}"
                     class="inline-flex items-center rounded-lg bg-slate-800 px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-700 dark:bg-slate-200 dark:text-slate-900 dark:hover:bg-white">
-                    Nouveau Département
+                    Nouvelle entité
                 </a>
             @endcan
         </div>
@@ -165,7 +165,7 @@
                     @empty
                         <tr>
                             <td colspan="6" class="px-5 py-10 text-center text-sm text-slate-500 dark:text-slate-400">
-                                Aucun département trouvé avec les filtres actuels.
+                                Aucune structure trouvée avec les filtres actuels.
                             </td>
                         </tr>
                     @endforelse

@@ -23,10 +23,10 @@
                     @endcan
                 @endif
                 @can('submit', $activite)
-                    @if ($activite->statut === 'brouillon')
+                    @if ($activite->peutEtreSoumis())
                         <form action="{{ route('activites.soumettre', $activite) }}" method="POST" class="inline">
                             @csrf
-                            <button type="submit" class="inline-flex items-center rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-indigo-500">Soumettre</button>
+                            <button type="submit" class="inline-flex items-center rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-indigo-500">{{ $activite->statut === 'rejete' ? 'Re-soumettre' : 'Soumettre' }}</button>
                         </form>
                     @endif
                 @endcan
@@ -37,7 +37,7 @@
         <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-5">
             <div class="rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-900">
                 <p class="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">Statut</p>
-                <p class="mt-2 text-lg font-semibold {{ $activite->statut === 'valide' ? 'text-emerald-700 dark:text-emerald-300' : ($activite->statut === 'soumis' ? 'text-amber-700 dark:text-amber-300' : 'text-slate-700 dark:text-slate-300') }}">{{ $activite->statut_label }}</p>
+                <p class="mt-2 text-lg font-semibold {{ $activite->statut === 'valide' ? 'text-emerald-700 dark:text-emerald-300' : ($activite->statut === 'rejete' ? 'text-rose-700 dark:text-rose-300' : (in_array($activite->statut, ['en_attente', 'soumis']) ? 'text-amber-700 dark:text-amber-300' : 'text-slate-700 dark:text-slate-300')) }}">{{ $activite->statut_label }}</p>
             </div>
             <div class="rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-900">
                 <p class="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">Coût</p>

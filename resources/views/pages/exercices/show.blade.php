@@ -160,12 +160,16 @@
                             <span class="font-semibold text-slate-900 dark:text-white">{{ $stats['activites_par_statut']['brouillon'] }}</span>
                         </div>
                         <div class="flex items-center justify-between">
-                            <span class="inline-flex items-center gap-2 text-slate-600 dark:text-slate-300"><span class="h-2 w-2 rounded-full bg-blue-500"></span>Soumis</span>
-                            <span class="font-semibold text-slate-900 dark:text-white">{{ $stats['activites_par_statut']['soumis'] }}</span>
+                            <span class="inline-flex items-center gap-2 text-slate-600 dark:text-slate-300"><span class="h-2 w-2 rounded-full bg-amber-500"></span>En attente</span>
+                            <span class="font-semibold text-slate-900 dark:text-white">{{ $stats['activites_par_statut']['en_attente'] }}</span>
                         </div>
                         <div class="flex items-center justify-between">
                             <span class="inline-flex items-center gap-2 text-slate-600 dark:text-slate-300"><span class="h-2 w-2 rounded-full bg-emerald-500"></span>Validé</span>
                             <span class="font-semibold text-slate-900 dark:text-white">{{ $stats['activites_par_statut']['valide'] }}</span>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <span class="inline-flex items-center gap-2 text-slate-600 dark:text-slate-300"><span class="h-2 w-2 rounded-full bg-rose-500"></span>Rejeté</span>
+                            <span class="font-semibold text-slate-900 dark:text-white">{{ $stats['activites_par_statut']['rejete'] }}</span>
                         </div>
                     </div>
                     <div class="mt-4 border-t border-slate-200 pt-4 dark:border-slate-700">

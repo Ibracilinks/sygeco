@@ -78,7 +78,7 @@
             </select>
 
             <select name="departement_id" class="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 focus:border-slate-500 focus:outline-none dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100">
-                <option value="">Tous départements</option>
+                <option value="">Toutes structures</option>
                 @foreach ($departements as $departement)
                     <option value="{{ $departement->id }}" @selected((string) ($filters['departement_id'] ?? '') === (string) $departement->id)>{{ $departement->nom }}</option>
                 @endforeach

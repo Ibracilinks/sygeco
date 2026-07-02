@@ -98,7 +98,7 @@ test('le dbcgoq peut refuser et notifier si demandé', function () {
     ])->assertRedirect(route('validations.index'));
 
     expect($activite->fresh())
-        ->statut->toBe('brouillon')
+        ->statut->toBe('rejete')
         ->motif_refus->toBe('Le budget proposé est incohérent');
     Notification::assertSentTo($saisisseur, ActiviteRefusee::class);
 });

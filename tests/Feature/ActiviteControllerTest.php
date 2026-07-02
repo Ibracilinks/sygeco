@@ -140,7 +140,7 @@ test('un chef peut soumettre une activité de son département', function () {
     $this->actingAs($chef)->post(route('activites.soumettre', $activite))
         ->assertRedirect(route('activites.index'));
 
-    expect($activite->fresh()->statut)->toBe('soumis');
+    expect($activite->fresh()->statut)->toBe('en_attente');
 });
 
 test('un chef ne peut pas soumettre une activité d\'un autre département', function () {
@@ -176,7 +176,7 @@ test('un agent ne peut pas valider une activité', function () {
     $this->actingAs($agent)->post(route('activites.valider', $activite))
         ->assertSessionHas('error');
 
-    expect($activite->fresh()->statut)->toBe('soumis');
+    expect($activite->fresh()->statut)->toBe('en_attente');
 });
 
 test('le dbcgoq peut refuser une activité avec un motif', function () {
@@ -188,7 +188,7 @@ test('le dbcgoq peut refuser une activité avec un motif', function () {
     ])->assertRedirect(route('activites.show', $activite));
 
     expect($activite->fresh())
-        ->statut->toBe('brouillon')
+        ->statut->toBe('rejete')
         ->motif_refus->toBe('Budget non justifié, merci de revoir');
 });
 
