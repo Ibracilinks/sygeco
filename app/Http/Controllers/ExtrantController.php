@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Extrant;
 use App\Models\Objectif;
+use App\Models\Resultat;
 use App\Support\ActiveExercice;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
@@ -73,15 +74,10 @@ class ExtrantController extends Controller
      */
     public function create(Request $request)
     {
-        $exerciceId = ActiveExercice::id();
-        $objectifs = Objectif::query()
-            ->where('statut', 'actif')
-            ->when($exerciceId !== null, fn ($q) => $q->where('exercice_id', $exerciceId))
-            ->orderBy('annee', 'desc')
-            ->get();
-        $selectedObjectif = $request->get('objectif_id');
+        $resultats = $this->resultatsSelectionnables();
+        $selectedResultat = $request->get('resultat_id');
 
-        return view('pages.extrants.create', compact('objectifs', 'selectedObjectif'));
+        return view('pages.extrants.create', compact('resultats', 'selectedResultat'));
     }
 
     /**
@@ -90,13 +86,16 @@ class ExtrantController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'objectif_id' => 'required|exists:objectifs,id',
+            'resultat_id' => 'required|exists:resultats,id',
             'code' => 'required|string|max:20|unique:extrants',
             'libelle' => 'required|string|max:500',
             'description' => 'nullable|string',
             'ordre' => 'nullable|integer',
             'is_active' => 'boolean',
         ]);
+
+        // L'objectif est dérivé du résultat sélectionné (cohérence Objectif → Résultat → Extrant).
+        $validated['objectif_id'] = Resultat::whereKey($validated['resultat_id'])->value('objectif_id');
 
         $extrant = Extrant::create($validated);
 
@@ -145,14 +144,25 @@ class ExtrantController extends Controller
      */
     public function edit(Extrant $extrant)
     {
-        $exerciceId = ActiveExercice::id();
-        $objectifs = Objectif::query()
-            ->where('statut', 'actif')
-            ->when($exerciceId !== null, fn ($q) => $q->where('exercice_id', $exerciceId))
-            ->orderBy('annee', 'desc')
-            ->get();
+        $resultats = $this->resultatsSelectionnables();
 
-        return view('pages.extrants.edit', compact('extrant', 'objectifs'));
+        return view('pages.extrants.edit', compact('extrant', 'resultats'));
+    }
+
+    /**
+     * Résultats actifs sélectionnables comme parent d'un extrant, limités à l'exercice actif,
+     * avec leur objectif de rattachement chargé pour l'affichage.
+     */
+    private function resultatsSelectionnables()
+    {
+        $exerciceId = ActiveExercice::id();
+
+        return Resultat::query()
+            ->actif()
+            ->with('objectif:id,code,annee,libelle')
+            ->when($exerciceId !== null, fn ($q) => $q->whereHas('objectif', fn ($o) => $o->where('exercice_id', $exerciceId)))
+            ->ordered()
+            ->get();
     }
 
     /**
@@ -161,13 +171,16 @@ class ExtrantController extends Controller
     public function update(Request $request, Extrant $extrant)
     {
         $validated = $request->validate([
-            'objectif_id' => 'required|exists:objectifs,id',
+            'resultat_id' => 'required|exists:resultats,id',
             'code' => ['required', 'string', 'max:20', Rule::unique('extrants')->ignore($extrant->id)],
             'libelle' => 'required|string|max:500',
             'description' => 'nullable|string',
             'ordre' => 'nullable|integer',
             'is_active' => 'boolean',
         ]);
+
+        // L'objectif suit le résultat sélectionné.
+        $validated['objectif_id'] = Resultat::whereKey($validated['resultat_id'])->value('objectif_id');
 
         $extrant->update($validated);
 
