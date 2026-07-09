@@ -231,6 +231,40 @@ class DashboardDataService
     }
 
     /**
+     * Évolution trimestrielle (T1 → T4) : nombre d'activités planifiées et budget associé,
+     * en s'appuyant sur les indicateurs de trimestre (trimestre_1..4 = "oui").
+     */
+    public function getEvolutionTrimestrielle()
+    {
+        return Cache::remember("dashboard_evolution_trimestrielle_{$this->annee}", 3600, function () {
+            $data = [];
+
+            for ($t = 1; $t <= 4; $t++) {
+                $colonne = "trimestre_{$t}";
+
+                $stats = DB::table('activites')
+                    ->join('extrants', 'activites.extrant_id', '=', 'extrants.id')
+                    ->join('objectifs', 'extrants.objectif_id', '=', 'objectifs.id')
+                    ->where('objectifs.annee', $this->annee)
+                    ->where("activites.{$colonne}", 'oui')
+                    ->selectRaw('
+                        COUNT(activites.id) as nb_activites,
+                        COALESCE(SUM(activites.cout), 0) as budget
+                    ')
+                    ->first();
+
+                $data[] = [
+                    'trimestre' => "T{$t}",
+                    'nb_activites' => (int) $stats->nb_activites,
+                    'budget' => (float) $stats->budget,
+                ];
+            }
+
+            return $data;
+        });
+    }
+
+    /**
      * Distribution budgétaire par tranche
      */
     public function getDistributionBudgetaire()
@@ -438,7 +472,7 @@ class DashboardDataService
         $budgetParObjectif = collect($this->getBudgetParObjectif());
         $topExtrants = collect($this->getTopExtrants());
         $topActivites = collect($this->getTopActivites());
-        $evolutionMensuelle = collect($this->getEvolutionMensuelle());
+        $evolutionTrimestrielle = collect($this->getEvolutionTrimestrielle());
         $distributionBudgetaire = $this->getDistributionBudgetaire();
         $activitesParStatut = $this->getActivitesParStatut();
         $activitesParTrimestre = $this->getActivitesParTrimestre();
@@ -471,9 +505,9 @@ class DashboardDataService
             ],
             'charts' => [
                 'evolution' => [
-                    'labels' => $evolutionMensuelle->pluck('mois')->values()->all(),
-                    'activites' => $evolutionMensuelle->pluck('nb_activites')->values()->all(),
-                    'budget_millions' => $evolutionMensuelle
+                    'labels' => $evolutionTrimestrielle->pluck('trimestre')->values()->all(),
+                    'activites' => $evolutionTrimestrielle->pluck('nb_activites')->values()->all(),
+                    'budget_millions' => $evolutionTrimestrielle
                         ->map(fn ($row) => round(((float) ($row['budget'] ?? 0)) / 1000000, 1))
                         ->values()
                         ->all(),

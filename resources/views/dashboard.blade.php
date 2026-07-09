@@ -55,8 +55,8 @@
         <section class="grid grid-cols-1 gap-6 lg:grid-cols-3">
             <article class="lg:col-span-2 rounded-xl border border-slate-200 bg-white p-6 dark:border-slate-700 dark:bg-slate-900">
                 <div class="mb-4 border-b border-slate-200 pb-4 dark:border-slate-700">
-                    <h2 class="text-lg font-semibold text-slate-900 dark:text-white">Evolution mensuelle</h2>
-                    <p class="text-sm text-slate-500 dark:text-slate-400">Volume des activites creees et dynamique budgetaire</p>
+                    <h2 class="text-lg font-semibold text-slate-900 dark:text-white">Evolution trimestrielle</h2>
+                    <p class="text-sm text-slate-500 dark:text-slate-400">Volume des activites planifiees et dynamique budgetaire par trimestre (T1 - T4)</p>
                 </div>
                 <div id="dash-chart-evolution">
                 <x-charts.line-chart :labels="$charts['evolution']['labels']" :datasets="[
@@ -246,7 +246,7 @@
                 ['label' => 'Soumission moyenne', 'value' => number_format($insights['soumission_moyenne'], 1, ',', ' ') . ' %'],
             ],
             'charts' => [
-                ['containerId' => 'dash-chart-evolution', 'title' => 'Évolution mensuelle'],
+                ['containerId' => 'dash-chart-evolution', 'title' => 'Évolution trimestrielle'],
                 ['containerId' => 'dash-chart-budget-objectif', 'title' => 'Budget par objectif'],
                 ['containerId' => 'dash-chart-top-extrants', 'title' => 'Top extrants'],
                 ['containerId' => 'dash-chart-distribution', 'title' => 'Distribution budgétaire'],
