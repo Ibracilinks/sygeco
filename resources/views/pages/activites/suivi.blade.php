@@ -153,16 +153,19 @@
                                     <p class="text-xs text-slate-500 dark:text-slate-400">Valeur indicateur : {{ $activite->valeur_indicateur !== null ? rtrim(rtrim(number_format($activite->valeur_indicateur, 2, ',', ' '), '0'), ',') : '—' }}</p>
                                 </div>
                                 @if (auth()->user()->can('edit_activites') && $peutSaisirExecution)
+                                    @php
+                                        $evalData = [
+                                            'action' => route('activites.execution', $activite),
+                                            'nom' => $activite->nom_activite,
+                                            'cout' => (float) $activite->cout,
+                                            'statut_execution' => $activite->statut_execution,
+                                            'execution_commentaire' => $activite->execution_commentaire,
+                                            'montant_utilise' => $activite->montant_utilise,
+                                            'valeur_indicateur' => $activite->valeur_indicateur,
+                                        ];
+                                    @endphp
                                     <button type="button"
-                                        onclick='openEvaluationModal(@json([
-                                            "action" => route("activites.execution", $activite),
-                                            "nom" => $activite->nom_activite,
-                                            "cout" => (float) $activite->cout,
-                                            "statut_execution" => $activite->statut_execution,
-                                            "execution_commentaire" => $activite->execution_commentaire,
-                                            "montant_utilise" => $activite->montant_utilise,
-                                            "valeur_indicateur" => $activite->valeur_indicateur,
-                                        ]))'
+                                        onclick="openEvaluationModal({{ Js::from($evalData) }})"
                                         class="mt-2 inline-flex items-center gap-1 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:hover:bg-slate-700">
                                         ✎ Renseigner l'évaluation
                                     </button>
