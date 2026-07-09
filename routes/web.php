@@ -25,6 +25,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // Dashboard parallèle « SAP Cloud Analytics » (présentation autonome, mêmes données)
     Route::get('sap-analytics', [SapAnalyticsController::class, 'index'])->name('sap.analytics');
 
+    // Manuel d'utilisation (documentation utilisateur)
+    Route::view('documentation', 'pages.documentation')->name('documentation');
+
     // Notifications in-app (accessible à tout utilisateur connecté)
     Route::prefix('notifications')->name('notifications.')->group(function () {
         Route::get('/', [NotificationController::class, 'index'])->name('index');
