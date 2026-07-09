@@ -520,11 +520,15 @@ class ActiviteController extends Controller
         $validated = $request->validate([
             'statut_execution' => ['required', Rule::in(array_keys(Activite::STATUTS_EXECUTION))],
             'execution_commentaire' => ['nullable', 'string', 'max:1000'],
+            'montant_utilise' => ['nullable', 'numeric', 'min:0'],
+            'valeur_indicateur' => ['nullable', 'numeric'],
         ]);
 
         $activite->update([
             'statut_execution' => $validated['statut_execution'],
             'execution_commentaire' => $validated['execution_commentaire'] ?? null,
+            'montant_utilise' => $validated['montant_utilise'] ?? null,
+            'valeur_indicateur' => $validated['valeur_indicateur'] ?? null,
             'execution_maj_le' => now(),
             'execution_maj_par' => Auth::id(),
         ]);

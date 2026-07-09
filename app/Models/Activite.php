@@ -30,6 +30,8 @@ class Activite extends Model
         'statut',
         'statut_execution',
         'execution_commentaire',
+        'montant_utilise',
+        'valeur_indicateur',
         'execution_maj_le',
         'execution_maj_par',
         'saisi_par',
@@ -45,6 +47,8 @@ class Activite extends Model
 
     protected $casts = [
         'cout' => 'decimal:2',
+        'montant_utilise' => 'decimal:2',
+        'valeur_indicateur' => 'decimal:2',
         'non_programmee' => 'boolean',
         'date_saisie' => 'date',
         'date_soumission' => 'datetime',
@@ -74,6 +78,19 @@ class Activite extends Model
             'en_cours' => 'amber',
             default => 'slate',
         };
+    }
+
+    /**
+     * Écart entre le budget planifié (cout) et le montant réellement utilisé.
+     * Positif = économie, négatif = dépassement. Null si non renseigné.
+     */
+    public function getEcartBudgetaireAttribute(): ?float
+    {
+        if ($this->montant_utilise === null) {
+            return null;
+        }
+
+        return (float) $this->cout - (float) $this->montant_utilise;
     }
 
     public function executionMajPar()

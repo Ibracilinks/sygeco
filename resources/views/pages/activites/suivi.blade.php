@@ -141,21 +141,42 @@
                             </td>
                             <td class="px-5 py-4">
                                 @if (auth()->user()->can('edit_activites') && $peutSaisirExecution)
-                                    <form action="{{ route('activites.execution', $activite) }}" method="POST" class="flex flex-col gap-2 sm:flex-row sm:items-start">
+                                    <form action="{{ route('activites.execution', $activite) }}" method="POST" class="flex flex-col gap-2">
                                         @csrf
-                                        <select name="statut_execution"
-                                            class="rounded-lg border border-slate-300 bg-white px-2 py-1.5 text-xs text-slate-700 focus:border-slate-500 focus:outline-none dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100">
-                                            @foreach (\App\Models\Activite::STATUTS_EXECUTION as $val => $label)
-                                                <option value="{{ $val }}" @selected($activite->statut_execution === $val)>{{ $label }}</option>
-                                            @endforeach
-                                        </select>
-                                        <input type="text" name="execution_commentaire" maxlength="1000"
-                                            value="{{ $activite->execution_commentaire }}" placeholder="Observation"
-                                            class="w-full rounded-lg border border-slate-300 bg-white px-2 py-1.5 text-xs text-slate-700 focus:border-slate-500 focus:outline-none dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 sm:w-64">
-                                        <button type="submit" class="rounded-lg bg-slate-800 px-3 py-1.5 text-xs font-medium text-white dark:bg-slate-200 dark:text-slate-900">Enregistrer</button>
+                                        <div class="flex flex-col gap-2 sm:flex-row sm:items-start">
+                                            <select name="statut_execution"
+                                                class="rounded-lg border border-slate-300 bg-white px-2 py-1.5 text-xs text-slate-700 focus:border-slate-500 focus:outline-none dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100">
+                                                @foreach (\App\Models\Activite::STATUTS_EXECUTION as $val => $label)
+                                                    <option value="{{ $val }}" @selected($activite->statut_execution === $val)>{{ $label }}</option>
+                                                @endforeach
+                                            </select>
+                                            <input type="text" name="execution_commentaire" maxlength="1000"
+                                                value="{{ $activite->execution_commentaire }}" placeholder="Observation"
+                                                class="w-full rounded-lg border border-slate-300 bg-white px-2 py-1.5 text-xs text-slate-700 focus:border-slate-500 focus:outline-none dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 sm:w-64">
+                                        </div>
+                                        <div class="flex flex-col gap-2 sm:flex-row sm:items-start">
+                                            <input type="number" step="0.01" min="0" name="montant_utilise"
+                                                value="{{ $activite->montant_utilise }}" placeholder="Budget utilisé (FCFA)"
+                                                class="w-full rounded-lg border border-slate-300 bg-white px-2 py-1.5 text-xs text-slate-700 focus:border-slate-500 focus:outline-none dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 sm:w-44">
+                                            <input type="number" step="0.01" name="valeur_indicateur"
+                                                value="{{ $activite->valeur_indicateur }}" placeholder="Valeur indicateur"
+                                                class="w-full rounded-lg border border-slate-300 bg-white px-2 py-1.5 text-xs text-slate-700 focus:border-slate-500 focus:outline-none dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 sm:w-44">
+                                            <button type="submit" class="rounded-lg bg-slate-800 px-3 py-1.5 text-xs font-medium text-white dark:bg-slate-200 dark:text-slate-900">Enregistrer</button>
+                                        </div>
                                     </form>
                                 @else
-                                    <p class="text-sm text-slate-600 dark:text-slate-300">{{ $activite->execution_commentaire ?: '—' }}</p>
+                                    <div class="space-y-1 text-sm text-slate-600 dark:text-slate-300">
+                                        <p>{{ $activite->execution_commentaire ?: '—' }}</p>
+                                        <p class="text-xs text-slate-500 dark:text-slate-400">
+                                            Budget utilisé : {{ $activite->montant_utilise !== null ? number_format($activite->montant_utilise, 0, ',', ' ') . ' FCFA' : '—' }}
+                                            @if ($activite->ecart_budgetaire !== null)
+                                                <span class="{{ $activite->ecart_budgetaire < 0 ? 'text-rose-600 dark:text-rose-400' : 'text-emerald-600 dark:text-emerald-400' }}">
+                                                    ({{ $activite->ecart_budgetaire < 0 ? 'dépassement' : 'écart' }} {{ number_format($activite->ecart_budgetaire, 0, ',', ' ') }})
+                                                </span>
+                                            @endif
+                                        </p>
+                                        <p class="text-xs text-slate-500 dark:text-slate-400">Valeur indicateur : {{ $activite->valeur_indicateur !== null ? rtrim(rtrim(number_format($activite->valeur_indicateur, 2, ',', ' '), '0'), ',') : '—' }}</p>
+                                    </div>
                                 @endif
                             </td>
                         </tr>

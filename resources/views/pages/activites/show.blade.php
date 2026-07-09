@@ -68,21 +68,58 @@
             </div>
 
             @can('edit_activites')
-                <form action="{{ route('activites.execution', $activite) }}" method="POST" class="mt-4 grid grid-cols-1 gap-3 md:grid-cols-[200px_1fr_auto]">
+                <form action="{{ route('activites.execution', $activite) }}" method="POST" class="mt-4 space-y-3">
                     @csrf
-                    <select name="statut_execution" class="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 focus:border-slate-500 focus:outline-none dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100">
-                        @foreach (\App\Models\Activite::STATUTS_EXECUTION as $val => $label)
-                            <option value="{{ $val }}" @selected($activite->statut_execution === $val)>{{ $label }}</option>
-                        @endforeach
-                    </select>
-                    <input type="text" name="execution_commentaire" maxlength="1000"
-                        value="{{ old('execution_commentaire', $activite->execution_commentaire) }}"
-                        placeholder="Commentaire de suivi (optionnel)"
-                        class="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 focus:border-slate-500 focus:outline-none dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100">
-                    <button type="submit" class="rounded-lg bg-slate-800 px-4 py-2 text-sm font-medium text-white dark:bg-slate-200 dark:text-slate-900">Mettre à jour</button>
+                    <div class="grid grid-cols-1 gap-3 md:grid-cols-[200px_1fr]">
+                        <select name="statut_execution" class="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 focus:border-slate-500 focus:outline-none dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100">
+                            @foreach (\App\Models\Activite::STATUTS_EXECUTION as $val => $label)
+                                <option value="{{ $val }}" @selected($activite->statut_execution === $val)>{{ $label }}</option>
+                            @endforeach
+                        </select>
+                        <input type="text" name="execution_commentaire" maxlength="1000"
+                            value="{{ old('execution_commentaire', $activite->execution_commentaire) }}"
+                            placeholder="Observation (optionnel)"
+                            class="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 focus:border-slate-500 focus:outline-none dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100">
+                    </div>
+                    <div class="grid grid-cols-1 gap-3 md:grid-cols-[1fr_1fr_auto]">
+                        <div>
+                            <label class="mb-1 block text-xs font-medium text-slate-500 dark:text-slate-400">Budget utilisé (FCFA) — planifié : {{ number_format($activite->cout, 0, ',', ' ') }}</label>
+                            <input type="number" step="0.01" min="0" name="montant_utilise"
+                                value="{{ old('montant_utilise', $activite->montant_utilise) }}"
+                                placeholder="Montant réellement consommé"
+                                class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 focus:border-slate-500 focus:outline-none dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100">
+                        </div>
+                        <div>
+                            <label class="mb-1 block text-xs font-medium text-slate-500 dark:text-slate-400">Valeur de l'indicateur</label>
+                            <input type="number" step="0.01" name="valeur_indicateur"
+                                value="{{ old('valeur_indicateur', $activite->valeur_indicateur) }}"
+                                placeholder="Valeur réalisée"
+                                class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 focus:border-slate-500 focus:outline-none dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100">
+                        </div>
+                        <button type="submit" class="self-end rounded-lg bg-slate-800 px-4 py-2 text-sm font-medium text-white dark:bg-slate-200 dark:text-slate-900">Mettre à jour</button>
+                    </div>
                 </form>
-            @elseif ($activite->execution_commentaire)
-                <p class="mt-3 text-sm text-slate-700 dark:text-slate-200">{{ $activite->execution_commentaire }}</p>
+            @else
+                @if ($activite->execution_commentaire)
+                    <p class="mt-3 text-sm text-slate-700 dark:text-slate-200">{{ $activite->execution_commentaire }}</p>
+                @endif
+                <dl class="mt-3 grid grid-cols-1 gap-3 text-sm sm:grid-cols-2">
+                    <div>
+                        <dt class="text-xs font-medium text-slate-500 dark:text-slate-400">Budget utilisé</dt>
+                        <dd class="text-slate-700 dark:text-slate-200">
+                            {{ $activite->montant_utilise !== null ? number_format($activite->montant_utilise, 0, ',', ' ') . ' FCFA' : '—' }}
+                            @if ($activite->ecart_budgetaire !== null)
+                                <span class="{{ $activite->ecart_budgetaire < 0 ? 'text-rose-600 dark:text-rose-400' : 'text-emerald-600 dark:text-emerald-400' }}">
+                                    ({{ $activite->ecart_budgetaire < 0 ? 'dépassement' : 'écart' }} {{ number_format($activite->ecart_budgetaire, 0, ',', ' ') }})
+                                </span>
+                            @endif
+                        </dd>
+                    </div>
+                    <div>
+                        <dt class="text-xs font-medium text-slate-500 dark:text-slate-400">Valeur de l'indicateur</dt>
+                        <dd class="text-slate-700 dark:text-slate-200">{{ $activite->valeur_indicateur !== null ? rtrim(rtrim(number_format($activite->valeur_indicateur, 2, ',', ' '), '0'), ',') : '—' }}</dd>
+                    </div>
+                </dl>
             @endcan
 
             @if ($activite->execution_maj_le)
