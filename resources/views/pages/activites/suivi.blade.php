@@ -140,43 +140,32 @@
                                 @endif
                             </td>
                             <td class="px-5 py-4">
+                                <div class="space-y-1 text-sm text-slate-600 dark:text-slate-300">
+                                    <p>{{ $activite->execution_commentaire ?: '—' }}</p>
+                                    <p class="text-xs text-slate-500 dark:text-slate-400">
+                                        Budget utilisé : {{ $activite->montant_utilise !== null ? number_format($activite->montant_utilise, 0, ',', ' ') . ' FCFA' : '—' }}
+                                        @if ($activite->ecart_budgetaire !== null)
+                                            <span class="{{ $activite->ecart_budgetaire < 0 ? 'text-rose-600 dark:text-rose-400' : 'text-emerald-600 dark:text-emerald-400' }}">
+                                                ({{ $activite->ecart_budgetaire < 0 ? 'dépassement' : 'écart' }} {{ number_format($activite->ecart_budgetaire, 0, ',', ' ') }})
+                                            </span>
+                                        @endif
+                                    </p>
+                                    <p class="text-xs text-slate-500 dark:text-slate-400">Valeur indicateur : {{ $activite->valeur_indicateur !== null ? rtrim(rtrim(number_format($activite->valeur_indicateur, 2, ',', ' '), '0'), ',') : '—' }}</p>
+                                </div>
                                 @if (auth()->user()->can('edit_activites') && $peutSaisirExecution)
-                                    <form action="{{ route('activites.execution', $activite) }}" method="POST" class="flex flex-col gap-2">
-                                        @csrf
-                                        <div class="flex flex-col gap-2 sm:flex-row sm:items-start">
-                                            <select name="statut_execution"
-                                                class="rounded-lg border border-slate-300 bg-white px-2 py-1.5 text-xs text-slate-700 focus:border-slate-500 focus:outline-none dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100">
-                                                @foreach (\App\Models\Activite::STATUTS_EXECUTION as $val => $label)
-                                                    <option value="{{ $val }}" @selected($activite->statut_execution === $val)>{{ $label }}</option>
-                                                @endforeach
-                                            </select>
-                                            <input type="text" name="execution_commentaire" maxlength="1000"
-                                                value="{{ $activite->execution_commentaire }}" placeholder="Observation"
-                                                class="w-full rounded-lg border border-slate-300 bg-white px-2 py-1.5 text-xs text-slate-700 focus:border-slate-500 focus:outline-none dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 sm:w-64">
-                                        </div>
-                                        <div class="flex flex-col gap-2 sm:flex-row sm:items-start">
-                                            <input type="number" step="0.01" min="0" name="montant_utilise"
-                                                value="{{ $activite->montant_utilise }}" placeholder="Budget utilisé (FCFA)"
-                                                class="w-full rounded-lg border border-slate-300 bg-white px-2 py-1.5 text-xs text-slate-700 focus:border-slate-500 focus:outline-none dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 sm:w-44">
-                                            <input type="number" step="0.01" name="valeur_indicateur"
-                                                value="{{ $activite->valeur_indicateur }}" placeholder="Valeur indicateur"
-                                                class="w-full rounded-lg border border-slate-300 bg-white px-2 py-1.5 text-xs text-slate-700 focus:border-slate-500 focus:outline-none dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 sm:w-44">
-                                            <button type="submit" class="rounded-lg bg-slate-800 px-3 py-1.5 text-xs font-medium text-white dark:bg-slate-200 dark:text-slate-900">Enregistrer</button>
-                                        </div>
-                                    </form>
-                                @else
-                                    <div class="space-y-1 text-sm text-slate-600 dark:text-slate-300">
-                                        <p>{{ $activite->execution_commentaire ?: '—' }}</p>
-                                        <p class="text-xs text-slate-500 dark:text-slate-400">
-                                            Budget utilisé : {{ $activite->montant_utilise !== null ? number_format($activite->montant_utilise, 0, ',', ' ') . ' FCFA' : '—' }}
-                                            @if ($activite->ecart_budgetaire !== null)
-                                                <span class="{{ $activite->ecart_budgetaire < 0 ? 'text-rose-600 dark:text-rose-400' : 'text-emerald-600 dark:text-emerald-400' }}">
-                                                    ({{ $activite->ecart_budgetaire < 0 ? 'dépassement' : 'écart' }} {{ number_format($activite->ecart_budgetaire, 0, ',', ' ') }})
-                                                </span>
-                                            @endif
-                                        </p>
-                                        <p class="text-xs text-slate-500 dark:text-slate-400">Valeur indicateur : {{ $activite->valeur_indicateur !== null ? rtrim(rtrim(number_format($activite->valeur_indicateur, 2, ',', ' '), '0'), ',') : '—' }}</p>
-                                    </div>
+                                    <button type="button"
+                                        onclick='openEvaluationModal(@json([
+                                            "action" => route("activites.execution", $activite),
+                                            "nom" => $activite->nom_activite,
+                                            "cout" => (float) $activite->cout,
+                                            "statut_execution" => $activite->statut_execution,
+                                            "execution_commentaire" => $activite->execution_commentaire,
+                                            "montant_utilise" => $activite->montant_utilise,
+                                            "valeur_indicateur" => $activite->valeur_indicateur,
+                                        ]))'
+                                        class="mt-2 inline-flex items-center gap-1 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:hover:bg-slate-700">
+                                        ✎ Renseigner l'évaluation
+                                    </button>
                                 @endif
                             </td>
                         </tr>
@@ -269,5 +258,75 @@
                 </form>
             </div>
         </div>
+
+        {{-- Modale : renseigner l'évaluation d'une activité --}}
+        <div id="evaluationModal" class="fixed inset-0 z-50 hidden overflow-y-auto bg-black/40 p-4">
+            <div class="mx-auto my-10 max-w-lg rounded-2xl bg-white p-6 shadow-xl dark:bg-zinc-900">
+                <div class="flex items-start justify-between gap-4">
+                    <div>
+                        <h2 class="text-xl font-semibold dark:text-white">Évaluation de l'activité</h2>
+                        <p id="evaluationModalNom" class="mt-1 text-sm text-zinc-500 dark:text-zinc-400"></p>
+                    </div>
+                    <button type="button" onclick="document.getElementById('evaluationModal').classList.add('hidden')"
+                        class="text-zinc-500 hover:text-zinc-800 dark:hover:text-white">✕</button>
+                </div>
+
+                <form id="evaluationForm" method="POST" class="mt-6 grid grid-cols-1 gap-4">
+                    @csrf
+                    <div>
+                        <label class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-200">État d'exécution *</label>
+                        <select name="statut_execution" id="eval_statut_execution" required
+                            class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 focus:border-slate-500 focus:outline-none dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100">
+                            @foreach (\App\Models\Activite::STATUTS_EXECUTION as $val => $label)
+                                <option value="{{ $val }}">{{ $label }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-200">Observation</label>
+                        <textarea name="execution_commentaire" id="eval_execution_commentaire" rows="2" maxlength="1000"
+                            class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 focus:border-slate-500 focus:outline-none dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"></textarea>
+                    </div>
+
+                    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                        <div>
+                            <label class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-200">Budget utilisé (FCFA)</label>
+                            <input type="number" step="0.01" min="0" name="montant_utilise" id="eval_montant_utilise"
+                                class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 focus:border-slate-500 focus:outline-none dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100">
+                            <p id="eval_cout_hint" class="mt-1 text-xs text-slate-400"></p>
+                        </div>
+                        <div>
+                            <label class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-200">Valeur de l'indicateur</label>
+                            <input type="number" step="0.01" name="valeur_indicateur" id="eval_valeur_indicateur"
+                                class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 focus:border-slate-500 focus:outline-none dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100">
+                        </div>
+                    </div>
+
+                    <div class="flex items-center justify-end gap-2 pt-2">
+                        <button type="button" onclick="document.getElementById('evaluationModal').classList.add('hidden')"
+                            class="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-white">Annuler</button>
+                        <button type="submit"
+                            class="rounded-lg bg-slate-800 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700 dark:bg-slate-200 dark:text-slate-900">Enregistrer</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <script>
+            function openEvaluationModal(data) {
+                const form = document.getElementById('evaluationForm');
+                form.action = data.action;
+                document.getElementById('evaluationModalNom').textContent = data.nom || '';
+                document.getElementById('eval_statut_execution').value = data.statut_execution || 'non_realise';
+                document.getElementById('eval_execution_commentaire').value = data.execution_commentaire || '';
+                document.getElementById('eval_montant_utilise').value = data.montant_utilise ?? '';
+                document.getElementById('eval_valeur_indicateur').value = data.valeur_indicateur ?? '';
+                const cout = Number(data.cout || 0);
+                document.getElementById('eval_cout_hint').textContent =
+                    'Budget planifié : ' + cout.toLocaleString('fr-FR') + ' FCFA';
+                document.getElementById('evaluationModal').classList.remove('hidden');
+            }
+        </script>
     @endcan
 </x-layouts::app>

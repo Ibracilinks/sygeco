@@ -57,78 +57,135 @@
             </div>
         </div>
 
-        {{-- Suivi d'exécution (Track Activité) --}}
+        {{-- Suivi & évaluation (Track Activité) --}}
+        @php
+            $cout = (float) $activite->cout;
+            $utilise = $activite->montant_utilise !== null ? (float) $activite->montant_utilise : null;
+            $ecart = $activite->ecart_budgetaire; // cout - utilise (positif = économie)
+            $tauxConso = ($utilise !== null && $cout > 0) ? round($utilise / $cout * 100, 1) : null;
+            $depassement = $ecart !== null && $ecart < 0;
+        @endphp
         <div class="rounded-xl border border-slate-200 bg-white p-6 dark:border-slate-700 dark:bg-slate-900">
             <div class="flex flex-wrap items-center justify-between gap-3">
                 <div>
-                    <h2 class="text-lg font-semibold text-slate-900 dark:text-white">Suivi d'exécution</h2>
-                    <p class="text-sm text-slate-500 dark:text-slate-400">État d'avancement de l'activité (mi-parcours).</p>
+                    <h2 class="text-lg font-semibold text-slate-900 dark:text-white">Suivi &amp; évaluation</h2>
+                    <p class="text-sm text-slate-500 dark:text-slate-400">État d'avancement, consommation budgétaire et indicateur.</p>
                 </div>
-                <x-execution-badge :statut="$activite->statut_execution" class="px-3 py-1 text-sm" />
+                <div class="flex items-center gap-3">
+                    <x-execution-badge :statut="$activite->statut_execution" class="px-3 py-1 text-sm" />
+                    @can('edit_activites')
+                        <button type="button" onclick="document.getElementById('evaluationModal').classList.remove('hidden')"
+                            class="inline-flex items-center gap-1 rounded-lg bg-slate-800 px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-700 dark:bg-slate-200 dark:text-slate-900 dark:hover:bg-white">
+                            ✎ Renseigner l'évaluation
+                        </button>
+                    @endcan
+                </div>
             </div>
 
-            @can('edit_activites')
-                <form action="{{ route('activites.execution', $activite) }}" method="POST" class="mt-4 space-y-3">
-                    @csrf
-                    <div class="grid grid-cols-1 gap-3 md:grid-cols-[200px_1fr]">
-                        <select name="statut_execution" class="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 focus:border-slate-500 focus:outline-none dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100">
-                            @foreach (\App\Models\Activite::STATUTS_EXECUTION as $val => $label)
-                                <option value="{{ $val }}" @selected($activite->statut_execution === $val)>{{ $label }}</option>
-                            @endforeach
-                        </select>
-                        <input type="text" name="execution_commentaire" maxlength="1000"
-                            value="{{ old('execution_commentaire', $activite->execution_commentaire) }}"
-                            placeholder="Observation (optionnel)"
-                            class="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 focus:border-slate-500 focus:outline-none dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100">
+            {{-- Comparatif analytique budgétaire --}}
+            <div class="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
+                <div class="rounded-lg border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-950/40">
+                    <p class="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">Budget planifié</p>
+                    <p class="mt-1 text-xl font-semibold text-slate-900 dark:text-white">{{ number_format($cout, 0, ',', ' ') }} <span class="text-xs font-normal">FCFA</span></p>
+                </div>
+                <div class="rounded-lg border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-950/40">
+                    <p class="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">Budget utilisé</p>
+                    <p class="mt-1 text-xl font-semibold text-slate-900 dark:text-white">{{ $utilise !== null ? number_format($utilise, 0, ',', ' ') : '—' }} <span class="text-xs font-normal">FCFA</span></p>
+                </div>
+                <div class="rounded-lg border p-4 {{ $ecart === null ? 'border-slate-200 bg-slate-50 dark:border-slate-700 dark:bg-slate-950/40' : ($depassement ? 'border-rose-200 bg-rose-50 dark:border-rose-900/60 dark:bg-rose-950/25' : 'border-emerald-200 bg-emerald-50 dark:border-emerald-900/60 dark:bg-emerald-950/25') }}">
+                    <p class="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">{{ $depassement ? 'Dépassement' : 'Écart / économie' }}</p>
+                    <p class="mt-1 text-xl font-semibold {{ $ecart === null ? 'text-slate-900 dark:text-white' : ($depassement ? 'text-rose-700 dark:text-rose-300' : 'text-emerald-700 dark:text-emerald-300') }}">
+                        {{ $ecart !== null ? number_format(abs($ecart), 0, ',', ' ') : '—' }} <span class="text-xs font-normal">FCFA</span>
+                    </p>
+                </div>
+            </div>
+
+            @if ($tauxConso !== null)
+                <div class="mt-4">
+                    <div class="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
+                        <span>Taux de consommation du budget</span>
+                        <span class="font-semibold {{ $tauxConso > 100 ? 'text-rose-600 dark:text-rose-400' : 'text-slate-700 dark:text-slate-200' }}">{{ $tauxConso }}%</span>
                     </div>
-                    <div class="grid grid-cols-1 gap-3 md:grid-cols-[1fr_1fr_auto]">
-                        <div>
-                            <label class="mb-1 block text-xs font-medium text-slate-500 dark:text-slate-400">Budget utilisé (FCFA) — planifié : {{ number_format($activite->cout, 0, ',', ' ') }}</label>
-                            <input type="number" step="0.01" min="0" name="montant_utilise"
-                                value="{{ old('montant_utilise', $activite->montant_utilise) }}"
-                                placeholder="Montant réellement consommé"
-                                class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 focus:border-slate-500 focus:outline-none dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100">
-                        </div>
-                        <div>
-                            <label class="mb-1 block text-xs font-medium text-slate-500 dark:text-slate-400">Valeur de l'indicateur</label>
-                            <input type="number" step="0.01" name="valeur_indicateur"
-                                value="{{ old('valeur_indicateur', $activite->valeur_indicateur) }}"
-                                placeholder="Valeur réalisée"
-                                class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 focus:border-slate-500 focus:outline-none dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100">
-                        </div>
-                        <button type="submit" class="self-end rounded-lg bg-slate-800 px-4 py-2 text-sm font-medium text-white dark:bg-slate-200 dark:text-slate-900">Mettre à jour</button>
+                    <div class="mt-1 h-2.5 w-full overflow-hidden rounded-full bg-slate-200 dark:bg-slate-700">
+                        <div class="h-full rounded-full {{ $tauxConso > 100 ? 'bg-rose-500' : 'bg-emerald-500' }}"
+                            style="width: {{ min($tauxConso, 100) }}%"></div>
                     </div>
-                </form>
-            @else
-                @if ($activite->execution_commentaire)
-                    <p class="mt-3 text-sm text-slate-700 dark:text-slate-200">{{ $activite->execution_commentaire }}</p>
-                @endif
-                <dl class="mt-3 grid grid-cols-1 gap-3 text-sm sm:grid-cols-2">
-                    <div>
-                        <dt class="text-xs font-medium text-slate-500 dark:text-slate-400">Budget utilisé</dt>
-                        <dd class="text-slate-700 dark:text-slate-200">
-                            {{ $activite->montant_utilise !== null ? number_format($activite->montant_utilise, 0, ',', ' ') . ' FCFA' : '—' }}
-                            @if ($activite->ecart_budgetaire !== null)
-                                <span class="{{ $activite->ecart_budgetaire < 0 ? 'text-rose-600 dark:text-rose-400' : 'text-emerald-600 dark:text-emerald-400' }}">
-                                    ({{ $activite->ecart_budgetaire < 0 ? 'dépassement' : 'écart' }} {{ number_format($activite->ecart_budgetaire, 0, ',', ' ') }})
-                                </span>
-                            @endif
-                        </dd>
-                    </div>
-                    <div>
-                        <dt class="text-xs font-medium text-slate-500 dark:text-slate-400">Valeur de l'indicateur</dt>
-                        <dd class="text-slate-700 dark:text-slate-200">{{ $activite->valeur_indicateur !== null ? rtrim(rtrim(number_format($activite->valeur_indicateur, 2, ',', ' '), '0'), ',') : '—' }}</dd>
-                    </div>
-                </dl>
-            @endcan
+                </div>
+            @endif
+
+            <dl class="mt-4 grid grid-cols-1 gap-3 text-sm sm:grid-cols-2">
+                <div>
+                    <dt class="text-xs font-medium text-slate-500 dark:text-slate-400">Valeur de l'indicateur</dt>
+                    <dd class="text-slate-700 dark:text-slate-200">{{ $activite->valeur_indicateur !== null ? rtrim(rtrim(number_format($activite->valeur_indicateur, 2, ',', ' '), '0'), ',') : '—' }}</dd>
+                </div>
+                <div>
+                    <dt class="text-xs font-medium text-slate-500 dark:text-slate-400">Observation</dt>
+                    <dd class="text-slate-700 dark:text-slate-200">{{ $activite->execution_commentaire ?: '—' }}</dd>
+                </div>
+            </dl>
 
             @if ($activite->execution_maj_le)
-                <p class="mt-3 text-xs text-slate-500 dark:text-slate-400">
+                <p class="mt-4 text-xs text-slate-500 dark:text-slate-400">
                     Dernière mise à jour : {{ $activite->execution_maj_le->format('d/m/Y H:i') }}
                     @if ($activite->executionMajPar) par {{ $activite->executionMajPar->name }} @endif
                 </p>
             @endif
         </div>
+
+        @can('edit_activites')
+            {{-- Modale : renseigner l'évaluation --}}
+            <div id="evaluationModal" class="fixed inset-0 z-50 hidden overflow-y-auto bg-black/40 p-4">
+                <div class="mx-auto my-10 max-w-lg rounded-2xl bg-white p-6 shadow-xl dark:bg-zinc-900">
+                    <div class="flex items-start justify-between gap-4">
+                        <div>
+                            <h2 class="text-xl font-semibold dark:text-white">Évaluation de l'activité</h2>
+                            <p class="mt-1 text-sm text-zinc-500 dark:text-zinc-400">{{ Str::limit($activite->nom_activite, 90) }}</p>
+                        </div>
+                        <button type="button" onclick="document.getElementById('evaluationModal').classList.add('hidden')"
+                            class="text-zinc-500 hover:text-zinc-800 dark:hover:text-white">✕</button>
+                    </div>
+
+                    <form action="{{ route('activites.execution', $activite) }}" method="POST" class="mt-6 grid grid-cols-1 gap-4">
+                        @csrf
+                        <div>
+                            <label class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-200">État d'exécution *</label>
+                            <select name="statut_execution" required
+                                class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 focus:border-slate-500 focus:outline-none dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100">
+                                @foreach (\App\Models\Activite::STATUTS_EXECUTION as $val => $label)
+                                    <option value="{{ $val }}" @selected($activite->statut_execution === $val)>{{ $label }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div>
+                            <label class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-200">Observation</label>
+                            <textarea name="execution_commentaire" rows="2" maxlength="1000"
+                                class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 focus:border-slate-500 focus:outline-none dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100">{{ old('execution_commentaire', $activite->execution_commentaire) }}</textarea>
+                        </div>
+                        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                            <div>
+                                <label class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-200">Budget utilisé (FCFA)</label>
+                                <input type="number" step="0.01" min="0" name="montant_utilise"
+                                    value="{{ old('montant_utilise', $activite->montant_utilise) }}"
+                                    class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 focus:border-slate-500 focus:outline-none dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100">
+                                <p class="mt-1 text-xs text-slate-400">Planifié : {{ number_format($cout, 0, ',', ' ') }} FCFA</p>
+                            </div>
+                            <div>
+                                <label class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-200">Valeur de l'indicateur</label>
+                                <input type="number" step="0.01" name="valeur_indicateur"
+                                    value="{{ old('valeur_indicateur', $activite->valeur_indicateur) }}"
+                                    class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 focus:border-slate-500 focus:outline-none dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100">
+                            </div>
+                        </div>
+                        <div class="flex items-center justify-end gap-2 pt-2">
+                            <button type="button" onclick="document.getElementById('evaluationModal').classList.add('hidden')"
+                                class="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-white">Annuler</button>
+                            <button type="submit"
+                                class="rounded-lg bg-slate-800 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700 dark:bg-slate-200 dark:text-slate-900">Enregistrer</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        @endcan
 
         <div class="grid grid-cols-1 gap-5 xl:grid-cols-3">
             <div class="rounded-xl border border-slate-200 bg-white p-6 dark:border-slate-700 dark:bg-slate-900 xl:col-span-2">
