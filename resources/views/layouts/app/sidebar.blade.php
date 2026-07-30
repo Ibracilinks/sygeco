@@ -80,15 +80,15 @@
                     </flux:sidebar.item>
                 @endif
 
+                <flux:sidebar.item icon="clipboard-document-list" href="{{ route('activites.index') }}"
+                    :current="request()->routeIs('activites.index') || request()->routeIs('activites.create') || request()->routeIs('activites.edit') || request()->routeIs('activites.show')">
+                    {{ __('Programmation / Planification') }}
+                </flux:sidebar.item>
+
                 @if ($currentUser->hasAnyRole(['superadmin', 'dbcgoq']))
                     <flux:sidebar.item icon="chart-pie" href="{{ route('budget.analysis') }}"
                         :current="request()->routeIs('budget.analysis')">
                         {{ __('Analyse Budgétaire') }}
-                    </flux:sidebar.item>
-
-                    <flux:sidebar.item icon="book-open-text" href="{{ route('journal.index') }}"
-                        :current="request()->routeIs('journal.*')">
-                        {{ __('Journal') }}
                     </flux:sidebar.item>
 
                     <flux:sidebar.item icon="check-badge" href="{{ route('validations.index') }}"
@@ -99,12 +99,12 @@
                             <flux:badge class="ml-auto">{{ $nbEnAttente }}</flux:badge>
                         @endif
                     </flux:sidebar.item>
-                @endif
 
-                <flux:sidebar.item icon="clipboard-document-list" href="{{ route('activites.index') }}"
-                    :current="request()->routeIs('activites.index') || request()->routeIs('activites.create') || request()->routeIs('activites.edit') || request()->routeIs('activites.show')">
-                    {{ __('Programmation / Planification') }}
-                </flux:sidebar.item>
+                    <flux:sidebar.item icon="book-open-text" href="{{ route('journal.index') }}"
+                        :current="request()->routeIs('journal.*')">
+                        {{ __('Journal') }}
+                    </flux:sidebar.item>
+                @endif
 
                 <flux:sidebar.item icon="chart-bar" href="{{ route('evaluations.index', 'mi-parcours') }}"
                     :current="request()->fullUrlIs(route('evaluations.index', 'mi-parcours').'*')">
