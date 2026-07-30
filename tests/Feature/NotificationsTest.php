@@ -161,7 +161,7 @@ test('le lien des notifications d\'exercice est adapté au rôle', function () {
     $notif = new \App\Notifications\MiParcoursOuvertNotification($exercice);
 
     expect($notif->toArray($admin)['url'])->toContain('/exercices/'.$exercice->id);
-    expect($notif->toArray($chef)['url'])->toContain('/activites/suivi');
+    expect($notif->toArray($chef)['url'])->toContain('/evaluations/');
 });
 
 /*

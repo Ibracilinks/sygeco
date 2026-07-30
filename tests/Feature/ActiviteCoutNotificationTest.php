@@ -28,6 +28,7 @@ test('modifier le coût notifie le directeur de la Direction Centrale et le chef
         'indicateur_objectivement_verifiable' => $activite->indicateur_objectivement_verifiable,
         'moyen_verification' => $activite->moyen_verification,
         'cout' => 2_500_000,
+        'trimestre_1' => 'oui',
     ])->assertRedirect(route('activites.index'));
 
     Notification::assertSentTo($directeurDC, ActiviteCoutModifieNotification::class);
@@ -50,6 +51,7 @@ test('modifier une activité sans changer le coût ne notifie personne', functio
         'indicateur_objectivement_verifiable' => $activite->indicateur_objectivement_verifiable,
         'moyen_verification' => $activite->moyen_verification,
         'cout' => 1_000_000,
+        'trimestre_1' => 'oui',
     ])->assertRedirect(route('activites.index'));
 
     Notification::assertNothingSent();

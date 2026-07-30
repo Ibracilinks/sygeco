@@ -1,16 +1,35 @@
-<x-layouts::app title="Suivi des activités">
+@php
+    use App\Models\ActiviteEvaluation;
+
+    $periodeLibelle = ActiviteEvaluation::PERIODES[$periode];
+    $slug = ActiviteEvaluation::slugDePeriode($periode);
+    $autreLibelle = ActiviteEvaluation::PERIODES[$autrePeriode];
+    $autreSlug = ActiviteEvaluation::slugDePeriode($autrePeriode);
+@endphp
+
+<x-layouts::app title="Évaluation — {{ $periodeLibelle }}">
     <div class="flex h-full w-full flex-1 flex-col gap-5 rounded-xl">
         <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
             <div>
-                <h1 class="text-2xl font-semibold text-slate-900 dark:text-white">Suivi des activités</h1>
-                <p class="text-sm text-slate-500 dark:text-slate-400">État d'avancement (réalisé / en cours / non réalisé) et observations — exercice en contexte.</p>
+                <h1 class="text-2xl font-semibold text-slate-900 dark:text-white">Évaluation — {{ $periodeLibelle }}</h1>
+                <p class="text-sm text-slate-500 dark:text-slate-400">
+                    État d'exécution, budget consommé et valeur d'indicateur pour la période
+                    @if ($exercice) — exercice {{ $exercice->annee }} @endif.
+                    <a href="{{ route('evaluations.index', $autreSlug) }}" class="font-medium text-sky-700 hover:underline dark:text-sky-300">Voir {{ $autreLibelle }}</a>
+                </p>
             </div>
-            @can('edit_activites')
-                <button type="button" onclick="document.getElementById('nonProgrammeeModal').classList.remove('hidden')"
-                    class="inline-flex items-center gap-2 rounded-lg bg-slate-800 px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-700 dark:bg-slate-200 dark:text-slate-900 dark:hover:bg-white">
-                    + Activité non programmée
-                </button>
-            @endcan
+            <div class="flex flex-wrap gap-2">
+                <a href="{{ route('evaluations.export', array_merge([$slug], request()->query())) }}"
+                    class="inline-flex items-center rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-emerald-500">
+                    Exporter (Cadre logique)
+                </a>
+                @can('edit_activites')
+                    <button type="button" onclick="document.getElementById('nonProgrammeeModal').classList.remove('hidden')"
+                        class="inline-flex items-center gap-2 rounded-lg bg-slate-800 px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-700 dark:bg-slate-200 dark:text-slate-900 dark:hover:bg-white">
+                        + Activité non programmée
+                    </button>
+                @endcan
+            </div>
         </div>
 
         @if (session('success'))
@@ -24,30 +43,41 @@
             </div>
         @endif
 
-        {{-- État de la fenêtre de saisie de l'exécution --}}
-        @if ($periodeSuivi === 'mi_parcours')
+        {{-- Onglets des deux périodes --}}
+        <div class="flex gap-1 rounded-xl border border-slate-200 bg-white p-1 dark:border-slate-700 dark:bg-slate-900 md:w-fit">
+            @foreach (ActiviteEvaluation::PERIODES as $valeur => $libelle)
+                <a href="{{ route('evaluations.index', ActiviteEvaluation::slugDePeriode($valeur)) }}"
+                    class="rounded-lg px-4 py-2 text-sm font-medium transition
+                    {{ $valeur === $periode
+                        ? 'bg-slate-800 text-white dark:bg-slate-200 dark:text-slate-900'
+                        : 'text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800' }}">
+                    {{ $libelle }}
+                </a>
+            @endforeach
+        </div>
+
+        {{-- État de la fenêtre de saisie --}}
+        @if ($exercice?->enPeriodeEvaluationPour($periode))
             <div class="rounded-lg border border-sky-200 bg-sky-50 p-4 dark:border-sky-800 dark:bg-sky-950/40">
                 <p class="text-sm font-medium text-sky-800 dark:text-sky-200">
-                    🟢 Période de suivi à mi-parcours ouverte{{ $exercice?->date_fin_mi_parcours ? ' — jusqu\'au ' . $exercice->date_fin_mi_parcours->format('d/m/Y') : '' }}.
-                    Renseignez l'état d'exécution de vos activités.
+                    🟢 Fenêtre de saisie {{ $periodeLibelle }} ouverte{{ $finFenetre ? " — jusqu'au ".$finFenetre->format('d/m/Y') : '' }}.
                 </p>
             </div>
-        @elseif ($periodeSuivi === 'evaluation')
+        @elseif ($peutSaisir)
             <div class="rounded-lg border border-indigo-200 bg-indigo-50 p-4 dark:border-indigo-800 dark:bg-indigo-950/40">
                 <p class="text-sm font-medium text-indigo-800 dark:text-indigo-200">
-                    🟢 Période d'évaluation de fin d'exercice ouverte{{ $exercice?->date_fin_evaluation ? ' — jusqu\'au ' . $exercice->date_fin_evaluation->format('d/m/Y') : '' }}.
-                    Finalisez l'état d'exécution de vos activités.
+                    ✎ Fenêtre {{ $periodeLibelle }} fermée{{ $debutFenetre && $finFenetre ? ' ('.$debutFenetre->format('d/m/Y').' → '.$finFenetre->format('d/m/Y').')' : '' }}, saisie autorisée pour votre profil.
                 </p>
             </div>
-        @elseif (! $peutSaisirExecution)
+        @else
             <div class="rounded-lg border border-amber-200 bg-amber-50 p-4 dark:border-amber-800 dark:bg-amber-950/40">
                 <p class="text-sm font-medium text-amber-800 dark:text-amber-200">
-                    🔒 Aucune fenêtre de saisie ouverte. La mise à jour de l'exécution n'est possible que pendant les périodes de mi-parcours ou d'évaluation.
+                    🔒 Fenêtre de saisie {{ $periodeLibelle }} fermée{{ $debutFenetre && $finFenetre ? ' ('.$debutFenetre->format('d/m/Y').' → '.$finFenetre->format('d/m/Y').')' : '' }} — consultation uniquement.
                 </p>
             </div>
         @endif
 
-        {{-- KPI avancement --}}
+        {{-- KPI d'avancement de la période --}}
         <div class="grid grid-cols-2 gap-4 sm:grid-cols-3 xl:grid-cols-5">
             <div class="rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-900">
                 <p class="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">Total</p>
@@ -72,7 +102,7 @@
         </div>
 
         {{-- Filtres --}}
-        <form method="GET" action="{{ route('activites.suivi') }}" class="grid grid-cols-1 gap-3 rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-900 md:grid-cols-5">
+        <form method="GET" action="{{ route('evaluations.index', $slug) }}" class="grid grid-cols-1 gap-3 rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-900 md:grid-cols-5">
             <input type="text" name="search" value="{{ $filters['search'] ?? '' }}" placeholder="Nom de l'activité"
                 class="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 focus:border-slate-500 focus:outline-none dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100">
 
@@ -85,13 +115,11 @@
 
             <select name="departement_id" class="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 focus:border-slate-500 focus:outline-none dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100">
                 <option value="">Toutes structures</option>
-                @foreach ($departements as $departement)
-                    <option value="{{ $departement->id }}" @selected((string) ($filters['departement_id'] ?? '') === (string) $departement->id)>{{ $departement->nom }}</option>
-                @endforeach
+                <x-departement-options :groupes="$departementsGroupes" :selected="$filters['departement_id'] ?? ''" />
             </select>
 
             <select name="statut_execution" class="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 focus:border-slate-500 focus:outline-none dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100">
-                <option value="">Tout suivi</option>
+                <option value="">Tous états</option>
                 @foreach (\App\Models\Activite::STATUTS_EXECUTION as $val => $label)
                     <option value="{{ $val }}" @selected(($filters['statut_execution'] ?? '') === $val)>{{ $label }}</option>
                 @endforeach
@@ -99,7 +127,7 @@
 
             <div class="flex gap-2">
                 <button type="submit" class="w-full rounded-lg bg-slate-800 px-4 py-2 text-sm font-medium text-white dark:bg-slate-200 dark:text-slate-900">Filtrer</button>
-                <a href="{{ route('activites.suivi') }}" class="rounded-lg bg-slate-100 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-100 dark:hover:bg-slate-700">Reset</a>
+                <a href="{{ route('evaluations.index', $slug) }}" class="rounded-lg bg-slate-100 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-100 dark:hover:bg-slate-700">Reset</a>
             </div>
         </form>
 
@@ -108,13 +136,20 @@
                 <thead class="bg-slate-50 dark:bg-slate-950">
                     <tr>
                         <th class="px-5 py-3 text-left text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">Activité</th>
-                        <th class="px-5 py-3 text-left text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">Suivi actuel</th>
+                        <th class="px-5 py-3 text-left text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">{{ $periodeLibelle }}</th>
+                        <th class="px-5 py-3 text-left text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">{{ $autreLibelle }}</th>
                         <th class="px-5 py-3 text-left text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">Mise à jour</th>
-                        <th class="px-5 py-3 text-left text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">État &amp; observations</th>
+                        <th class="px-5 py-3 text-left text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">Budget &amp; observations</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-200 dark:divide-slate-700">
                     @forelse ($activites as $activite)
+                        @php
+                            $evaluation = $activite->evaluation($periode);
+                            $autreEvaluation = $activite->evaluation($autrePeriode);
+                            $montant = $evaluation?->montant_utilise;
+                            $ecart = $montant !== null ? (float) $activite->cout - (float) $montant : null;
+                        @endphp
                         <tr class="align-top">
                             <td class="px-5 py-4">
                                 <a href="{{ route('activites.show', $activite) }}" class="text-sm font-semibold text-slate-900 transition hover:text-sky-700 hover:underline dark:text-white dark:hover:text-sky-300">
@@ -126,54 +161,67 @@
                                         <span class="ml-1 inline-flex items-center rounded-full bg-purple-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-purple-800 dark:bg-purple-900/40 dark:text-purple-200">Non programmée</span>
                                     @endif
                                 </p>
-                                <p class="mt-2 text-xs font-medium text-sky-700 dark:text-sky-300">Voir le détail, les observations et les pièces jointes</p>
+                                <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">Budget planifié : {{ number_format($activite->cout, 0, ',', ' ') }} FCFA</p>
                             </td>
                             <td class="px-5 py-4">
-                                <x-execution-badge :statut="$activite->statut_execution" />
+                                <x-execution-badge :statut="$evaluation->statut_execution ?? 'non_realise'" />
+                                @unless ($evaluation)
+                                    <p class="mt-1 text-xs text-slate-400 dark:text-slate-500">Non renseignée</p>
+                                @endunless
+                            </td>
+                            <td class="px-5 py-4">
+                                @if ($autreEvaluation)
+                                    <x-execution-badge :statut="$autreEvaluation->statut_execution" />
+                                @else
+                                    <span class="text-xs text-slate-400 dark:text-slate-500">—</span>
+                                @endif
                             </td>
                             <td class="px-5 py-4 text-xs text-slate-500 dark:text-slate-400">
-                                @if ($activite->execution_maj_le)
-                                    {{ $activite->execution_maj_le->format('d/m/Y H:i') }}
-                                    @if ($activite->executionMajPar)<br>par {{ $activite->executionMajPar->name }}@endif
+                                @if ($evaluation?->maj_le)
+                                    {{ $evaluation->maj_le->format('d/m/Y H:i') }}
+                                    @if ($evaluation->majPar)<br>par {{ $evaluation->majPar->name }}@endif
                                 @else
                                     —
                                 @endif
                             </td>
                             <td class="px-5 py-4">
                                 <div class="space-y-1 text-sm text-slate-600 dark:text-slate-300">
-                                    <p>{{ $activite->execution_commentaire ?: '—' }}</p>
+                                    <p>{{ $evaluation?->observation ?: '—' }}</p>
                                     <p class="text-xs text-slate-500 dark:text-slate-400">
-                                        Budget utilisé : {{ $activite->montant_utilise !== null ? number_format($activite->montant_utilise, 0, ',', ' ') . ' FCFA' : '—' }}
-                                        @if ($activite->ecart_budgetaire !== null)
-                                            <span class="{{ $activite->ecart_budgetaire < 0 ? 'text-rose-600 dark:text-rose-400' : 'text-emerald-600 dark:text-emerald-400' }}">
-                                                ({{ $activite->ecart_budgetaire < 0 ? 'dépassement' : 'écart' }} {{ number_format($activite->ecart_budgetaire, 0, ',', ' ') }})
+                                        Budget utilisé : {{ $montant !== null ? number_format($montant, 0, ',', ' ').' FCFA' : '—' }}
+                                        @if ($ecart !== null)
+                                            <span class="{{ $ecart < 0 ? 'text-rose-600 dark:text-rose-400' : 'text-emerald-600 dark:text-emerald-400' }}">
+                                                ({{ $ecart < 0 ? 'dépassement' : 'écart' }} {{ number_format(abs($ecart), 0, ',', ' ') }})
                                             </span>
                                         @endif
                                     </p>
-                                    <p class="text-xs text-slate-500 dark:text-slate-400">Valeur indicateur : {{ $activite->valeur_indicateur !== null ? rtrim(rtrim(number_format($activite->valeur_indicateur, 2, ',', ' '), '0'), ',') : '—' }}</p>
+                                    <p class="text-xs text-slate-500 dark:text-slate-400">
+                                        Valeur indicateur :
+                                        {{ $evaluation?->valeur_indicateur !== null ? rtrim(rtrim(number_format($evaluation->valeur_indicateur, 2, ',', ' '), '0'), ',') : '—' }}
+                                    </p>
                                 </div>
-                                @if (auth()->user()->can('edit_activites') && $peutSaisirExecution)
+                                @if (auth()->user()->can('edit_activites') && $peutSaisir)
                                     @php
                                         $evalData = [
-                                            'action' => route('activites.execution', $activite),
+                                            'action' => route('evaluations.enregistrer', [$activite, $slug]),
                                             'nom' => $activite->nom_activite,
                                             'cout' => (float) $activite->cout,
-                                            'statut_execution' => $activite->statut_execution,
-                                            'execution_commentaire' => $activite->execution_commentaire,
-                                            'montant_utilise' => $activite->montant_utilise,
-                                            'valeur_indicateur' => $activite->valeur_indicateur,
+                                            'statut_execution' => $evaluation->statut_execution ?? 'non_realise',
+                                            'observation' => $evaluation?->observation,
+                                            'montant_utilise' => $evaluation?->montant_utilise,
+                                            'valeur_indicateur' => $evaluation?->valeur_indicateur,
                                         ];
                                     @endphp
                                     <button type="button"
                                         onclick="openEvaluationModal({{ Js::from($evalData) }})"
                                         class="mt-2 inline-flex items-center gap-1 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:hover:bg-slate-700">
-                                        ✎ Renseigner l'évaluation
+                                        ✎ Renseigner {{ $periodeLibelle }}
                                     </button>
                                 @endif
                             </td>
                         </tr>
                     @empty
-                        <tr><td colspan="4" class="px-5 py-10 text-center text-sm text-slate-500 dark:text-slate-400">Aucune activité à suivre.</td></tr>
+                        <tr><td colspan="5" class="px-5 py-10 text-center text-sm text-slate-500 dark:text-slate-400">Aucune activité à évaluer.</td></tr>
                     @endforelse
                 </tbody>
             </table>
@@ -189,7 +237,7 @@
                 <div class="flex items-start justify-between gap-4">
                     <div>
                         <h2 class="text-xl font-semibold dark:text-white">Nouvelle activité non programmée</h2>
-                        <p class="mt-1 text-sm text-zinc-500 dark:text-zinc-400">Activité hors plan de travail annuel, rattachée à l'exercice en cours{{ $exercice ? ' (' . $exercice->annee . ')' : '' }}.</p>
+                        <p class="mt-1 text-sm text-zinc-500 dark:text-zinc-400">Activité hors plan de travail annuel, rattachée à l'exercice en cours{{ $exercice ? ' ('.$exercice->annee.')' : '' }}.</p>
                     </div>
                     <button type="button" onclick="document.getElementById('nonProgrammeeModal').classList.add('hidden')"
                         class="text-zinc-500 hover:text-zinc-800 dark:hover:text-white">✕</button>
@@ -209,9 +257,7 @@
                             <select name="departement_id" required
                                 class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 focus:border-slate-500 focus:outline-none dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100">
                                 <option value="">— Sélectionner —</option>
-                                @foreach ($departements as $departement)
-                                    <option value="{{ $departement->id }}">{{ $departement->nom }}</option>
-                                @endforeach
+                                <x-departement-options :groupes="$departementsGroupes" />
                             </select>
                         </div>
                     @else
@@ -220,7 +266,7 @@
 
                     <div>
                         <label class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-200">Coût (FCFA) *</label>
-                        <input type="number" name="cout" min="0" step="1" required
+                        <input type="number" name="cout" min="0" step="1" max="{{ \App\Models\Activite::MONTANT_MAX }}" required
                             class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 focus:border-slate-500 focus:outline-none dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100">
                     </div>
 
@@ -262,12 +308,12 @@
             </div>
         </div>
 
-        {{-- Modale : renseigner l'évaluation d'une activité --}}
+        {{-- Modale : renseigner l'évaluation de la période affichée --}}
         <div id="evaluationModal" class="fixed inset-0 z-50 hidden overflow-y-auto bg-black/40 p-4">
             <div class="mx-auto my-10 max-w-lg rounded-2xl bg-white p-6 shadow-xl dark:bg-zinc-900">
                 <div class="flex items-start justify-between gap-4">
                     <div>
-                        <h2 class="text-xl font-semibold dark:text-white">Évaluation de l'activité</h2>
+                        <h2 class="text-xl font-semibold dark:text-white">Évaluation {{ $periodeLibelle }}</h2>
                         <p id="evaluationModalNom" class="mt-1 text-sm text-zinc-500 dark:text-zinc-400"></p>
                     </div>
                     <button type="button" onclick="document.getElementById('evaluationModal').classList.add('hidden')"
@@ -288,14 +334,14 @@
 
                     <div>
                         <label class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-200">Observation</label>
-                        <textarea name="execution_commentaire" id="eval_execution_commentaire" rows="2" maxlength="1000"
+                        <textarea name="observation" id="eval_observation" rows="2" maxlength="1000"
                             class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 focus:border-slate-500 focus:outline-none dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"></textarea>
                     </div>
 
                     <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
                         <div>
                             <label class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-200">Budget utilisé (FCFA)</label>
-                            <input type="number" step="0.01" min="0" name="montant_utilise" id="eval_montant_utilise"
+                            <input type="number" step="0.01" min="0" max="{{ \App\Models\Activite::MONTANT_MAX }}" name="montant_utilise" id="eval_montant_utilise"
                                 class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 focus:border-slate-500 focus:outline-none dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100">
                             <p id="eval_cout_hint" class="mt-1 text-xs text-slate-400"></p>
                         </div>
@@ -322,7 +368,7 @@
                 form.action = data.action;
                 document.getElementById('evaluationModalNom').textContent = data.nom || '';
                 document.getElementById('eval_statut_execution').value = data.statut_execution || 'non_realise';
-                document.getElementById('eval_execution_commentaire').value = data.execution_commentaire || '';
+                document.getElementById('eval_observation').value = data.observation || '';
                 document.getElementById('eval_montant_utilise').value = data.montant_utilise ?? '';
                 document.getElementById('eval_valeur_indicateur').value = data.valeur_indicateur ?? '';
                 const cout = Number(data.cout || 0);

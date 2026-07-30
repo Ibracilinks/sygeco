@@ -1,13 +1,13 @@
-<x-layouts::app title="Activités">
+<x-layouts::app title="Programmation / Planification">
     <div class="flex h-full w-full flex-1 flex-col gap-5 rounded-xl">
         <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
             <div>
-                <h1 class="text-2xl font-semibold text-slate-900 dark:text-white">Activités</h1>
-                <p class="text-sm text-slate-500 dark:text-slate-400">Suivi opérationnel des activités par extrant, structure et statut.</p>
+                <h1 class="text-2xl font-semibold text-slate-900 dark:text-white">Programmation / Planification</h1>
+                <p class="text-sm text-slate-500 dark:text-slate-400">Activités programmées par extrant, structure et statut de validation. L'évaluation de l'exécution se fait dans <a href="{{ route('evaluations.index', 'mi-parcours') }}" class="font-medium text-sky-700 hover:underline dark:text-sky-300">Évaluation</a>.</p>
             </div>
             @can('create_activites')
                 <a href="{{ route('activites.create') }}" class="inline-flex items-center rounded-lg bg-slate-800 px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-700 dark:bg-slate-200 dark:text-slate-900 dark:hover:bg-white">
-                    Nouvelle activité
+                    Programmer une activité
                 </a>
             @endcan
         </div>
@@ -62,11 +62,7 @@
 
             <select name="departement_id" class="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 focus:border-slate-500 focus:outline-none dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100">
                 <option value="">Toutes structures</option>
-                @foreach ($departements as $departement)
-                    <option value="{{ $departement->id }}" @selected((string) ($filters['departement_id'] ?? '') === (string) $departement->id)>
-                        {{ $departement->nom }}
-                    </option>
-                @endforeach
+                <x-departement-options :groupes="$departementsGroupes" :selected="$filters['departement_id'] ?? ''" />
             </select>
 
             <select name="statut" class="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 focus:border-slate-500 focus:outline-none dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100">
@@ -85,13 +81,6 @@
                 <option value="4" @selected(($filters['trimestre'] ?? '') === '4')>T4</option>
             </select>
 
-            <select name="statut_execution" class="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 focus:border-slate-500 focus:outline-none dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100">
-                <option value="">Tout suivi</option>
-                @foreach (\App\Models\Activite::STATUTS_EXECUTION as $val => $label)
-                    <option value="{{ $val }}" @selected(($filters['statut_execution'] ?? '') === $val)>{{ $label }}</option>
-                @endforeach
-            </select>
-
             <div class="flex gap-2">
                 <button type="submit" class="w-full rounded-lg bg-slate-800 px-4 py-2 text-sm font-medium text-white dark:bg-slate-200 dark:text-slate-900">Filtrer</button>
                 <a href="{{ route('activites.index') }}" class="rounded-lg bg-slate-100 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-100 dark:hover:bg-slate-700">Reset</a>
@@ -107,7 +96,6 @@
                         <th class="px-5 py-3 text-left text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">Structure</th>
                         <th class="px-5 py-3 text-left text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">Coût</th>
                         <th class="px-5 py-3 text-left text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">Statut</th>
-                        <th class="px-5 py-3 text-left text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">Suivi</th>
                         <th class="px-5 py-3 text-left text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">Actions</th>
                     </tr>
                 </thead>
@@ -135,26 +123,6 @@
                                 </span>
                             </td>
                             <td class="px-5 py-4">
-                                @can('edit_activites')
-                                    <form action="{{ route('activites.execution', $activite) }}" method="POST" class="inline">
-                                        @csrf
-                                        <select name="statut_execution" onchange="this.form.submit()"
-                                            class="rounded-lg border px-2 py-1 text-xs font-medium focus:outline-none dark:bg-slate-950
-                                            {{ $activite->statut_execution === 'realise'
-                                                ? 'border-emerald-300 bg-emerald-50 text-emerald-800 dark:border-emerald-800 dark:text-emerald-200'
-                                                : ($activite->statut_execution === 'en_cours'
-                                                    ? 'border-amber-300 bg-amber-50 text-amber-800 dark:border-amber-800 dark:text-amber-200'
-                                                    : 'border-slate-300 bg-slate-50 text-slate-700 dark:border-slate-700 dark:text-slate-200') }}">
-                                            @foreach (\App\Models\Activite::STATUTS_EXECUTION as $val => $label)
-                                                <option value="{{ $val }}" @selected($activite->statut_execution === $val)>{{ $label }}</option>
-                                            @endforeach
-                                        </select>
-                                    </form>
-                                @else
-                                    <x-execution-badge :statut="$activite->statut_execution" />
-                                @endcan
-                            </td>
-                            <td class="px-5 py-4">
                                 <div class="flex flex-wrap items-center gap-1">
                                     <x-actions.view :href="route('activites.show', $activite)" />
 
@@ -172,20 +140,12 @@
                                             <x-actions.submit :action="route('activites.soumettre', $activite)" />
                                         @endif
                                     @endcan
-
-                                    @can('validate_activites')
-                                        @if ($activite->statut === 'en_attente')
-                                            <x-actions.validate :action="route('activites.valider', $activite)" />
-                                            <x-action variant="refuse" icon="x-mark" type="button" label="Rejeter"
-                                                onclick="openRefusModal({{ $activite->id }}, '{{ addslashes($activite->nom_activite) }}')" />
-                                        @endif
-                                    @endcan
                                 </div>
                             </td>
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="7" class="px-5 py-10 text-center text-sm text-slate-500 dark:text-slate-400">Aucune activité trouvée.</td>
+                            <td colspan="6" class="px-5 py-10 text-center text-sm text-slate-500 dark:text-slate-400">Aucune activité programmée trouvée.</td>
                         </tr>
                     @endforelse
                 </tbody>
@@ -195,40 +155,4 @@
         <div class="mt-2">{{ $activites->links() }}</div>
     </div>
 
-    <div id="refusModal" class="fixed inset-0 z-50 hidden bg-slate-900/50">
-        <div class="mx-auto mt-24 w-full max-w-lg rounded-xl border border-slate-200 bg-white p-6 shadow-lg dark:border-slate-700 dark:bg-slate-900">
-            <div class="mb-4 flex items-center justify-between">
-                <h3 class="text-lg font-semibold text-slate-900 dark:text-white">Rejeter l'activité</h3>
-                <button onclick="closeRefusModal()" class="text-slate-500 hover:text-slate-700 dark:text-slate-300 dark:hover:text-slate-100">✕</button>
-            </div>
-            <p class="mb-3 text-sm text-slate-500 dark:text-slate-400">Activité: <span id="activiteNom" class="font-medium text-slate-900 dark:text-white"></span></p>
-            <form id="refusForm" method="POST" class="space-y-4">
-                @csrf
-                <div>
-                    <label for="motif_refus" class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-200">Motif du rejet *</label>
-                    <textarea id="motif_refus" name="motif_refus" rows="4" required minlength="10"
-                        class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 focus:border-slate-500 focus:outline-none dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"></textarea>
-                </div>
-                <div class="flex justify-end gap-3">
-                    <button type="button" onclick="closeRefusModal()" class="rounded-lg bg-slate-200 px-4 py-2 text-sm font-medium text-slate-800 dark:bg-slate-700 dark:text-slate-100">Annuler</button>
-                    <button type="submit" class="rounded-lg bg-rose-600 px-4 py-2 text-sm font-medium text-white hover:bg-rose-500">Rejeter</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    @push('scripts')
-        <script>
-            function openRefusModal(activiteId, activiteNom) {
-                document.getElementById('activiteNom').textContent = activiteNom;
-                document.getElementById('refusForm').action = `/activites/${activiteId}/refuser`;
-                document.getElementById('refusModal').classList.remove('hidden');
-            }
-
-            function closeRefusModal() {
-                document.getElementById('refusModal').classList.add('hidden');
-                document.getElementById('motif_refus').value = '';
-            }
-        </script>
-    @endpush
 </x-layouts::app>

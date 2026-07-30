@@ -14,7 +14,8 @@ use Illuminate\Support\Facades\Notification;
 uses(\Illuminate\Foundation\Testing\RefreshDatabase::class);
 
 /**
- * Construit une activité rattachée à un exercice donné, dans un département donné.
+ * Construit une activité validée (seul statut évaluable) rattachée à un exercice
+ * donné, dans un département donné.
  */
 function activitePourExercice(Exercice $exercice, Departement $departement): Activite
 {
@@ -22,7 +23,7 @@ function activitePourExercice(Exercice $exercice, Departement $departement): Act
     $resultat = Resultat::factory()->forObjectif($objectif)->create();
     $extrant = Extrant::factory()->forResultat($resultat)->create();
 
-    return Activite::factory()->pourExtrant($extrant)->pourDepartement($departement)->create();
+    return Activite::factory()->valide()->pourExtrant($extrant)->pourDepartement($departement)->create();
 }
 
 /*
@@ -31,7 +32,7 @@ function activitePourExercice(Exercice $exercice, Departement $departement): Act
 |--------------------------------------------------------------------------
 */
 
-test('un chef peut renseigner l\'exécution pendant le mi-parcours', function () {
+test('un chef peut renseigner l\'évaluation mi-parcours pendant sa fenêtre', function () {
     seedRolesAndPermissions();
     $dep = Departement::factory()->create();
     $chef = User::factory()->dansDepartement($dep)->create();
@@ -43,17 +44,20 @@ test('un chef peut renseigner l\'exécution pendant le mi-parcours', function ()
     ]);
     $activite = activitePourExercice($exercice, $dep);
 
-    $this->actingAs($chef)->post(route('activites.execution', $activite), [
+    $this->actingAs($chef)->post(route('evaluations.enregistrer', [$activite, 'mi-parcours']), [
         'statut_execution' => 'realise',
-        'execution_commentaire' => 'Activité terminée',
+        'observation' => 'Activité terminée',
     ])->assertSessionHas('success');
 
-    expect($activite->fresh())
+    expect($activite->evaluation('mi_parcours'))
         ->statut_execution->toBe('realise')
-        ->execution_maj_par->toBe($chef->id);
+        ->observation->toBe('Activité terminée')
+        ->maj_par->toBe($chef->id);
+
+    expect($activite->fresh()->statut_execution)->toBe('realise');
 });
 
-test('un chef ne peut pas renseigner l\'exécution hors fenêtre', function () {
+test('un chef ne peut pas renseigner l\'évaluation hors fenêtre', function () {
     seedRolesAndPermissions();
     $dep = Departement::factory()->create();
     $chef = User::factory()->dansDepartement($dep)->create();
@@ -67,14 +71,15 @@ test('un chef ne peut pas renseigner l\'exécution hors fenêtre', function () {
     ]);
     $activite = activitePourExercice($exercice, $dep);
 
-    $this->actingAs($chef)->post(route('activites.execution', $activite), [
+    $this->actingAs($chef)->post(route('evaluations.enregistrer', [$activite, 'mi-parcours']), [
         'statut_execution' => 'realise',
     ])->assertSessionHas('error');
 
+    expect($activite->evaluation('mi_parcours'))->toBeNull();
     expect($activite->fresh()->statut_execution)->not->toBe('realise');
 });
 
-test('le dbcgoq peut renseigner l\'exécution même hors fenêtre', function () {
+test('le dbcgoq peut renseigner l\'évaluation même hors fenêtre', function () {
     $admin = userWithRole('dbcgoq');
     $exercice = Exercice::factory()->actif()->create([
         'date_debut_mi_parcours' => null,
@@ -83,14 +88,14 @@ test('le dbcgoq peut renseigner l\'exécution même hors fenêtre', function () 
     $dep = Departement::factory()->create();
     $activite = activitePourExercice($exercice, $dep);
 
-    $this->actingAs($admin)->post(route('activites.execution', $activite), [
+    $this->actingAs($admin)->post(route('evaluations.enregistrer', [$activite, 'mi-parcours']), [
         'statut_execution' => 'en_cours',
     ])->assertSessionHas('success');
 
-    expect($activite->fresh()->statut_execution)->toBe('en_cours');
+    expect($activite->evaluation('mi_parcours')->statut_execution)->toBe('en_cours');
 });
 
-test('un chef peut renseigner l\'exécution pendant l\'évaluation', function () {
+test('un chef peut renseigner l\'évaluation de fin d\'année pendant sa fenêtre', function () {
     seedRolesAndPermissions();
     $dep = Departement::factory()->create();
     $chef = User::factory()->dansDepartement($dep)->create();
@@ -102,11 +107,11 @@ test('un chef peut renseigner l\'exécution pendant l\'évaluation', function ()
     ]);
     $activite = activitePourExercice($exercice, $dep);
 
-    $this->actingAs($chef)->post(route('activites.execution', $activite), [
+    $this->actingAs($chef)->post(route('evaluations.enregistrer', [$activite, 'fin-annee']), [
         'statut_execution' => 'realise',
     ])->assertSessionHas('success');
 
-    expect($activite->fresh()->statut_execution)->toBe('realise');
+    expect($activite->evaluation('fin_annee')->statut_execution)->toBe('realise');
 });
 
 /*
@@ -188,4 +193,41 @@ test('la commande ne notifie rien hors fenêtre', function () {
     $this->artisan('activites:notifier-suivi')->assertSuccessful();
 
     Notification::assertNothingSent();
+});
+
+test('une activité non validée ne peut pas être évaluée', function () {
+    $admin = userWithRole('dbcgoq');
+    $exercice = Exercice::factory()->actif()->create();
+    $dep = Departement::factory()->create();
+
+    $objectif = Objectif::factory()->create(['exercice_id' => $exercice->id, 'annee' => $exercice->annee]);
+    $resultat = Resultat::factory()->forObjectif($objectif)->create();
+    $extrant = Extrant::factory()->forResultat($resultat)->create();
+    $activite = Activite::factory()->brouillon()->pourExtrant($extrant)->pourDepartement($dep)->create();
+
+    $this->actingAs($admin)->post(route('evaluations.enregistrer', [$activite, 'mi-parcours']), [
+        'statut_execution' => 'realise',
+    ])->assertSessionHas('error');
+
+    expect($activite->evaluation('mi_parcours'))->toBeNull();
+});
+
+test('seules les activités validées apparaissent dans l\'évaluation', function () {
+    $admin = userWithRole('dbcgoq');
+    $exercice = Exercice::factory()->actif()->create();
+    $dep = Departement::factory()->create();
+
+    $objectif = Objectif::factory()->create(['exercice_id' => $exercice->id, 'annee' => $exercice->annee]);
+    $resultat = Resultat::factory()->forObjectif($objectif)->create();
+    $extrant = Extrant::factory()->forResultat($resultat)->create();
+
+    $validee = Activite::factory()->valide()->pourExtrant($extrant)->pourDepartement($dep)->create();
+    $brouillon = Activite::factory()->brouillon()->pourExtrant($extrant)->pourDepartement($dep)->create();
+    $enAttente = Activite::factory()->soumis()->pourExtrant($extrant)->pourDepartement($dep)->create();
+
+    $this->actingAs($admin)->get(route('evaluations.index', 'mi-parcours'))
+        ->assertOk()
+        ->assertSee($validee->nom_activite)
+        ->assertDontSee($brouillon->nom_activite)
+        ->assertDontSee($enAttente->nom_activite);
 });

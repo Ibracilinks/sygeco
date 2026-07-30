@@ -33,7 +33,7 @@ test('le dbcgoq peut valider une activité et notifier le saisisseur', function 
 
     $this->actingAs($admin)->post(route('validations.valider', $activite), [
         'commentaire' => 'Validé après vérification',
-    ])->assertRedirect(route('validations.index'));
+    ])->assertRedirect(route('validations.entite', $activite->departement_id));
 
     expect($activite->fresh()->statut)->toBe('valide');
     Notification::assertSentTo($saisisseur, ActiviteValidee::class);
@@ -71,7 +71,7 @@ test('un chef valide les activités de ses entités enfants (flux montant)', fun
     $activite = Activite::factory()->soumis()->pourDepartement($service)->create();
 
     $this->actingAs($chef)->post(route('validations.valider', $activite))
-        ->assertRedirect(route('validations.index'));
+        ->assertRedirect(route('validations.entite', $service));
 
     expect($activite->fresh()->statut)->toBe('valide');
 });
@@ -95,7 +95,7 @@ test('le dbcgoq peut refuser et notifier si demandé', function () {
     $this->actingAs($admin)->post(route('validations.refuser', $activite), [
         'motif_refus' => 'Le budget proposé est incohérent',
         'notifier_utilisateur' => 'on',
-    ])->assertRedirect(route('validations.index'));
+    ])->assertRedirect(route('validations.entite', $activite->departement_id));
 
     expect($activite->fresh())
         ->statut->toBe('rejete')
@@ -111,7 +111,7 @@ test('refuser sans notifier n\'envoie pas de notification', function () {
 
     $this->actingAs($admin)->post(route('validations.refuser', $activite), [
         'motif_refus' => 'Motif suffisamment long pour passer',
-    ])->assertRedirect(route('validations.index'));
+    ])->assertRedirect(route('validations.entite', $activite->departement_id));
 
     Notification::assertNothingSent();
 });

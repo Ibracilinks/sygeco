@@ -1,8 +1,8 @@
-<x-layouts::app title="Validation activité">
+<x-layouts::app title="Arbitrage / Validation">
     <div class="flex h-full w-full flex-1 flex-col gap-5 rounded-xl">
         <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
             <div>
-                <h1 class="text-2xl font-semibold text-slate-900 dark:text-white">Validation de l'activité</h1>
+                <h1 class="text-2xl font-semibold text-slate-900 dark:text-white">Arbitrage de l'activité</h1>
                 <p class="text-sm text-slate-500 dark:text-slate-400">ACT-{{ $activite->id }} • {{ Str::limit($activite->nom_activite, 90) }}</p>
             </div>
             <div class="flex flex-wrap gap-2">

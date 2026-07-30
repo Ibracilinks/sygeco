@@ -29,6 +29,10 @@ class Departement extends Model
         self::TYPE_SERVICE => 'Service',
     ];
 
+    /** Libellés des groupes utilisés dans les listes déroulantes hiérarchiques. */
+    public const GROUPE_DIRECTIONS = 'Directions';
+    public const GROUPE_DIRECTIONS_CENTRALES = 'Directions Centrales';
+
     protected $fillable = [
         'code',
         'nom',
@@ -163,5 +167,65 @@ class Departement extends Model
     public function scopeOfType($query, string $type)
     {
         return $query->where('type', $type);
+    }
+
+    /**
+     * Regroupe des entités par Direction Centrale de rattachement, pour alimenter
+     * les <optgroup> des listes déroulantes. Groupes et entités triés par nom.
+     *
+     * @param  iterable<int, self>  $departements
+     * @return array<string, array<int, self>>
+     */
+    public static function grouperParDirectionCentrale($departements): array
+    {
+        // Carte complète de la hiérarchie : les ancêtres d'une entité visible ne
+        // font pas forcément partie du périmètre passé en paramètre.
+        $carte = self::query()->get(['id', 'parent_id', 'type', 'nom'])->keyBy('id');
+
+        $groupes = [];
+
+        foreach (collect($departements)->sortBy('nom', SORT_NATURAL | SORT_FLAG_CASE) as $departement) {
+            $groupes[self::libelleGroupeHierarchique($departement, $carte)][] = $departement;
+        }
+
+        // Une Direction Centrale sans entité rattachée n'a pas besoin de son propre
+        // groupe : on rassemble ces entités dans un groupe commun.
+        $communLibelle = self::GROUPE_DIRECTIONS_CENTRALES;
+        $commun = [];
+
+        foreach ($groupes as $libelle => $entites) {
+            if ($libelle !== $communLibelle && count($entites) === 1 && $entites[0]->type === self::TYPE_DEPARTEMENT) {
+                $commun[] = $entites[0];
+                unset($groupes[$libelle]);
+            }
+        }
+
+        if ($commun !== []) {
+            $groupes[$communLibelle] = array_merge($groupes[$communLibelle] ?? [], $commun);
+            usort($groupes[$communLibelle], fn ($a, $b) => strnatcasecmp($a->nom, $b->nom));
+        }
+
+        ksort($groupes, SORT_NATURAL | SORT_FLAG_CASE);
+
+        return $groupes;
+    }
+
+    /**
+     * Nom de la Direction Centrale dont dépend l'entité (elle-même si c'en est une),
+     * sinon le groupe des entités situées au-dessus des Directions Centrales.
+     */
+    protected static function libelleGroupeHierarchique(self $departement, \Illuminate\Support\Collection $carte): string
+    {
+        $courant = $carte[$departement->id] ?? $departement;
+
+        while ($courant) {
+            if ($courant->type === self::TYPE_DEPARTEMENT) {
+                return $courant->nom;
+            }
+
+            $courant = $courant->parent_id ? ($carte[$courant->parent_id] ?? null) : null;
+        }
+
+        return self::GROUPE_DIRECTIONS;
     }
 }

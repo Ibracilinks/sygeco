@@ -93,7 +93,7 @@
 
                     <flux:sidebar.item icon="check-badge" href="{{ route('validations.index') }}"
                         :current="request()->routeIs('validations.*')">
-                        {{ __('Validations') }}
+                        {{ __('Arbitrage / Validation') }}
                         @php $nbEnAttente = App\Models\Activite::where('statut', 'en_attente')->count(); @endphp
                         @if ($nbEnAttente > 0)
                             <flux:badge class="ml-auto">{{ $nbEnAttente }}</flux:badge>
@@ -103,12 +103,17 @@
 
                 <flux:sidebar.item icon="clipboard-document-list" href="{{ route('activites.index') }}"
                     :current="request()->routeIs('activites.index') || request()->routeIs('activites.create') || request()->routeIs('activites.edit') || request()->routeIs('activites.show')">
-                    {{ __('Activités') }}
+                    {{ __('Programmation / Planification') }}
                 </flux:sidebar.item>
 
-                <flux:sidebar.item icon="chart-bar" href="{{ route('activites.suivi') }}"
-                    :current="request()->routeIs('activites.suivi')">
-                    {{ __('Suivi des activités') }}
+                <flux:sidebar.item icon="chart-bar" href="{{ route('evaluations.index', 'mi-parcours') }}"
+                    :current="request()->fullUrlIs(route('evaluations.index', 'mi-parcours').'*')">
+                    {{ __('Évaluation : Mi-parcours') }}
+                </flux:sidebar.item>
+
+                <flux:sidebar.item icon="chart-bar-square" href="{{ route('evaluations.index', 'fin-annee') }}"
+                    :current="request()->fullUrlIs(route('evaluations.index', 'fin-annee').'*')">
+                    {{ __("Évaluation : Fin d'année") }}
                 </flux:sidebar.item>
 
                 @php($nbNonLues = auth()->user()?->unreadNotifications()->count() ?? 0)

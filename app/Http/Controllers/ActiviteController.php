@@ -12,11 +12,13 @@ use App\Notifications\ActiviteRefusee;
 use App\Notifications\ActiviteSoumiseNotification;
 use App\Notifications\ActiviteValidee;
 use App\Support\ActiveExercice;
+use App\Support\CadreLogique;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
 
 class ActiviteController extends Controller
@@ -57,10 +59,6 @@ class ActiviteController extends Controller
             $query->pourTrimestre($request->trimestre);
         }
 
-        if ($request->filled('statut_execution')) {
-            $query->where('statut_execution', $request->statut_execution);
-        }
-
         if ($request->filled('search')) {
             $query->where(function ($q) use ($request) {
                 $q->where('nom_activite', 'like', "%{$request->search}%")
@@ -91,69 +89,11 @@ class ActiviteController extends Controller
             ->ordered()
             ->get();
         $departements = $this->departementsVisibles();
+        $departementsGroupes = Departement::grouperParDirectionCentrale($departements);
         $statuts = ['brouillon', 'en_attente', 'valide', 'rejete'];
-        $filters = $request->only(['search', 'extrant_id', 'departement_id', 'statut', 'trimestre', 'statut_execution']);
+        $filters = $request->only(['search', 'extrant_id', 'departement_id', 'statut', 'trimestre']);
 
-        return view('pages.activites.index', compact('activites', 'extrants', 'departements', 'statuts', 'summary', 'filters'));
-    }
-
-    /**
-     * Suivi de l'exécution des activités (réalisé / en cours / non réalisé) avec observations.
-     */
-    public function suivi(Request $request)
-    {
-        $exerciceId = ActiveExercice::id();
-
-        $query = Activite::with(['extrant', 'departement'])->forExercice($exerciceId);
-
-        // Même périmètre que l'index : sous-arbre pour les chefs, entité propre pour les agents.
-        if ($perimetre = Auth::user()?->perimetreActivitesIds()) {
-            $query->whereIn('departement_id', $perimetre);
-        }
-
-        if ($request->filled('extrant_id')) {
-            $query->where('extrant_id', $request->extrant_id);
-        }
-        if ($request->filled('departement_id')) {
-            $query->where('departement_id', $request->departement_id);
-        }
-        if ($request->filled('statut_execution')) {
-            $query->where('statut_execution', $request->statut_execution);
-        }
-        if ($request->filled('search')) {
-            $query->where('nom_activite', 'like', "%{$request->search}%");
-        }
-
-        $base = (clone $query);
-        $summary = [
-            'total' => (clone $base)->count(),
-            'non_realise' => (clone $base)->where('statut_execution', 'non_realise')->count(),
-            'en_cours' => (clone $base)->where('statut_execution', 'en_cours')->count(),
-            'realise' => (clone $base)->where('statut_execution', 'realise')->count(),
-        ];
-        $summary['taux_realisation'] = $summary['total'] > 0
-            ? round($summary['realise'] / $summary['total'] * 100, 1)
-            : 0.0;
-
-        $activites = $query->orderBy('extrant_id')->orderBy('id')->paginate(20)->withQueryString();
-
-        $extrants = Extrant::query()
-            ->with('objectif')
-            ->actif()
-            ->when($exerciceId !== null, fn ($q) => $q->whereHas('objectif', fn ($oq) => $oq->where('exercice_id', $exerciceId)))
-            ->ordered()
-            ->get();
-        $departements = $this->departementsVisibles();
-        $filters = $request->only(['search', 'extrant_id', 'departement_id', 'statut_execution']);
-
-        // Fenêtre de saisie de l'exécution : ouverte pour le dbcgoq en permanence,
-        // sinon uniquement pendant le mi-parcours ou l'évaluation de l'exercice actif.
-        $exercice = ActiveExercice::model();
-        $periodeSuivi = $exercice?->periodeSuiviCourante();
-        $peutSaisirExecution = Auth::user()->can('validate_activites')
-            || ($exercice?->enPeriodeSuiviExecution() ?? false);
-
-        return view('pages.activites.suivi', compact('activites', 'extrants', 'departements', 'summary', 'filters', 'exercice', 'periodeSuivi', 'peutSaisirExecution'));
+        return view('pages.activites.index', compact('activites', 'extrants', 'departements', 'departementsGroupes', 'statuts', 'summary', 'filters'));
     }
 
     /**
@@ -168,13 +108,14 @@ class ActiviteController extends Controller
             ->when($exerciceId !== null, fn ($q) => $q->whereHas('objectif', fn ($oq) => $oq->where('exercice_id', $exerciceId)))
             ->ordered()
             ->get();
-        $departements = Departement::active()->ordered()->get();
+        $departements = $this->departementsVisibles();
+        $departementsGroupes = Departement::grouperParDirectionCentrale($departements);
 
         $departementId = Auth::user()->departement_id ?? $departements->first()?->id;
 
         $selectedExtrant = $request->get('extrant_id');
 
-        return view('pages.activites.create', compact('extrants', 'departements', 'departementId', 'selectedExtrant'));
+        return view('pages.activites.create', compact('extrants', 'departements', 'departementsGroupes', 'departementId', 'selectedExtrant'));
     }
 
     /**
@@ -182,13 +123,13 @@ class ActiviteController extends Controller
      */
     public function store(Request $request)
     {
-        $validated = $request->validate([
+        $validated = $this->validerProgrammation($request, [
             'extrant_id' => 'required|exists:extrants,id',
             'departement_id' => 'required|exists:departements,id',
             'nom_activite' => 'required|string',
             'indicateur_objectivement_verifiable' => 'required|string',
             'moyen_verification' => 'required|string',
-            'cout' => 'required|numeric|min:0',
+            'cout' => 'required|numeric|min:0|max:'.Activite::MONTANT_MAX,
             'trimestre_1' => 'nullable|in:on,oui',
             'trimestre_2' => 'nullable|in:on,oui',
             'trimestre_3' => 'nullable|in:on,oui',
@@ -239,7 +180,7 @@ class ActiviteController extends Controller
         $validated = $request->validate([
             'departement_id' => 'required|exists:departements,id',
             'nom_activite' => 'required|string',
-            'cout' => 'required|numeric|min:0',
+            'cout' => 'required|numeric|min:0|max:'.Activite::MONTANT_MAX,
             'indicateur_objectivement_verifiable' => 'nullable|string',
             'moyen_verification' => 'nullable|string',
             'statut_execution' => ['nullable', Rule::in(array_keys(Activite::STATUTS_EXECUTION))],
@@ -275,7 +216,7 @@ class ActiviteController extends Controller
         $activite->commentaires = $validated['commentaires'] ?? null;
         $activite->save();
 
-        return redirect()->route('activites.suivi')
+        return redirect()->route('evaluations.index', 'mi-parcours')
             ->with('success', 'Activité non programmée enregistrée dans le suivi.');
     }
 
@@ -286,7 +227,9 @@ class ActiviteController extends Controller
     {
         $activite->load([
             'extrant.objectif',
+            'extrant.resultat',
             'departement.responsable',
+            'departement.parent.parent',
             'departements',
             'executionMajPar',
             'piecesJointes.auteur',
@@ -311,9 +254,10 @@ class ActiviteController extends Controller
             ->when($exerciceId !== null, fn ($q) => $q->whereHas('objectif', fn ($oq) => $oq->where('exercice_id', $exerciceId)))
             ->ordered()
             ->get();
-        $departements = Departement::active()->ordered()->get();
+        $departements = $this->departementsVisibles();
+        $departementsGroupes = Departement::grouperParDirectionCentrale($departements);
 
-        return view('pages.activites.edit', compact('activite', 'extrants', 'departements'));
+        return view('pages.activites.edit', compact('activite', 'extrants', 'departements', 'departementsGroupes'));
     }
 
     /**
@@ -321,13 +265,13 @@ class ActiviteController extends Controller
      */
     public function update(Request $request, Activite $activite)
     {
-        $validated = $request->validate([
+        $validated = $this->validerProgrammation($request, [
             'extrant_id' => 'required|exists:extrants,id',
             'departement_id' => 'required|exists:departements,id',
             'nom_activite' => 'required|string',
             'indicateur_objectivement_verifiable' => 'required|string',
             'moyen_verification' => 'required|string',
-            'cout' => 'required|numeric|min:0',
+            'cout' => 'required|numeric|min:0|max:'.Activite::MONTANT_MAX,
             'trimestre_1' => 'nullable|in:on,oui',
             'trimestre_2' => 'nullable|in:on,oui',
             'trimestre_3' => 'nullable|in:on,oui',
@@ -468,6 +412,31 @@ class ActiviteController extends Controller
      *
      * @return \Illuminate\Support\Collection<int, Departement>
      */
+    /**
+     * Valide une saisie de programmation en exigeant, en plus des règles fournies,
+     * au moins un trimestre coché dans le chronogramme.
+     *
+     * @param  array<string, mixed>  $regles
+     * @return array<string, mixed>
+     */
+    private function validerProgrammation(Request $request, array $regles): array
+    {
+        $validator = Validator::make($request->all(), $regles);
+
+        $validator->after(function ($validator) use ($request) {
+            $trimestres = ['trimestre_1', 'trimestre_2', 'trimestre_3', 'trimestre_4'];
+
+            if (! collect($trimestres)->contains(fn ($trimestre) => $request->filled($trimestre))) {
+                $validator->errors()->add(
+                    'chronogramme',
+                    'Le chronogramme est obligatoire : sélectionnez au moins un trimestre.'
+                );
+            }
+        });
+
+        return $validator->validate();
+    }
+
     private function departementsVisibles()
     {
         $query = Departement::active()->ordered();
@@ -494,46 +463,6 @@ class ActiviteController extends Controller
         if ($destinataires->isNotEmpty()) {
             Notification::send($destinataires, new ActiviteSoumiseNotification($activite));
         }
-    }
-
-    /**
-     * Mettre à jour le suivi d'exécution (Track Activité : réalisé / en cours / non réalisé).
-     */
-    public function updateExecution(Request $request, Activite $activite)
-    {
-        $user = Auth::user();
-
-        if (! $user->can('edit_activites') && ! $user->can('validate_activites')) {
-            return back()->with('error', "Vous n'êtes pas autorisé à mettre à jour le suivi d'exécution.");
-        }
-
-        // Les chefs de département ne peuvent renseigner l'exécution que pendant une fenêtre
-        // ouverte (mi-parcours ou évaluation). Le dbcgoq (validate_activites) garde l'accès permanent.
-        if (! $user->can('validate_activites')) {
-            $exercice = $activite->exercice();
-
-            if (! $exercice || ! $exercice->enPeriodeSuiviExecution()) {
-                return back()->with('error', "La saisie de l'exécution n'est ouverte que pendant les périodes de mi-parcours ou d'évaluation.");
-            }
-        }
-
-        $validated = $request->validate([
-            'statut_execution' => ['required', Rule::in(array_keys(Activite::STATUTS_EXECUTION))],
-            'execution_commentaire' => ['nullable', 'string', 'max:1000'],
-            'montant_utilise' => ['nullable', 'numeric', 'min:0'],
-            'valeur_indicateur' => ['nullable', 'numeric'],
-        ]);
-
-        $activite->update([
-            'statut_execution' => $validated['statut_execution'],
-            'execution_commentaire' => $validated['execution_commentaire'] ?? null,
-            'montant_utilise' => $validated['montant_utilise'] ?? null,
-            'valeur_indicateur' => $validated['valeur_indicateur'] ?? null,
-            'execution_maj_le' => now(),
-            'execution_maj_par' => Auth::id(),
-        ]);
-
-        return back()->with('success', "Suivi d'exécution mis à jour.");
     }
 
     public function storePieceJointe(Request $request, Activite $activite)

@@ -116,6 +116,7 @@ test('un chef de département voit son département forcé à la création', fun
         'indicateur_objectivement_verifiable' => 'Indicateur',
         'moyen_verification' => 'PV',
         'cout' => 500000,
+        'trimestre_1' => 'oui',
     ]);
 
     $this->assertDatabaseHas('activites', [

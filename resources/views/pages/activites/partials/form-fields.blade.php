@@ -23,15 +23,13 @@
                 {{ auth()->user()->departement->nom ?? 'Votre structure' }}
             </div>
         @else
-            <select id="departement_id" name="departement_id"
+            <select id="departement_id" name="departement_id" required
                 class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 focus:border-slate-500 focus:outline-none dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100">
                 <option value="">Sélectionnez une structure</option>
-                @foreach ($departements as $departement)
-                    <option value="{{ $departement->id }}" @selected((string) old('departement_id', $activite->departement_id ?? $departementId ?? '') === (string) $departement->id)>
-                        {{ $departement->nom }}
-                    </option>
-                @endforeach
+                <x-departement-options :groupes="$departementsGroupes ?? \App\Models\Departement::grouperParDirectionCentrale($departements)"
+                    :selected="old('departement_id', $activite->departement_id ?? $departementId ?? '')" />
             </select>
+            <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">Entités regroupées par Direction Centrale.</p>
         @endif
         @error('departement_id')
             <p class="mt-1 text-sm text-rose-600 dark:text-rose-400">{{ $message }}</p>
@@ -68,6 +66,7 @@
     <div>
         <label for="cout" class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-200">Coût (FCFA) *</label>
         <input id="cout" type="number" name="cout" value="{{ old('cout', $activite->cout ?? '') }}" step="0.01"
+            min="0" max="{{ \App\Models\Activite::MONTANT_MAX }}" required
             class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 focus:border-slate-500 focus:outline-none dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100">
         @error('cout')
             <p class="mt-1 text-sm text-rose-600 dark:text-rose-400">{{ $message }}</p>
@@ -75,13 +74,16 @@
     </div>
 
     <div>
-        <p class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-200">Chronogramme</p>
+        <p class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-200">Chronogramme * <span class="font-normal text-slate-500 dark:text-slate-400">(au moins un trimestre)</span></p>
         <div class="grid grid-cols-2 gap-2 text-sm text-slate-700 dark:text-slate-200">
             <label class="inline-flex items-center gap-2"><input type="checkbox" name="trimestre_1" value="on" @checked(old('trimestre_1', isset($activite) ? $activite->trimestre_1 === 'oui' : false)) class="rounded border-slate-300 text-slate-800 dark:border-slate-700">T1</label>
             <label class="inline-flex items-center gap-2"><input type="checkbox" name="trimestre_2" value="on" @checked(old('trimestre_2', isset($activite) ? $activite->trimestre_2 === 'oui' : false)) class="rounded border-slate-300 text-slate-800 dark:border-slate-700">T2</label>
             <label class="inline-flex items-center gap-2"><input type="checkbox" name="trimestre_3" value="on" @checked(old('trimestre_3', isset($activite) ? $activite->trimestre_3 === 'oui' : false)) class="rounded border-slate-300 text-slate-800 dark:border-slate-700">T3</label>
             <label class="inline-flex items-center gap-2"><input type="checkbox" name="trimestre_4" value="on" @checked(old('trimestre_4', isset($activite) ? $activite->trimestre_4 === 'oui' : false)) class="rounded border-slate-300 text-slate-800 dark:border-slate-700">T4</label>
         </div>
+        @error('chronogramme')
+            <p class="mt-1 text-sm text-rose-600 dark:text-rose-400">{{ $message }}</p>
+        @enderror
     </div>
 
     <div class="md:col-span-2">

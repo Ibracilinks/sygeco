@@ -3,6 +3,7 @@
 use App\Http\Controllers\BudgetAnalysisController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DepartementController;
+use App\Http\Controllers\EvaluationController;
 use App\Http\Controllers\ExerciceController;
 use App\Http\Controllers\ExtrantController;
 use App\Http\Controllers\ActiviteController;
@@ -25,8 +26,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // Dashboard parallèle « SAP Cloud Analytics » (présentation autonome, mêmes données)
     Route::get('sap-analytics', [SapAnalyticsController::class, 'index'])->name('sap.analytics');
 
-    // Manuel d'utilisation (documentation utilisateur)
-    Route::view('documentation', 'pages.documentation')->name('documentation');
+    // Manuel d'utilisation (documentation utilisateur), découpé en chapitres.
+    Route::view('documentation', 'pages.documentation.index')->name('documentation');
+    Route::prefix('documentation')->name('documentation.')->group(function () {
+        Route::view('directions-centrales', 'pages.documentation.directions-centrales')->name('directions-centrales');
+        Route::view('utilisateurs', 'pages.documentation.utilisateurs')->name('utilisateurs');
+    });
 
     // Notifications in-app (accessible à tout utilisateur connecté)
     Route::prefix('notifications')->name('notifications.')->group(function () {
@@ -63,10 +68,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::middleware(['role:superadmin|dbcgoq|chef'])->group(function () {
         Route::prefix('validations')->name('validations.')->group(function () {
             Route::get('/', [ValidationController::class, 'index'])->name('index');
+            Route::get('/entite/{departement}', [ValidationController::class, 'entite'])->name('entite');
             Route::get('/{activite}', [ValidationController::class, 'show'])->name('show');
+            Route::post('/valider-plusieurs', [ValidationController::class, 'validerPlusieurs'])->name('valider-plusieurs');
             Route::post('/{activite}/valider', [ValidationController::class, 'valider'])->name('valider');
             Route::post('/{activite}/refuser', [ValidationController::class, 'refuser'])->name('refuser');
-            Route::post('/valider-plusieurs', [ValidationController::class, 'validerPlusieurs'])->name('valider-plusieurs');
             // Arbitrage budgétaire
             Route::post('/{activite}/arbitrer-modifier', [ValidationController::class, 'arbitrerModifier'])->name('arbitrer-modifier');
             Route::post('/{activite}/arbitrer-supprimer', [ValidationController::class, 'arbitrerSupprimer'])->name('arbitrer-supprimer');
@@ -86,12 +92,17 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::resource('users', UserController::class)->only(['index', 'show']);
     });
 
+    Route::middleware(['role:superadmin|dbcgoq|chef|agent'])->prefix('evaluations')->name('evaluations.')->group(function () {
+        Route::get('/{periode}', [EvaluationController::class, 'index'])->name('index')->where('periode', 'mi-parcours|fin-annee');
+        Route::get('/{periode}/export', [EvaluationController::class, 'exporter'])->name('export')->where('periode', 'mi-parcours|fin-annee');
+        Route::post('/{activite}/{periode}', [EvaluationController::class, 'enregistrer'])->name('enregistrer')->where('periode', 'mi-parcours|fin-annee');
+    });
+
     Route::middleware(['role:superadmin|dbcgoq|chef|agent'])->prefix('activites')->name('activites.')->group(function () {
         Route::get('/', [ActiviteController::class, 'index'])->name('index');
         Route::get('/create', [ActiviteController::class, 'create'])->name('create');
         Route::post('/', [ActiviteController::class, 'store'])->name('store');
         Route::get('/export', [ActiviteController::class, 'export'])->name('export');
-        Route::get('/suivi', [ActiviteController::class, 'suivi'])->name('suivi');
         Route::post('/non-programmee', [ActiviteController::class, 'storeNonProgrammee'])->name('non-programmee.store');
         Route::get('/{activite}', [ActiviteController::class, 'show'])->name('show');
         Route::get('/{activite}/edit', [ActiviteController::class, 'edit'])->name('edit');
@@ -102,7 +113,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('/{activite}/soumettre', [ActiviteController::class, 'soumettre'])->name('soumettre');
         Route::post('/{activite}/valider', [ActiviteController::class, 'valider'])->name('valider');
         Route::post('/{activite}/refuser', [ActiviteController::class, 'refuser'])->name('refuser');
-        Route::post('/{activite}/execution', [ActiviteController::class, 'updateExecution'])->name('execution');
         Route::post('/{activite}/pieces-jointes', [ActiviteController::class, 'storePieceJointe'])->name('pieces-jointes.store');
         Route::get('/{activite}/pieces-jointes/{pieceJointe}', [ActiviteController::class, 'downloadPieceJointe'])->name('pieces-jointes.download');
     });

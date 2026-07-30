@@ -108,6 +108,28 @@ class Exercice extends Model
     }
 
     /**
+     * La fenêtre de saisie d'une période d'évaluation est-elle ouverte aujourd'hui ?
+     */
+    public function enPeriodeEvaluationPour(string $periode): bool
+    {
+        return $periode === ActiviteEvaluation::PERIODE_MI_PARCOURS
+            ? $this->enPeriodeMiParcours()
+            : $this->enPeriodeEvaluation();
+    }
+
+    /**
+     * Bornes de la fenêtre de saisie d'une période d'évaluation.
+     *
+     * @return array{0: ?\Illuminate\Support\Carbon, 1: ?\Illuminate\Support\Carbon}
+     */
+    public function fenetreEvaluation(string $periode): array
+    {
+        return $periode === ActiviteEvaluation::PERIODE_MI_PARCOURS
+            ? [$this->date_debut_mi_parcours, $this->date_fin_mi_parcours]
+            : [$this->date_debut_evaluation, $this->date_fin_evaluation];
+    }
+
+    /**
      * Libellé de la fenêtre de suivi en cours, ou null si aucune n'est ouverte.
      */
     public function periodeSuiviCourante(): ?string

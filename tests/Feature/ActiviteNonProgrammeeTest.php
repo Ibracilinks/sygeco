@@ -17,7 +17,7 @@ test('un dbcgoq enregistre une activité non programmée dans le suivi', functio
         'nom_activite' => 'Réunion imprévue de gestion de crise',
         'cout' => 750000,
         'statut_execution' => 'realise',
-    ])->assertRedirect(route('activites.suivi'));
+    ])->assertRedirect(route('evaluations.index', 'mi-parcours'));
 
     $activite = Activite::where('nom_activite', 'Réunion imprévue de gestion de crise')->first();
 
@@ -36,7 +36,7 @@ test('une activité non programmée sans exercice actif est refusée', function 
     $service = Departement::factory()->service()->create();
 
     $this->actingAs($admin)
-        ->from(route('activites.suivi'))
+        ->from(route('evaluations.index', 'mi-parcours'))
         ->post(route('activites.non-programmee.store'), [
             'departement_id' => $service->id,
             'nom_activite' => 'Activité sans exercice',

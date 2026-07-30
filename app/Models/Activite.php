@@ -14,6 +14,11 @@ class Activite extends Model
 
     protected $table = 'activites';
 
+    /**
+     * Montant maximum acceptable pour les colonnes monétaires (decimal(15,2)).
+     */
+    public const MONTANT_MAX = 9999999999999.99;
+
     protected $fillable = [
         'extrant_id',
         'exercice_id',
@@ -99,6 +104,24 @@ class Activite extends Model
     }
 
     /**
+     * Évaluations de l'activité, une par période (mi-parcours / fin d'année).
+     */
+    public function evaluations()
+    {
+        return $this->hasMany(ActiviteEvaluation::class);
+    }
+
+    /**
+     * Évaluation d'une période donnée, si elle a été saisie.
+     */
+    public function evaluation(string $periode): ?ActiviteEvaluation
+    {
+        return $this->relationLoaded('evaluations')
+            ? $this->evaluations->firstWhere('periode', $periode)
+            : $this->evaluations()->where('periode', $periode)->first();
+    }
+
+    /**
      * Exercice rattaché à l'activité (via extrant → objectif).
      */
     public function exercice(): ?Exercice
@@ -118,6 +141,22 @@ class Activite extends Model
     public function exerciceDirect()
     {
         return $this->belongsTo(Exercice::class, 'exercice_id');
+    }
+
+    /**
+     * Filtre sur l'état d'exécution évalué pour une période donnée. Une activité sans
+     * évaluation saisie sur la période est considérée comme non réalisée.
+     */
+    public function scopeParStatutEvaluation($query, string $periode, string $statut)
+    {
+        if ($statut === 'non_realise') {
+            return $query->where(function ($outer) use ($periode) {
+                $outer->whereHas('evaluations', fn ($q) => $q->where('periode', $periode)->where('statut_execution', 'non_realise'))
+                    ->orWhereDoesntHave('evaluations', fn ($q) => $q->where('periode', $periode));
+            });
+        }
+
+        return $query->whereHas('evaluations', fn ($q) => $q->where('periode', $periode)->where('statut_execution', $statut));
     }
 
     public function scopeByStatutExecution($query, $statut)

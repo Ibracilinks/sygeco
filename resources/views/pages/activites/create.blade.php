@@ -1,8 +1,8 @@
-<x-layouts::app title="Créer une Activité">
+<x-layouts::app title="Programmer une activité">
     <div class="flex h-full w-full flex-1 flex-col gap-5 rounded-xl">
         <div>
-            <h1 class="text-2xl font-semibold text-slate-900 dark:text-white">Créer une activité</h1>
-            <p class="text-sm text-slate-500 dark:text-slate-400">Saisissez une nouvelle activité opérationnelle rattachée à un extrant.</p>
+            <h1 class="text-2xl font-semibold text-slate-900 dark:text-white">Programmer une activité</h1>
+            <p class="text-sm text-slate-500 dark:text-slate-400">Planification d'une activité rattachée à un extrant : structure responsable, coût et chronogramme.</p>
         </div>
 
         <div class="rounded-xl border border-slate-200 bg-white p-6 dark:border-slate-700 dark:bg-slate-900">
@@ -18,7 +18,7 @@
                     </a>
                     <button type="submit"
                         class="inline-flex items-center rounded-lg bg-slate-800 px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-700 dark:bg-slate-200 dark:text-slate-900 dark:hover:bg-white">
-                        Créer l'activité
+                        Enregistrer la programmation
                     </button>
                 </div>
             </form>

@@ -100,6 +100,12 @@ class User extends Authenticatable
      */
     public function perimetreActivitesIds(): ?array
     {
+        // Le superadmin et le dbcgoq voient tout, même s'ils sont rattachés à une entité
+        // et cumulent un rôle chef ou agent (cohérent avec ActivitePolicy::view()).
+        if ($this->hasRole('superadmin') || $this->hasRole('dbcgoq')) {
+            return null;
+        }
+
         if ($this->departement_id === null) {
             return null;
         }

@@ -12,12 +12,12 @@
 <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel">
 <head>
     <meta charset="utf-8">
-    <title>Cadre logique des activités</title>
+    <title>Cadre logique — évaluation {{ $periodeLibelle }}</title>
 </head>
 <body>
     <table border="1" cellspacing="0" cellpadding="0" style="border-collapse:collapse;">
         <tr>
-            <td colspan="9" style="border:none;padding:8px;font-size:16px;font-weight:bold;text-align:center;font-family:Calibri,Arial,sans-serif;">CADRE LOGIQUE DES ACTIVITES {{ now()->year }}</td>
+            <td colspan="9" style="border:none;padding:8px;font-size:16px;font-weight:bold;text-align:center;font-family:Calibri,Arial,sans-serif;">CADRE LOGIQUE — EVALUATION {{ Str::upper($periodeLibelle) }} {{ now()->year }}</td>
         </tr>
 
         @forelse ($objectifs as $bloc)
@@ -33,7 +33,7 @@
                 <td rowspan="2" style="{{ $th }}width:300px;">ACTIVITES</td>
                 <td rowspan="2" style="{{ $th }}width:160px;">INDICATEUR OBJECTIVEMENT VERIFIABLE</td>
                 <td rowspan="2" style="{{ $th }}width:130px;">VALEUR DE L'INDICATEUR</td>
-                <td colspan="3" style="{{ $th }}">1er SEMESTRE</td>
+                <td colspan="3" style="{{ $th }}">{{ $entetePeriode }}</td>
                 <td rowspan="2" style="{{ $th }}width:120px;">RESPONS</td>
                 <td rowspan="2" style="{{ $th }}width:160px;">OBSERVATIONS</td>
             </tr>
@@ -58,17 +58,21 @@
                     </tr>
 
                     @foreach ($blocExtrant['activites'] as $activite)
-                        @php $rang++; @endphp
+                        @php
+                            $rang++;
+                            $evaluation = $activite->evaluation($periode);
+                            $statut = $evaluation->statut_execution ?? 'non_realise';
+                        @endphp
                         <tr>
                             <td style="{{ $cell }}{{ $center }}">{{ $rang }}</td>
                             <td style="{{ $cell }}">{{ $activite->nom_activite }}</td>
                             <td style="{{ $cell }}">{{ $activite->indicateur_objectivement_verifiable }}</td>
-                            <td style="{{ $cell }}">{{ $activite->moyen_verification }}</td>
-                            <td style="{{ $cell }}{{ $center }}">{{ $activite->statut_execution === 'realise' ? 'X' : '' }}</td>
-                            <td style="{{ $cell }}{{ $center }}">{{ $activite->statut_execution === 'en_cours' ? 'X' : '' }}</td>
-                            <td style="{{ $cell }}{{ $center }}">{{ in_array($activite->statut_execution, ['non_realise', null], true) ? 'X' : '' }}</td>
+                            <td style="{{ $cell }}">{{ $evaluation?->valeur_indicateur !== null ? rtrim(rtrim(number_format($evaluation->valeur_indicateur, 2, ',', ' '), '0'), ',') : '' }}</td>
+                            <td style="{{ $cell }}{{ $center }}">{{ $statut === 'realise' ? 'X' : '' }}</td>
+                            <td style="{{ $cell }}{{ $center }}">{{ $statut === 'en_cours' ? 'X' : '' }}</td>
+                            <td style="{{ $cell }}{{ $center }}">{{ $statut === 'non_realise' ? 'X' : '' }}</td>
                             <td style="{{ $cell }}{{ $center }}">{{ $activite->departements->isNotEmpty() ? $activite->departements->pluck('nom')->join('/') : ($activite->departement?->nom ?? '') }}</td>
-                            <td style="{{ $cell }}">{{ $activite->execution_commentaire }}</td>
+                            <td style="{{ $cell }}">{{ $evaluation?->observation }}</td>
                         </tr>
                     @endforeach
                 @endforeach
