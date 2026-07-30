@@ -231,3 +231,32 @@ test('seules les activités validées apparaissent dans l\'évaluation', functio
         ->assertDontSee($brouillon->nom_activite)
         ->assertDontSee($enAttente->nom_activite);
 });
+
+test('une activité non évaluée n\'est pas comptée comme non réalisée', function () {
+    $admin = userWithRole('dbcgoq');
+    $exercice = Exercice::factory()->actif()->create();
+    $dep = Departement::factory()->create();
+
+    $objectif = Objectif::factory()->create(['exercice_id' => $exercice->id, 'annee' => $exercice->annee]);
+    $resultat = Resultat::factory()->forObjectif($objectif)->create();
+    $extrant = Extrant::factory()->forResultat($resultat)->create();
+
+    $evaluee = Activite::factory()->valide()->pourExtrant($extrant)->pourDepartement($dep)->create();
+    Activite::factory()->valide()->pourExtrant($extrant)->pourDepartement($dep)->create(); // jamais évaluée
+
+    $this->actingAs($admin)->post(route('evaluations.enregistrer', [$evaluee, 'mi-parcours']), [
+        'statut_execution' => 'realise',
+    ])->assertSessionHas('success');
+
+    $summary = $this->actingAs($admin)->get(route('evaluations.index', 'mi-parcours'))
+        ->assertOk()
+        ->viewData('summary');
+
+    expect($summary)
+        ->total->toBe(2)
+        ->evaluees->toBe(1)
+        ->realise->toBe(1)
+        ->non_realise->toBe(0)
+        ->non_evaluee->toBe(1)
+        ->taux_realisation->toBe(100.0);
+});

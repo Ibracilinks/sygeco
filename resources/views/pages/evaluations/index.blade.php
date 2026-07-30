@@ -78,10 +78,11 @@
         @endif
 
         {{-- KPI d'avancement de la période --}}
-        <div class="grid grid-cols-2 gap-4 sm:grid-cols-3 xl:grid-cols-5">
+        <div class="grid grid-cols-2 gap-4 sm:grid-cols-3 xl:grid-cols-6">
             <div class="rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-900">
-                <p class="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">Total</p>
+                <p class="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">Activités validées</p>
                 <p class="mt-2 text-3xl font-semibold text-slate-900 dark:text-white">{{ number_format($summary['total']) }}</p>
+                <p class="text-xs text-slate-500 dark:text-slate-400">{{ number_format($summary['evaluees']) }} évaluée(s) — {{ $summary['taux_saisie'] }}%</p>
             </div>
             <div class="rounded-xl border border-emerald-200 bg-emerald-50 p-4 dark:border-emerald-900/60 dark:bg-emerald-950/25">
                 <p class="text-xs uppercase tracking-wide text-emerald-700 dark:text-emerald-300">Réalisé</p>
@@ -91,13 +92,18 @@
                 <p class="text-xs uppercase tracking-wide text-amber-700 dark:text-amber-300">En cours</p>
                 <p class="mt-2 text-3xl font-semibold text-amber-800 dark:text-amber-100">{{ number_format($summary['en_cours']) }}</p>
             </div>
+            <div class="rounded-xl border border-rose-200 bg-rose-50 p-4 dark:border-rose-900/60 dark:bg-rose-950/25">
+                <p class="text-xs uppercase tracking-wide text-rose-700 dark:text-rose-300">Non réalisé</p>
+                <p class="mt-2 text-3xl font-semibold text-rose-800 dark:text-rose-100">{{ number_format($summary['non_realise']) }}</p>
+            </div>
             <div class="rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-950/40">
-                <p class="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">Non réalisé</p>
-                <p class="mt-2 text-3xl font-semibold text-slate-900 dark:text-white">{{ number_format($summary['non_realise']) }}</p>
+                <p class="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">Non évaluée</p>
+                <p class="mt-2 text-3xl font-semibold text-slate-900 dark:text-white">{{ number_format($summary['non_evaluee']) }}</p>
             </div>
             <div class="rounded-xl border border-sky-200 bg-sky-50 p-4 dark:border-sky-900/60 dark:bg-sky-950/25">
                 <p class="text-xs uppercase tracking-wide text-sky-700 dark:text-sky-300">Taux de réalisation</p>
                 <p class="mt-2 text-3xl font-semibold text-sky-800 dark:text-sky-100">{{ $summary['taux_realisation'] }}%</p>
+                <p class="text-xs text-sky-700/80 dark:text-sky-300/80">sur les activités évaluées</p>
             </div>
         </div>
 
@@ -123,6 +129,7 @@
                 @foreach (\App\Models\Activite::STATUTS_EXECUTION as $val => $label)
                     <option value="{{ $val }}" @selected(($filters['statut_execution'] ?? '') === $val)>{{ $label }}</option>
                 @endforeach
+                <option value="non_evaluee" @selected(($filters['statut_execution'] ?? '') === 'non_evaluee')>Non évaluée</option>
             </select>
 
             <div class="flex gap-2">
@@ -164,16 +171,19 @@
                                 <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">Budget planifié : {{ number_format($activite->cout, 0, ',', ' ') }} FCFA</p>
                             </td>
                             <td class="px-5 py-4">
-                                <x-execution-badge :statut="$evaluation->statut_execution ?? 'non_realise'" />
-                                @unless ($evaluation)
-                                    <p class="mt-1 text-xs text-slate-400 dark:text-slate-500">Non renseignée</p>
-                                @endunless
+                                @if ($evaluation)
+                                    <x-execution-badge :statut="$evaluation->statut_execution" />
+                                @else
+                                    <span class="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-500 dark:bg-slate-800 dark:text-slate-400">
+                                        Non évaluée
+                                    </span>
+                                @endif
                             </td>
                             <td class="px-5 py-4">
                                 @if ($autreEvaluation)
                                     <x-execution-badge :statut="$autreEvaluation->statut_execution" />
                                 @else
-                                    <span class="text-xs text-slate-400 dark:text-slate-500">—</span>
+                                    <span class="text-xs text-slate-400 dark:text-slate-500">Non évaluée</span>
                                 @endif
                             </td>
                             <td class="px-5 py-4 text-xs text-slate-500 dark:text-slate-400">

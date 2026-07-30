@@ -29,9 +29,17 @@ class EvaluationController extends Controller
             'non_realise' => (clone $base)->parStatutEvaluation($periode, 'non_realise')->count(),
             'en_cours' => (clone $base)->parStatutEvaluation($periode, 'en_cours')->count(),
             'realise' => (clone $base)->parStatutEvaluation($periode, 'realise')->count(),
+            'non_evaluee' => (clone $base)->sansEvaluation($periode)->count(),
         ];
-        $summary['taux_realisation'] = $summary['total'] > 0
-            ? round($summary['realise'] / $summary['total'] * 100, 1)
+        $summary['evaluees'] = $summary['total'] - $summary['non_evaluee'];
+
+        // Taux de réalisation calculé sur les activités effectivement évaluées :
+        // celles qui n'ont pas encore été renseignées ne comptent pas comme non réalisées.
+        $summary['taux_realisation'] = $summary['evaluees'] > 0
+            ? round($summary['realise'] / $summary['evaluees'] * 100, 1)
+            : 0.0;
+        $summary['taux_saisie'] = $summary['total'] > 0
+            ? round($summary['evaluees'] / $summary['total'] * 100, 1)
             : 0.0;
 
         $activites = $query->orderBy('extrant_id')->orderBy('id')->paginate(20)->withQueryString();
@@ -90,7 +98,9 @@ class EvaluationController extends Controller
             return back()->with('error', "Seules les activités validées peuvent être évaluées.");
         }
 
-        $exercice = ActiveExercice::model();
+        // La fenêtre s'apprécie sur l'exercice de l'activité, pas sur celui que
+        // l'utilisateur a sélectionné dans son contexte de navigation.
+        $exercice = $activite->exercice();
         $peutSaisir = $user->can('validate_activites')
             || ($exercice?->enPeriodeEvaluationPour($periode) ?? false);
 
@@ -174,7 +184,9 @@ class EvaluationController extends Controller
             $query->where('departement_id', $request->departement_id);
         }
         if ($request->filled('statut_execution')) {
-            $query->parStatutEvaluation($periode, $request->statut_execution);
+            $request->statut_execution === 'non_evaluee'
+                ? $query->sansEvaluation($periode)
+                : $query->parStatutEvaluation($periode, $request->statut_execution);
         }
         if ($request->filled('search')) {
             $query->where('nom_activite', 'like', "%{$request->search}%");

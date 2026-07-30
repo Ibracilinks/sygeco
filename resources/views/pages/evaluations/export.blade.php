@@ -61,7 +61,8 @@
                         @php
                             $rang++;
                             $evaluation = $activite->evaluation($periode);
-                            $statut = $evaluation->statut_execution ?? 'non_realise';
+                            // Aucune colonne cochée tant que la période n'a pas été évaluée.
+                            $statut = $evaluation->statut_execution ?? null;
                         @endphp
                         <tr>
                             <td style="{{ $cell }}{{ $center }}">{{ $rang }}</td>

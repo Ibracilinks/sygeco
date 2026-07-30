@@ -145,18 +145,20 @@ class Activite extends Model
 
     /**
      * Filtre sur l'état d'exécution évalué pour une période donnée. Une activité sans
-     * évaluation saisie sur la période est considérée comme non réalisée.
+     * évaluation saisie n'est pas « non réalisée » : elle n'est pas encore évaluée
+     * (voir scopeSansEvaluation).
      */
     public function scopeParStatutEvaluation($query, string $periode, string $statut)
     {
-        if ($statut === 'non_realise') {
-            return $query->where(function ($outer) use ($periode) {
-                $outer->whereHas('evaluations', fn ($q) => $q->where('periode', $periode)->where('statut_execution', 'non_realise'))
-                    ->orWhereDoesntHave('evaluations', fn ($q) => $q->where('periode', $periode));
-            });
-        }
-
         return $query->whereHas('evaluations', fn ($q) => $q->where('periode', $periode)->where('statut_execution', $statut));
+    }
+
+    /**
+     * Activités dont l'évaluation de la période n'a pas encore été renseignée.
+     */
+    public function scopeSansEvaluation($query, string $periode)
+    {
+        return $query->whereDoesntHave('evaluations', fn ($q) => $q->where('periode', $periode));
     }
 
     public function scopeByStatutExecution($query, $statut)
