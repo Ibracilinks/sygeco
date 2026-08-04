@@ -1,10 +1,13 @@
+{{--
+    Corps partagé des deux pages d'évaluation. Chaque période a sa propre vue
+    (mi-parcours / fin-annee) et n'affiche que ses propres données : aucune
+    donnée de l'autre période n'apparaît ici.
+--}}
 @php
     use App\Models\ActiviteEvaluation;
 
     $periodeLibelle = ActiviteEvaluation::PERIODES[$periode];
     $slug = ActiviteEvaluation::slugDePeriode($periode);
-    $autreLibelle = ActiviteEvaluation::PERIODES[$autrePeriode];
-    $autreSlug = ActiviteEvaluation::slugDePeriode($autrePeriode);
 @endphp
 
 <x-layouts::app title="Évaluation — {{ $periodeLibelle }}">
@@ -15,7 +18,6 @@
                 <p class="text-sm text-slate-500 dark:text-slate-400">
                     État d'exécution, budget consommé et valeur d'indicateur pour la période
                     @if ($exercice) — exercice {{ $exercice->annee }} @endif.
-                    <a href="{{ route('evaluations.index', $autreSlug) }}" class="font-medium text-sky-700 hover:underline dark:text-sky-300">Voir {{ $autreLibelle }}</a>
                 </p>
             </div>
             <div class="flex flex-wrap gap-2">
@@ -42,19 +44,6 @@
                 <p class="text-sm font-medium text-rose-800 dark:text-rose-200">{{ session('error') }}</p>
             </div>
         @endif
-
-        {{-- Onglets des deux périodes --}}
-        <div class="flex gap-1 rounded-xl border border-slate-200 bg-white p-1 dark:border-slate-700 dark:bg-slate-900 md:w-fit">
-            @foreach (ActiviteEvaluation::PERIODES as $valeur => $libelle)
-                <a href="{{ route('evaluations.index', ActiviteEvaluation::slugDePeriode($valeur)) }}"
-                    class="rounded-lg px-4 py-2 text-sm font-medium transition
-                    {{ $valeur === $periode
-                        ? 'bg-slate-800 text-white dark:bg-slate-200 dark:text-slate-900'
-                        : 'text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800' }}">
-                    {{ $libelle }}
-                </a>
-            @endforeach
-        </div>
 
         {{-- État de la fenêtre de saisie --}}
         @if ($exercice?->enPeriodeEvaluationPour($periode))
@@ -144,7 +133,6 @@
                     <tr>
                         <th class="px-5 py-3 text-left text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">Activité</th>
                         <th class="px-5 py-3 text-left text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">{{ $periodeLibelle }}</th>
-                        <th class="px-5 py-3 text-left text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">{{ $autreLibelle }}</th>
                         <th class="px-5 py-3 text-left text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">Mise à jour</th>
                         <th class="px-5 py-3 text-left text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">Budget &amp; observations</th>
                     </tr>
@@ -153,7 +141,6 @@
                     @forelse ($activites as $activite)
                         @php
                             $evaluation = $activite->evaluation($periode);
-                            $autreEvaluation = $activite->evaluation($autrePeriode);
                             $montant = $evaluation?->montant_utilise;
                             $ecart = $montant !== null ? (float) $activite->cout - (float) $montant : null;
                         @endphp
@@ -177,13 +164,6 @@
                                     <span class="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-500 dark:bg-slate-800 dark:text-slate-400">
                                         Non évaluée
                                     </span>
-                                @endif
-                            </td>
-                            <td class="px-5 py-4">
-                                @if ($autreEvaluation)
-                                    <x-execution-badge :statut="$autreEvaluation->statut_execution" />
-                                @else
-                                    <span class="text-xs text-slate-400 dark:text-slate-500">Non évaluée</span>
                                 @endif
                             </td>
                             <td class="px-5 py-4 text-xs text-slate-500 dark:text-slate-400">
@@ -231,7 +211,7 @@
                             </td>
                         </tr>
                     @empty
-                        <tr><td colspan="5" class="px-5 py-10 text-center text-sm text-slate-500 dark:text-slate-400">Aucune activité à évaluer.</td></tr>
+                        <tr><td colspan="4" class="px-5 py-10 text-center text-sm text-slate-500 dark:text-slate-400">Aucune activité à évaluer.</td></tr>
                     @endforelse
                 </tbody>
             </table>
@@ -349,12 +329,15 @@
                     </div>
 
                     <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                        <div>
-                            <label class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-200">Budget utilisé (FCFA)</label>
-                            <input type="number" step="0.01" min="0" max="{{ \App\Models\Activite::MONTANT_MAX }}" name="montant_utilise" id="eval_montant_utilise"
-                                class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 focus:border-slate-500 focus:outline-none dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100">
-                            <p id="eval_cout_hint" class="mt-1 text-xs text-slate-400"></p>
-                        </div>
+                        {{-- Le budget consommé n'est saisissable que par l'administration (superadmin / DBCGOQ). --}}
+                        @if ($peutSaisirBudget)
+                            <div>
+                                <label class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-200">Budget utilisé (FCFA)</label>
+                                <input type="number" step="0.01" min="0" max="{{ \App\Models\Activite::MONTANT_MAX }}" name="montant_utilise" id="eval_montant_utilise"
+                                    class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 focus:border-slate-500 focus:outline-none dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100">
+                                <p id="eval_cout_hint" class="mt-1 text-xs text-slate-400"></p>
+                            </div>
+                        @endif
                         <div>
                             <label class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-200">Valeur de l'indicateur</label>
                             <input type="number" step="0.01" name="valeur_indicateur" id="eval_valeur_indicateur"
@@ -379,11 +362,16 @@
                 document.getElementById('evaluationModalNom').textContent = data.nom || '';
                 document.getElementById('eval_statut_execution').value = data.statut_execution || 'non_realise';
                 document.getElementById('eval_observation').value = data.observation || '';
-                document.getElementById('eval_montant_utilise').value = data.montant_utilise ?? '';
                 document.getElementById('eval_valeur_indicateur').value = data.valeur_indicateur ?? '';
-                const cout = Number(data.cout || 0);
-                document.getElementById('eval_cout_hint').textContent =
-                    'Budget planifié : ' + cout.toLocaleString('fr-FR') + ' FCFA';
+
+                // Champ budget absent du formulaire pour les profils non administrateurs.
+                const montant = document.getElementById('eval_montant_utilise');
+                if (montant) {
+                    montant.value = data.montant_utilise ?? '';
+                    const cout = Number(data.cout || 0);
+                    document.getElementById('eval_cout_hint').textContent =
+                        'Budget planifié : ' + cout.toLocaleString('fr-FR') + ' FCFA';
+                }
                 document.getElementById('evaluationModal').classList.remove('hidden');
             }
         </script>

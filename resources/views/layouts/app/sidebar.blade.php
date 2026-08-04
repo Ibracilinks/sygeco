@@ -14,10 +14,11 @@
         class="app-sidebar border-e border-zinc-200 bg-zinc-50/95 dark:border-zinc-800 dark:bg-zinc-900/95">
         <flux:sidebar.header class="app-sidebar-header">
             <x-app-logo :sidebar="true" href="{{ route('dashboard') }}" wire:navigate />
-            <flux:sidebar.collapse class="lg:hidden" />
+            {{-- Réduction de la sidebar : en panneau sur mobile, en bande d'icônes sur desktop. --}}
+            <flux:sidebar.collapse />
         </flux:sidebar.header>
 
-        <div class="app-sidebar-intro hidden lg:block">
+        <div class="app-sidebar-intro hidden lg:block in-data-flux-sidebar-collapsed-desktop:lg:hidden">
             <p class="app-sidebar-intro-kicker">CANAM</p>
             <p class="app-sidebar-intro-title">Centre de pilotage</p>
             <div class="app-sidebar-intro-chip">
@@ -29,7 +30,8 @@
         <flux:sidebar.nav class="app-sidebar-nav">
 
             <!-- Dashboard -->
-            <flux:sidebar.group :heading="__('Navigation')" class="app-sidebar-group grid">
+            <flux:sidebar.group expandable icon="squares-2x2" :heading="__('Navigation')"
+                class="app-sidebar-group grid" data-groupe="navigation">
                 <flux:sidebar.item icon="home" :href="route('dashboard')" :current="request()->routeIs('dashboard')"
                     wire:navigate>
                     {{ __('Dashboard') }}
@@ -41,7 +43,8 @@
 
             <!-- Organisation -->
             @if ($currentUser->hasAnyRole(['superadmin', 'dbcgoq']))
-                <flux:sidebar.group :heading="__('Organisation')" class="app-sidebar-group grid">
+                <flux:sidebar.group expandable icon="building-office-2" :heading="__('Organisation')"
+                    class="app-sidebar-group grid" data-groupe="organisation">
                     <flux:sidebar.item icon="building-office" href="{{ route('departements.index') }}"
                         :current="request()->routeIs('departements.*')">
                         {{ __('Directions Centrales') }}
@@ -55,7 +58,8 @@
             @endif
 
             <!-- Planification Stratégique -->
-            <flux:sidebar.group :heading="__('Planification Stratégique')" class="app-sidebar-group grid">
+            <flux:sidebar.group expandable icon="chart-bar-square" :heading="__('Planification Stratégique')"
+                class="app-sidebar-group grid" data-groupe="planification">
                 @if ($currentUser->hasAnyRole(['superadmin', 'dbcgoq']))
                     <flux:sidebar.item icon="calendar-days" href="{{ route('exercices.index') }}"
                         :current="request()->routeIs('exercices.*')">
@@ -177,6 +181,48 @@
     </flux:header>
 
     {{ $slot }}
+
+    <script>
+        // Mémorise l'état plié/déplié de chaque groupe de la sidebar d'une page à l'autre.
+        // Les groupes sont des <ui-disclosure> Flux : l'attribut `open` porte leur état.
+        (function () {
+            const CLE = 'sygeco.sidebar.groupes';
+
+            const lire = () => {
+                try {
+                    return JSON.parse(localStorage.getItem(CLE)) || {};
+                } catch (e) {
+                    return {};
+                }
+            };
+
+            const appliquer = () => {
+                const etats = lire();
+
+                document.querySelectorAll('[data-groupe]').forEach((groupe) => {
+                    const nom = groupe.dataset.groupe;
+
+                    // Aucun état mémorisé : on conserve celui rendu par le serveur.
+                    if (etats[nom] !== undefined) {
+                        groupe.toggleAttribute('open', etats[nom]);
+                    }
+
+                    if (groupe.dataset.groupeObserve) return;
+                    groupe.dataset.groupeObserve = '1';
+
+                    new MutationObserver(() => {
+                        const courant = lire();
+                        courant[nom] = groupe.hasAttribute('open');
+                        localStorage.setItem(CLE, JSON.stringify(courant));
+                    }).observe(groupe, { attributes: true, attributeFilter: ['open'] });
+                });
+            };
+
+            document.addEventListener('DOMContentLoaded', appliquer);
+            // Navigations Livewire : la sidebar est re-rendue sans rechargement.
+            document.addEventListener('livewire:navigated', appliquer);
+        })();
+    </script>
 
     @stack('scripts')
     @fluxScripts

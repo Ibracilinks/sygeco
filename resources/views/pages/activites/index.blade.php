@@ -87,70 +87,96 @@
             </div>
         </form>
 
-        <div class="overflow-hidden rounded-xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900">
-            <table class="min-w-full divide-y divide-slate-200 dark:divide-slate-700">
-                <thead class="bg-slate-50 dark:bg-slate-950">
-                    <tr>
-                        <th class="px-5 py-3 text-left text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">Activité</th>
-                        <th class="px-5 py-3 text-left text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">Extrant</th>
-                        <th class="px-5 py-3 text-left text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">Structure</th>
-                        <th class="px-5 py-3 text-left text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">Coût</th>
-                        <th class="px-5 py-3 text-left text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">Statut</th>
-                        <th class="px-5 py-3 text-left text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">Actions</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-slate-200 dark:divide-slate-700">
-                    @forelse ($activites as $activite)
-                        <tr class="align-top">
-                            <td class="px-5 py-4">
-                                <p class="text-sm font-semibold text-slate-900 dark:text-white">{{ Str::limit($activite->nom_activite, 90) }}</p>
-                                <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">{{ Str::limit($activite->indicateur_objectivement_verifiable, 90) }}</p>
-                                <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">Trimestres: {{ $activite->trimestres_selectionnes ?: '-' }}</p>
-                            </td>
-                            <td class="px-5 py-4 text-sm text-slate-700 dark:text-slate-200">{{ $activite->extrant->code ?? '-' }}</td>
-                            <td class="px-5 py-4 text-sm text-slate-700 dark:text-slate-200">{{ $activite->departement->nom ?? '-' }}</td>
-                            <td class="px-5 py-4 text-sm text-slate-700 dark:text-slate-200">{{ number_format($activite->cout, 0, ',', ' ') }} FCFA</td>
-                            <td class="px-5 py-4">
-                                <span class="rounded-full px-2 py-1 text-xs font-semibold
-                                {{ $activite->statut == 'valide'
-                                    ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-200'
-                                    : ($activite->statut == 'rejete'
-                                        ? 'bg-rose-100 text-rose-800 dark:bg-rose-900/40 dark:text-rose-200'
-                                        : (in_array($activite->statut, ['en_attente', 'soumis'])
-                                            ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-200'
-                                            : 'bg-slate-100 text-slate-800 dark:bg-slate-700 dark:text-slate-200')) }}">
-                                    {{ $activite->statut_label }}
-                                </span>
-                            </td>
-                            <td class="px-5 py-4">
-                                <div class="flex flex-wrap items-center gap-1">
-                                    <x-actions.view :href="route('activites.show', $activite)" />
+        {{-- Cadre logique : Résultat → Extrant → activités --}}
+        @forelse ($groupes as $blocResultat)
+            @php($resultat = $blocResultat['resultat'])
+            <div class="overflow-hidden rounded-xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900">
+                <div class="flex flex-col gap-1 border-b border-emerald-200 bg-emerald-50 px-5 py-3 dark:border-emerald-900/60 dark:bg-emerald-950/25 md:flex-row md:items-center md:justify-between">
+                    <h2 class="text-sm font-semibold text-emerald-900 dark:text-emerald-100">
+                        {{ $resultat?->code ? $resultat->code.' — ' : '' }}{{ $resultat?->libelle ?? 'Résultat non rattaché' }}
+                    </h2>
+                    <p class="shrink-0 text-xs font-medium text-emerald-800 dark:text-emerald-200">
+                        {{ $blocResultat['nb_activites'] }} activité(s) • {{ number_format($blocResultat['cout_total'], 0, ',', ' ') }} FCFA
+                    </p>
+                </div>
 
-                                    @if ($activite->estModifiable())
-                                        @can('edit_activites')
-                                            <x-actions.edit :href="route('activites.edit', $activite)" />
-                                        @endcan
-                                        @can('delete_activites')
-                                            <x-actions.delete :action="route('activites.destroy', $activite)" confirm="Confirmer la suppression ?" />
-                                        @endcan
-                                    @endif
-
-                                    @can('submit', $activite)
-                                        @if ($activite->peutEtreSoumis())
-                                            <x-actions.submit :action="route('activites.soumettre', $activite)" />
-                                        @endif
-                                    @endcan
-                                </div>
-                            </td>
-                        </tr>
-                    @empty
+                <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-slate-200 dark:divide-slate-700">
+                    <thead class="bg-slate-50 dark:bg-slate-950">
                         <tr>
-                            <td colspan="6" class="px-5 py-10 text-center text-sm text-slate-500 dark:text-slate-400">Aucune activité programmée trouvée.</td>
+                            <th class="px-5 py-3 text-left text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">Activité</th>
+                            <th class="px-5 py-3 text-left text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">Structure</th>
+                            <th class="px-5 py-3 text-left text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">Transmis le</th>
+                            <th class="px-5 py-3 text-left text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">Coût</th>
+                            <th class="px-5 py-3 text-left text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">Statut</th>
+                            <th class="px-5 py-3 text-left text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">Actions</th>
                         </tr>
-                    @endforelse
-                </tbody>
-            </table>
-        </div>
+                    </thead>
+                    <tbody class="divide-y divide-slate-200 dark:divide-slate-700">
+                        @foreach ($blocResultat['extrants'] as $blocExtrant)
+                            @php($extrant = $blocExtrant['extrant'])
+                            <tr class="bg-rose-50/60 dark:bg-rose-950/20">
+                                <td colspan="3" class="px-5 py-2 text-xs font-semibold text-slate-800 dark:text-slate-100">
+                                    {{ $extrant?->code ? $extrant->code.' — ' : '' }}{{ $extrant?->libelle ?? 'Extrant non rattaché' }}
+                                </td>
+                                <td class="px-5 py-2 text-xs font-semibold text-slate-800 dark:text-slate-100">{{ number_format($blocExtrant['cout_total'], 0, ',', ' ') }}</td>
+                                <td colspan="2" class="px-5 py-2"></td>
+                            </tr>
+
+                            @foreach ($blocExtrant['activites'] as $activite)
+                                <tr class="align-top">
+                                    <td class="px-5 py-4">
+                                        <p class="text-sm font-semibold text-slate-900 dark:text-white">{{ Str::limit($activite->nom_activite, 90) }}</p>
+                                        <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">{{ Str::limit($activite->indicateur_objectivement_verifiable, 90) }}</p>
+                                        <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">Trimestres: {{ $activite->trimestres_selectionnes ?: '-' }}</p>
+                                    </td>
+                                    <td class="px-5 py-4 text-sm text-slate-700 dark:text-slate-200">{{ $activite->departement->nom ?? '-' }}</td>
+                                    <td class="px-5 py-4 text-sm text-slate-700 dark:text-slate-200">{{ optional($activite->date_soumission)->format('d/m/Y H:i') ?? '—' }}</td>
+                                    <td class="px-5 py-4 text-sm text-slate-700 dark:text-slate-200">{{ number_format($activite->cout, 0, ',', ' ') }} FCFA</td>
+                                    <td class="px-5 py-4">
+                                        <span class="rounded-full px-2 py-1 text-xs font-semibold
+                                        {{ $activite->statut == 'valide'
+                                            ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-200'
+                                            : ($activite->statut == 'rejete'
+                                                ? 'bg-rose-100 text-rose-800 dark:bg-rose-900/40 dark:text-rose-200'
+                                                : (in_array($activite->statut, ['en_attente', 'soumis'])
+                                                    ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-200'
+                                                    : 'bg-slate-100 text-slate-800 dark:bg-slate-700 dark:text-slate-200')) }}">
+                                            {{ $activite->statut_label }}
+                                        </span>
+                                    </td>
+                                    <td class="px-5 py-4">
+                                        <div class="flex flex-wrap items-center gap-1">
+                                            <x-actions.view :href="route('activites.show', $activite)" />
+
+                                            @if ($activite->estModifiable())
+                                                @can('edit_activites')
+                                                    <x-actions.edit :href="route('activites.edit', $activite)" />
+                                                @endcan
+                                                @can('delete_activites')
+                                                    <x-actions.delete :action="route('activites.destroy', $activite)" confirm="Confirmer la suppression ?" />
+                                                @endcan
+                                            @endif
+
+                                            @can('submit', $activite)
+                                                @if ($activite->peutEtreSoumis())
+                                                    <x-actions.submit :action="route('activites.soumettre', $activite)" />
+                                                @endif
+                                            @endcan
+                                        </div>
+                                    </td>
+                                </tr>
+                            @endforeach
+                        @endforeach
+                    </tbody>
+                </table>
+                </div>
+            </div>
+        @empty
+            <div class="rounded-xl border border-slate-200 bg-white p-10 text-center dark:border-slate-700 dark:bg-slate-900">
+                <p class="text-sm text-slate-500 dark:text-slate-400">Aucune activité programmée trouvée.</p>
+            </div>
+        @endforelse
 
         <div class="mt-2">{{ $activites->links() }}</div>
     </div>

@@ -20,19 +20,25 @@ class ValidationController extends Controller
     public function index(Request $request)
     {
         $activites = $this->buildQuery($request)
-            ->with(['extrant.objectif', 'departement.parent', 'saisiePar', 'validationHistoriques.utilisateur'])
+            ->with(['extrant.objectif', 'departement.parent.parent', 'saisiePar', 'validationHistoriques.utilisateur'])
             ->orderBy('date_soumission', 'desc')
             ->get();
 
-        // Toutes les entités (directions, directions centrales, services) ayant au moins
-        // une activité à arbitrer : une carte par entité, triée par nom.
+        // Un service n'est jamais arbitré pour lui-même : ses activités sont concentrées
+        // dans l'entité qui le chapeaute (ex. SJC → DAGRH). Les autres entités sont
+        // arbitrées pour elles-mêmes.
         $groupes = $activites
-            ->groupBy('departement_id')
-            ->map(fn ($groupe) => [
-                'departement' => $groupe->first()->departement,
-                'activites' => $groupe->values(),
-                'cout_total' => (float) $groupe->sum('cout'),
-            ])
+            ->groupBy(fn ($activite) => $activite->departement?->entiteDeRattachement()?->id)
+            ->map(function ($groupe) {
+                $porteuse = $groupe->first()->departement;
+                $entite = $porteuse?->entiteDeRattachement();
+
+                return [
+                    'departement' => $entite,
+                    'activites' => $groupe->values(),
+                    'cout_total' => (float) $groupe->sum('cout'),
+                ];
+            })
             ->sortBy(fn ($groupe) => $groupe['departement']->nom ?? '', SORT_NATURAL | SORT_FLAG_CASE)
             ->values();
 
@@ -58,10 +64,18 @@ class ValidationController extends Controller
      */
     public function entite(Request $request, Departement $departement)
     {
-        $request->merge(['departement_id' => $departement->id]);
+        // Une Direction Centrale arbitre pour tout son sous-arbre : les activités de ses
+        // services y sont concentrées. Les activités déjà validées restent affichées afin
+        // que la date de validation soit consultable ; seules les activités en attente
+        // ouvrent les actions d'arbitrage.
+        $perimetre = $departement->sousArbreIds();
 
-        $activites = $this->buildQuery($request)
-            ->with(['extrant.resultat', 'extrant.objectif', 'departement.parent', 'saisiePar', 'validationHistoriques.utilisateur'])
+        $activites = $this->appliquerPerimetre(
+                Activite::query()->whereIn('statut', ['en_attente', 'valide']),
+                $request
+            )
+            ->whereIn('departement_id', $perimetre)
+            ->with(['extrant.resultat', 'extrant.objectif', 'departement.responsable', 'departement.parent', 'saisiePar', 'validePar', 'validationHistoriques.utilisateur'])
             ->orderBy('date_soumission', 'desc')
             ->get();
 
@@ -76,8 +90,14 @@ class ValidationController extends Controller
                     ->groupBy('extrant_id')
                     ->map(fn ($parExtrant) => [
                         'extrant' => $parExtrant->first()->extrant,
-                        'activites' => $parExtrant->values(),
-                        'cout_total' => (float) $parExtrant->sum('cout'),
+                        // Au sein d'un extrant, les activités sont classées par service
+                        // porteur (ordre alphabétique) puis par identifiant. La clé de tri
+                        // est une chaîne unique : `sortBy` ne sait pas comparer des tableaux.
+                        'activites' => $parExtrant
+                            ->sortBy(fn ($activite) => mb_strtolower($activite->departement->nom ?? '')
+                                .'|'.str_pad((string) $activite->id, 12, '0', STR_PAD_LEFT))
+                            ->values(),
+                        'cout_total' => (float) $parExtrant->where('statut', 'en_attente')->sum('cout'),
                     ])
                     ->sortBy(fn ($bloc) => sprintf('%010d|%s', $bloc['extrant']->ordre ?? PHP_INT_MAX, $bloc['extrant']->code ?? ''))
                     ->values();
@@ -85,8 +105,8 @@ class ValidationController extends Controller
                 return [
                     'resultat' => $resultat,
                     'extrants' => $extrantsGroupes,
-                    'cout_total' => (float) $parResultat->sum('cout'),
-                    'nb_activites' => $parResultat->count(),
+                    'cout_total' => (float) $parResultat->where('statut', 'en_attente')->sum('cout'),
+                    'nb_activites' => $parResultat->where('statut', 'en_attente')->count(),
                 ];
             })
             ->sortBy(fn ($bloc) => sprintf(
@@ -98,9 +118,15 @@ class ValidationController extends Controller
             ->values();
 
         $departement->load('parent', 'responsable');
-        $coutTotal = (float) $activites->sum('cout');
 
-        return view('pages.validations.entite', compact('departement', 'activites', 'resultats', 'coutTotal'));
+        $enAttente = $activites->where('statut', 'en_attente');
+        $coutTotal = (float) $enAttente->sum('cout');
+        $nbEnAttente = $enAttente->count();
+        $nbValidees = $activites->where('statut', 'valide')->count();
+
+        return view('pages.validations.entite', compact(
+            'departement', 'activites', 'resultats', 'coutTotal', 'nbEnAttente', 'nbValidees'
+        ));
     }
 
     public function show(Activite $activite)

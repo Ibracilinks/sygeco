@@ -37,7 +37,7 @@ class ActiviteController extends Controller
      */
     public function index(Request $request)
     {
-        $query = Activite::with(['extrant.objectif', 'departement', 'saisiePar']);
+        $query = Activite::with(['extrant.objectif', 'extrant.resultat', 'departement', 'saisiePar']);
 
         $exerciceId = ActiveExercice::id();
         $query->forExercice($exerciceId);
@@ -80,7 +80,21 @@ class ActiviteController extends Controller
             'rejete' => (clone $summaryQuery)->where('statut', 'rejete')->count(),
         ];
 
-        $activites = $query->orderBy('date_saisie', 'desc')->paginate(15)->withQueryString();
+        // Présentation en cadre logique : Résultat → Extrant → activités. L'ordre SQL
+        // suit la même hiérarchie pour qu'une page de pagination donne des blocs cohérents.
+        $activites = $query
+            ->leftJoin('extrants', 'extrants.id', '=', 'activites.extrant_id')
+            ->leftJoin('resultats', 'resultats.id', '=', 'extrants.resultat_id')
+            ->orderBy('resultats.ordre')
+            ->orderBy('resultats.code')
+            ->orderBy('extrants.ordre')
+            ->orderBy('extrants.code')
+            ->orderBy('activites.date_saisie', 'desc')
+            ->select('activites.*')
+            ->paginate(15)
+            ->withQueryString();
+
+        $groupes = $this->grouperParCadreLogique($activites->getCollection());
 
         $extrants = Extrant::query()
             ->with('objectif')
@@ -93,7 +107,7 @@ class ActiviteController extends Controller
         $statuts = ['brouillon', 'en_attente', 'valide', 'rejete'];
         $filters = $request->only(['search', 'extrant_id', 'departement_id', 'statut', 'trimestre']);
 
-        return view('pages.activites.index', compact('activites', 'extrants', 'departements', 'departementsGroupes', 'statuts', 'summary', 'filters'));
+        return view('pages.activites.index', compact('activites', 'groupes', 'extrants', 'departements', 'departementsGroupes', 'statuts', 'summary', 'filters'));
     }
 
     /**
@@ -114,8 +128,9 @@ class ActiviteController extends Controller
         $departementId = Auth::user()->departement_id ?? $departements->first()?->id;
 
         $selectedExtrant = $request->get('extrant_id');
+        $structuresGroupes = $this->structuresIntervenantesGroupes();
 
-        return view('pages.activites.create', compact('extrants', 'departements', 'departementsGroupes', 'departementId', 'selectedExtrant'));
+        return view('pages.activites.create', compact('extrants', 'departements', 'departementsGroupes', 'structuresGroupes', 'departementId', 'selectedExtrant'));
     }
 
     /**
@@ -126,6 +141,8 @@ class ActiviteController extends Controller
         $validated = $this->validerProgrammation($request, [
             'extrant_id' => 'required|exists:extrants,id',
             'departement_id' => 'required|exists:departements,id',
+            'structures_intervenantes' => 'nullable|array',
+            'structures_intervenantes.*' => 'integer|exists:departements,id',
             'nom_activite' => 'required|string',
             'indicateur_objectivement_verifiable' => 'required|string',
             'moyen_verification' => 'required|string',
@@ -137,9 +154,7 @@ class ActiviteController extends Controller
             'commentaires' => 'nullable|string',
         ]);
 
-        if (Auth::user()->hasRole('chef') && Auth::user()->departement_id) {
-            $validated['departement_id'] = Auth::user()->departement_id;
-        }
+        $validated['departement_id'] = $this->departementAutorise($validated['departement_id']);
 
         $activite = new Activite();
         $activite->extrant_id = $validated['extrant_id'];
@@ -156,6 +171,8 @@ class ActiviteController extends Controller
         $activite->date_saisie = now();
         $activite->commentaires = $validated['commentaires'] ?? null;
         $activite->save();
+
+        $activite->departements()->sync($this->structuresIntervenantes($validated));
 
         return redirect()->route('activites.index')
             ->with('success', 'Activité créée avec succès.');
@@ -191,9 +208,7 @@ class ActiviteController extends Controller
             'commentaires' => 'nullable|string',
         ]);
 
-        if (Auth::user()->hasRole('chef') && Auth::user()->departement_id) {
-            $validated['departement_id'] = Auth::user()->departement_id;
-        }
+        $validated['departement_id'] = $this->departementAutorise($validated['departement_id']);
 
         $activite = new Activite();
         $activite->extrant_id = null;
@@ -256,8 +271,11 @@ class ActiviteController extends Controller
             ->get();
         $departements = $this->departementsVisibles();
         $departementsGroupes = Departement::grouperParDirectionCentrale($departements);
+        $structuresGroupes = $this->structuresIntervenantesGroupes();
 
-        return view('pages.activites.edit', compact('activite', 'extrants', 'departements', 'departementsGroupes'));
+        $activite->load('departements');
+
+        return view('pages.activites.edit', compact('activite', 'extrants', 'departements', 'departementsGroupes', 'structuresGroupes'));
     }
 
     /**
@@ -268,6 +286,8 @@ class ActiviteController extends Controller
         $validated = $this->validerProgrammation($request, [
             'extrant_id' => 'required|exists:extrants,id',
             'departement_id' => 'required|exists:departements,id',
+            'structures_intervenantes' => 'nullable|array',
+            'structures_intervenantes.*' => 'integer|exists:departements,id',
             'nom_activite' => 'required|string',
             'indicateur_objectivement_verifiable' => 'required|string',
             'moyen_verification' => 'required|string',
@@ -279,9 +299,7 @@ class ActiviteController extends Controller
             'commentaires' => 'nullable|string',
         ]);
 
-        if (Auth::user()->hasRole('chef') && Auth::user()->departement_id) {
-            $validated['departement_id'] = Auth::user()->departement_id;
-        }
+        $validated['departement_id'] = $this->departementAutorise($validated['departement_id']);
 
         $ancienCout = (float) $activite->cout;
 
@@ -298,6 +316,8 @@ class ActiviteController extends Controller
             'trimestre_4' => isset($validated['trimestre_4']) ? 'oui' : 'non',
             'commentaires' => $validated['commentaires'] ?? null,
         ]);
+
+        $activite->departements()->sync($this->structuresIntervenantes($validated));
 
         $this->notifierChangementCout($activite, $ancienCout, (float) $validated['cout'], 'edition');
 
@@ -435,6 +455,80 @@ class ActiviteController extends Controller
         });
 
         return $validator->validate();
+    }
+
+    /**
+     * Regroupe une page d'activités en cadre logique : Résultat → Extrant → activités.
+     * L'ordre des blocs suit celui de la collection reçue (déjà trié en SQL).
+     *
+     * @param  \Illuminate\Support\Collection<int, Activite>  $activites
+     * @return \Illuminate\Support\Collection<int, array<string, mixed>>
+     */
+    private function grouperParCadreLogique($activites): \Illuminate\Support\Collection
+    {
+        return $activites
+            ->groupBy(fn (Activite $activite) => $activite->extrant?->resultat_id ?? 'sans-resultat')
+            ->map(fn ($parResultat) => [
+                'resultat' => $parResultat->first()->extrant?->resultat,
+                'cout_total' => (float) $parResultat->sum('cout'),
+                'nb_activites' => $parResultat->count(),
+                'extrants' => $parResultat
+                    ->groupBy(fn (Activite $activite) => $activite->extrant_id ?? 'sans-extrant')
+                    ->map(fn ($parExtrant) => [
+                        'extrant' => $parExtrant->first()->extrant,
+                        'activites' => $parExtrant->values(),
+                        'cout_total' => (float) $parExtrant->sum('cout'),
+                    ])
+                    ->values(),
+            ])
+            ->values();
+    }
+
+    /**
+     * Structures intervenantes retenues : entités participantes distinctes de la
+     * structure porteuse (elle est déjà portée par `departement_id`).
+     *
+     * @param  array<string, mixed>  $validated
+     * @return array<int, int>
+     */
+    private function structuresIntervenantes(array $validated): array
+    {
+        return collect($validated['structures_intervenantes'] ?? [])
+            ->map(fn ($id) => (int) $id)
+            ->reject(fn ($id) => $id === (int) $validated['departement_id'])
+            ->unique()
+            ->values()
+            ->all();
+    }
+
+    /**
+     * Entités proposées comme structures intervenantes : toute l'organisation,
+     * une activité pouvant mobiliser des entités hors du périmètre de son porteur.
+     *
+     * @return array<string, array<int, Departement>>
+     */
+    private function structuresIntervenantesGroupes(): array
+    {
+        return Departement::grouperParDirectionCentrale(Departement::active()->ordered()->get());
+    }
+
+    /**
+     * Structure retenue pour l'activité, ramenée au périmètre de l'utilisateur.
+     *
+     * Un chef choisit librement parmi les entités de son sous-arbre (sa Direction
+     * Centrale et les services qu'elle chapeaute) ; une structure hors périmètre
+     * est ramenée à son entité de rattachement plutôt qu'acceptée telle quelle.
+     * Les profils non restreints (superadmin, dbcgoq) gardent leur choix.
+     */
+    private function departementAutorise($departementId): int
+    {
+        $perimetre = Auth::user()?->perimetreActivitesIds();
+
+        if ($perimetre === null || in_array((int) $departementId, $perimetre, true)) {
+            return (int) $departementId;
+        }
+
+        return (int) (Auth::user()->departement_id ?? $departementId);
     }
 
     private function departementsVisibles()

@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\ActiviteEvaluation;
 use App\Models\Departement;
 use App\Models\Exercice;
 use App\Support\ActiveExercice;
@@ -294,6 +295,40 @@ class DashboardDataService
     }
 
     /**
+     * Répartition de l'état d'exécution des activités validées, telle qu'évaluée
+     * en fin d'année. Les activités validées non encore évaluées forment une part
+     * distincte : elles ne sont pas assimilées à des activités non réalisées.
+     *
+     * @return array<string, int>
+     */
+    public function getExecutionActivitesValidees(): array
+    {
+        return Cache::remember("dashboard_execution_validees_{$this->annee}", 3600, function () {
+            $comptes = DB::table('activites')
+                ->join('extrants', 'activites.extrant_id', '=', 'extrants.id')
+                ->join('objectifs', 'extrants.objectif_id', '=', 'objectifs.id')
+                ->leftJoin('activite_evaluations', function ($join) {
+                    $join->on('activite_evaluations.activite_id', '=', 'activites.id')
+                        ->where('activite_evaluations.periode', '=', ActiviteEvaluation::PERIODE_FIN_ANNEE);
+                })
+                ->where('objectifs.annee', $this->annee)
+                ->where('activites.statut', 'valide')
+                ->whereNull('activites.deleted_at')
+                ->selectRaw('activite_evaluations.statut_execution as statut, COUNT(activites.id) as total')
+                ->groupBy('activite_evaluations.statut_execution')
+                ->pluck('total', 'statut')
+                ->toArray();
+
+            return [
+                'Réalisée' => (int) ($comptes['realise'] ?? 0),
+                'En cours de réalisation' => (int) ($comptes['en_cours'] ?? 0),
+                'Non réalisée' => (int) ($comptes['non_realise'] ?? 0),
+                'Non évaluée' => (int) ($comptes[''] ?? 0),
+            ];
+        });
+    }
+
+    /**
      * Activités par statut
      */
     public function getActivitesParStatut()
@@ -480,6 +515,7 @@ class DashboardDataService
         $departementsEnRetard = collect($this->getDepartementsEnRetard());
         $budgetParDepartement = collect($this->getBudgetParDepartement());
 
+        $executionValidees = $this->getExecutionActivitesValidees();
         $maxActiviteCout = (float) max(1, (float) $topActivites->max('cout'));
         $yearOptions = $this->anneesExercices();
         $totalActivitesStatut = array_sum($activitesParStatut);
@@ -527,6 +563,10 @@ class DashboardDataService
                 'activites_statut' => [
                     'labels' => array_keys($activitesParStatut),
                     'values' => array_values($activitesParStatut),
+                ],
+                'execution_validees' => [
+                    'labels' => array_keys($executionValidees),
+                    'values' => array_values($executionValidees),
                 ],
                 'activites_trimestre' => [
                     'labels' => ['T1', 'T2', 'T3', 'T4'],

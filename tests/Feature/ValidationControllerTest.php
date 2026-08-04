@@ -2,6 +2,7 @@
 
 use App\Models\Activite;
 use App\Models\Departement;
+use App\Models\Extrant;
 use App\Models\User;
 use App\Notifications\ActiviteRefusee;
 use App\Notifications\ActiviteValidee;
@@ -124,4 +125,118 @@ test('refuser exige un motif valide', function () {
         ->from(route('validations.index'))
         ->post(route('validations.refuser', $activite), ['motif_refus' => 'court'])
         ->assertSessionHasErrors('motif_refus');
+});
+
+/*
+|--------------------------------------------------------------------------
+| Concentration de l'arbitrage au niveau de la Direction Centrale
+|--------------------------------------------------------------------------
+*/
+
+test("l'index concentre les activités des services dans leur Direction Centrale", function () {
+    $admin = userWithRole('dbcgoq');
+    $dc = Departement::factory()->departement()->create(['nom' => 'DAGRH']);
+    $service = Departement::factory()->service()->enfantDe($dc)->create(['nom' => 'SJC']);
+
+    Activite::factory()->pourDepartement($service)->create(['statut' => 'en_attente', 'cout' => 2000000]);
+    Activite::factory()->pourDepartement($dc)->create(['statut' => 'en_attente', 'cout' => 3000000]);
+
+    $response = $this->actingAs($admin)->get(route('validations.index'))->assertOk();
+
+    // Le service n'apparaît nulle part : ni carte, ni lien, ni mention. Ses activités
+    // et son budget sont comptés dans la carte de sa Direction Centrale.
+    $response->assertSee('DAGRH');
+    $response->assertDontSee('SJC');
+    $response->assertSee(route('validations.entite', $dc));
+    $response->assertDontSee(route('validations.entite', $service));
+    $response->assertSee('2 act.');
+    $response->assertSee('5 000 000');
+});
+
+test("un service rattaché à une Direction remonte lui aussi dans son entité", function () {
+    $admin = userWithRole('dbcgoq');
+
+    // Cas réel : un service peut dépendre d'une Direction et non d'une Direction Centrale.
+    $direction = Departement::factory()->direction()->create(['nom' => 'DAGRH']);
+    $service = Departement::factory()->service()->enfantDe($direction)->create(['nom' => 'SJC']);
+
+    Activite::factory()->pourDepartement($service)->create(['statut' => 'en_attente']);
+
+    $this->actingAs($admin)->get(route('validations.index'))
+        ->assertOk()
+        ->assertSee('DAGRH')
+        ->assertDontSee('SJC')
+        ->assertSee(route('validations.entite', $direction))
+        ->assertDontSee(route('validations.entite', $service));
+});
+
+test("un service à deux niveaux de profondeur remonte à son entité non-service", function () {
+    $admin = userWithRole('dbcgoq');
+
+    $direction = Departement::factory()->direction()->create(['nom' => 'Direction Generale']);
+    $dc = Departement::factory()->departement()->enfantDe($direction)->create(['nom' => 'DBCGOQ']);
+    $service = Departement::factory()->service()->enfantDe($dc)->create(['nom' => 'Service Qualite']);
+
+    Activite::factory()->pourDepartement($service)->create(['statut' => 'en_attente']);
+
+    // Le rattachement vise le plus proche ancêtre non-service, pas la racine.
+    $this->actingAs($admin)->get(route('validations.index'))
+        ->assertOk()
+        ->assertSee('DBCGOQ')
+        ->assertDontSee('Service Qualite')
+        ->assertSee(route('validations.entite', $dc))
+        ->assertDontSee(route('validations.entite', $service));
+});
+
+test("la page d'une Direction Centrale liste les activités de ses services", function () {
+    $admin = userWithRole('dbcgoq');
+    $dc = Departement::factory()->departement()->create();
+    $service = Departement::factory()->service()->enfantDe($dc)->create(['nom' => 'Service Marchés']);
+
+    $activite = Activite::factory()->pourDepartement($service)->create([
+        'statut' => 'en_attente',
+        'nom_activite' => 'Activité portée par le service',
+    ]);
+
+    $this->actingAs($admin)->get(route('validations.entite', $dc))
+        ->assertOk()
+        ->assertSee('Activité portée par le service')
+        ->assertSee('Service Marchés')
+        ->assertSee($activite->indicateur_objectivement_verifiable)
+        ->assertSee('Validé le');
+});
+
+test("les activités d'un même extrant sont classées par service alphabétiquement", function () {
+    $admin = userWithRole('dbcgoq');
+    $dc = Departement::factory()->departement()->create();
+    $zeta = Departement::factory()->service()->enfantDe($dc)->create(['nom' => 'Zeta Service']);
+    $alpha = Departement::factory()->service()->enfantDe($dc)->create(['nom' => 'Alpha Service']);
+
+    // Deux services sous un même extrant : c'est la comparaison entre les deux
+    // qui exerce la clé de tri.
+    $extrant = Extrant::factory()->create();
+    Activite::factory()->pourExtrant($extrant)->pourDepartement($zeta)->create(['statut' => 'en_attente']);
+    Activite::factory()->pourExtrant($extrant)->pourDepartement($alpha)->create(['statut' => 'en_attente']);
+
+    $contenu = $this->actingAs($admin)->get(route('validations.entite', $dc))
+        ->assertOk()
+        ->getContent();
+
+    expect(strpos($contenu, 'Alpha Service'))->toBeLessThan(strpos($contenu, 'Zeta Service'));
+});
+
+test("la page d'arbitrage affiche les activités déjà validées avec leur date de validation", function () {
+    $admin = userWithRole('dbcgoq');
+    $dc = Departement::factory()->departement()->create();
+
+    Activite::factory()->pourDepartement($dc)->create([
+        'statut' => 'valide',
+        'nom_activite' => 'Activité déjà validée',
+        'date_validation' => now()->setDate(2026, 4, 3)->setTime(9, 30),
+    ]);
+
+    $this->actingAs($admin)->get(route('validations.entite', $dc))
+        ->assertOk()
+        ->assertSee('Activité déjà validée')
+        ->assertSee('03/04/2026 09:30');
 });

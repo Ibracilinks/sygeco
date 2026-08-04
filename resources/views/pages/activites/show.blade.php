@@ -189,7 +189,7 @@
                         </dd>
                     </div>
                     <div>
-                        <dt class="text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">Structures co-responsables</dt>
+                        <dt class="text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">Structures intervenantes</dt>
                         <dd class="mt-1 font-medium text-slate-900 dark:text-white">
                             {{ $activite->departements->isNotEmpty() ? $activite->departements->pluck('nom')->join(' / ') : '—' }}
                         </dd>

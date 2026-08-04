@@ -82,10 +82,12 @@
 
             <article class="rounded-xl border border-slate-200 bg-white p-6 dark:border-slate-700 dark:bg-slate-900">
                 <div class="mb-4 border-b border-slate-200 pb-4 dark:border-slate-700">
-                    <h2 class="text-lg font-semibold text-slate-900 dark:text-white">Realisation</h2>
-                    <p class="text-sm text-slate-500 dark:text-slate-400">Part des activites validees</p>
+                    <h2 class="text-lg font-semibold text-slate-900 dark:text-white">Execution des activites validees</h2>
+                    <p class="text-sm text-slate-500 dark:text-slate-400">Etat d'execution evalue en fin d'annee</p>
                 </div>
-                <x-charts.gauge-chart :value="$kpis['taux_realisation']" title="Taux de completion" unit="%" :size="210" />
+                <div id="dash-chart-execution-validees">
+                <x-charts.pie-chart :labels="$charts['execution_validees']['labels']" :data="$charts['execution_validees']['values']" type="pie" :height="300" />
+                </div>
             </article>
         </section>
 
@@ -247,6 +249,7 @@
             ],
             'charts' => [
                 ['containerId' => 'dash-chart-evolution', 'title' => 'Évolution trimestrielle'],
+                ['containerId' => 'dash-chart-execution-validees', 'title' => 'Exécution des activités validées'],
                 ['containerId' => 'dash-chart-budget-objectif', 'title' => 'Budget par objectif'],
                 ['containerId' => 'dash-chart-top-extrants', 'title' => 'Top extrants'],
                 ['containerId' => 'dash-chart-distribution', 'title' => 'Distribution budgétaire'],

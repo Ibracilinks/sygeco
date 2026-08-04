@@ -14,8 +14,14 @@
                     @if ($departement->responsable) • responsable : {{ $departement->responsable->name }} @endif
                 </p>
                 <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
-                    {{ $activites->count() }} activité(s) soumise(s) — {{ number_format($coutTotal, 0, ',', ' ') }} FCFA à arbitrer.
+                    {{ $nbEnAttente }} activité(s) en attente — {{ number_format($coutTotal, 0, ',', ' ') }} FCFA à arbitrer
+                    @if ($nbValidees) • {{ $nbValidees }} déjà validée(s) @endif
                 </p>
+                @if ($departement->type === \App\Models\Departement::TYPE_DEPARTEMENT)
+                    <p class="mt-1 text-xs text-slate-400 dark:text-slate-500">
+                        Inclut les activités des services rattachés à cette Direction Centrale.
+                    </p>
+                @endif
             </div>
             <div class="flex flex-wrap gap-2">
                 <a href="{{ route('validations.exporter', ['departement_id' => $departement->id]) }}"
@@ -66,18 +72,21 @@
                         {{ $resultat?->code ? $resultat->code.' — ' : '' }}{{ $resultat?->libelle ?? 'Résultat non rattaché' }}
                     </h2>
                     <p class="shrink-0 text-xs font-medium text-emerald-800 dark:text-emerald-200">
-                        {{ $blocResultat['nb_activites'] }} activité(s) • {{ number_format($blocResultat['cout_total'], 0, ',', ' ') }} FCFA
+                        {{ $blocResultat['nb_activites'] }} activité(s) en attente • {{ number_format($blocResultat['cout_total'], 0, ',', ' ') }} FCFA
                     </p>
                 </div>
 
+                <div class="overflow-x-auto">
                 <table class="min-w-full divide-y divide-slate-200 dark:divide-slate-700">
                     <thead class="bg-slate-50 dark:bg-slate-950">
                         <tr>
                             <th class="px-5 py-3 text-left"><input type="checkbox" class="select-group rounded border-slate-300" onchange="toggleGroup(this)"></th>
                             <th class="px-5 py-3 text-left text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">Activité</th>
+                            <th class="px-5 py-3 text-left text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">Responsable</th>
+                            <th class="px-5 py-3 text-left text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">Indicateur objectivement vérifiable</th>
                             <th class="px-5 py-3 text-left text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">Moyen de vérification</th>
                             <th class="px-5 py-3 text-left text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">Chrono.</th>
-                            <th class="px-5 py-3 text-left text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">Soumise le</th>
+                            <th class="px-5 py-3 text-left text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">Validé le</th>
                             <th class="px-5 py-3 text-left text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">Coût</th>
                             <th class="px-5 py-3 text-left text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">Actions</th>
                         </tr>
@@ -86,7 +95,7 @@
                         @foreach ($blocResultat['extrants'] as $blocExtrant)
                             @php $extrant = $blocExtrant['extrant']; @endphp
                             <tr class="bg-rose-50/60 dark:bg-rose-950/20">
-                                <td colspan="5" class="px-5 py-2 text-xs font-semibold text-slate-800 dark:text-slate-100">
+                                <td colspan="7" class="px-5 py-2 text-xs font-semibold text-slate-800 dark:text-slate-100">
                                     {{ $extrant?->code ? $extrant->code.' — ' : '' }}{{ $extrant?->libelle ?? 'Extrant non rattaché' }}
                                 </td>
                                 <td class="px-5 py-2 text-xs font-semibold text-slate-800 dark:text-slate-100">{{ number_format($blocExtrant['cout_total'], 0, ',', ' ') }}</td>
@@ -117,28 +126,49 @@
                                         'created_at' => optional($item->created_at)->format('d/m/Y H:i'),
                                     ]);
                                 @endphp
-                                <tr class="align-top">
-                                    <td class="px-5 py-4"><input type="checkbox" class="row-checkbox rounded border-slate-300" value="{{ $activite->id }}" data-activite="{{ json_encode($arbData, JSON_UNESCAPED_UNICODE) }}"></td>
+                                @php $enAttente = $activite->statut === 'en_attente'; @endphp
+                                <tr class="align-top {{ $enAttente ? '' : 'bg-emerald-50/40 dark:bg-emerald-950/10' }}">
+                                    <td class="px-5 py-4">
+                                        @if ($enAttente)
+                                            <input type="checkbox" class="row-checkbox rounded border-slate-300" value="{{ $activite->id }}" data-activite="{{ json_encode($arbData, JSON_UNESCAPED_UNICODE) }}">
+                                        @endif
+                                    </td>
                                     <td class="px-5 py-4">
                                         <p class="text-sm font-semibold text-slate-900 dark:text-white">ACT-{{ $activite->id }} • {{ Str::limit($activite->nom_activite, 80) }}</p>
-                                        <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">{{ Str::limit($activite->indicateur_objectivement_verifiable, 80) }}</p>
                                         <p class="mt-1 text-xs text-slate-400 dark:text-slate-500">Saisie : {{ $activite->saisiePar->name ?? '—' }}</p>
+                                        @unless ($enAttente)
+                                            <span class="mt-1 inline-block rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-semibold text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-200">Validée</span>
+                                        @endunless
                                     </td>
+                                    <td class="px-5 py-4">
+                                        <p class="text-sm font-medium text-slate-800 dark:text-slate-100">{{ $activite->departement->nom ?? '—' }}</p>
+                                        @if ($activite->departement?->responsable)
+                                            <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">{{ $activite->departement->responsable->name }}</p>
+                                        @endif
+                                    </td>
+                                    <td class="px-5 py-4 text-xs text-slate-700 dark:text-slate-200">{{ Str::limit($activite->indicateur_objectivement_verifiable, 60) }}</td>
                                     <td class="px-5 py-4 text-xs text-slate-700 dark:text-slate-200">{{ Str::limit($activite->moyen_verification, 40) }}</td>
                                     <td class="px-5 py-4 text-xs font-medium text-slate-700 dark:text-slate-200">{{ $activite->trimestres_selectionnes ?: '-' }}</td>
-                                    <td class="px-5 py-4 text-sm text-slate-700 dark:text-slate-200">{{ optional($activite->date_soumission)->format('d/m/Y H:i') ?? '-' }}</td>
+                                    <td class="px-5 py-4 text-sm text-slate-700 dark:text-slate-200">
+                                        {{ optional($activite->date_validation)->format('d/m/Y H:i') ?? '—' }}
+                                        @if ($activite->date_validation && $activite->validePar)
+                                            <span class="mt-1 block text-xs text-slate-400 dark:text-slate-500">{{ $activite->validePar->name }}</span>
+                                        @endif
+                                    </td>
                                     <td class="px-5 py-4 text-sm font-medium text-slate-700 dark:text-slate-200">{{ number_format($activite->cout, 0, ',', ' ') }}</td>
                                     <td class="px-5 py-4">
                                         <div class="flex flex-wrap items-center gap-1">
-                                            <x-actions.view :href="route('validations.show', $activite)" wire:navigate />
-                                            <x-action variant="validate" icon="check" type="button" label="Valider"
-                                                onclick="openValiderModal({{ $activite->id }}, '{{ addslashes($activite->nom_activite) }}', {{ json_encode($historique) }})" />
-                                            <x-action variant="refuse" icon="x-mark" type="button" label="Rejeter"
-                                                onclick="openRefuserModal({{ $activite->id }}, '{{ addslashes($activite->nom_activite) }}', {{ json_encode($historique) }})" />
-                                            <x-action variant="edit" icon="pencil" type="button" label="Modifier"
-                                                onclick="openArbitrerModifier({{ $activite->id }})" />
-                                            <x-action variant="delete" icon="trash" type="button" label="Supprimer"
-                                                onclick="openArbitrerSupprimer({{ $activite->id }}, '{{ addslashes($activite->nom_activite) }}')" />
+                                            <x-actions.view :href="$enAttente ? route('validations.show', $activite) : route('activites.show', $activite)" wire:navigate />
+                                            @if ($enAttente)
+                                                <x-action variant="validate" icon="check" type="button" label="Valider"
+                                                    onclick="openValiderModal({{ $activite->id }}, '{{ addslashes($activite->nom_activite) }}', {{ json_encode($historique) }})" />
+                                                <x-action variant="refuse" icon="x-mark" type="button" label="Rejeter"
+                                                    onclick="openRefuserModal({{ $activite->id }}, '{{ addslashes($activite->nom_activite) }}', {{ json_encode($historique) }})" />
+                                                <x-action variant="edit" icon="pencil" type="button" label="Modifier"
+                                                    onclick="openArbitrerModifier({{ $activite->id }})" />
+                                                <x-action variant="delete" icon="trash" type="button" label="Supprimer"
+                                                    onclick="openArbitrerSupprimer({{ $activite->id }}, '{{ addslashes($activite->nom_activite) }}')" />
+                                            @endif
                                         </div>
                                     </td>
                                 </tr>
@@ -146,6 +176,7 @@
                         @endforeach
                     </tbody>
                 </table>
+                </div>
             </div>
         @empty
             <div class="rounded-xl border border-slate-200 bg-white p-10 text-center dark:border-slate-700 dark:bg-slate-900">

@@ -49,6 +49,120 @@
             </div>
         </div>
 
+        {{-- Analytique de l'exercice actif, agrégée sur le sous-arbre de l'entité --}}
+        <div class="rounded-xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900">
+            <div class="flex flex-col gap-1 border-b border-slate-200 px-6 py-4 dark:border-slate-700 md:flex-row md:items-center md:justify-between">
+                <div>
+                    <h2 class="text-lg font-semibold text-slate-900 dark:text-white">
+                        Analytique — exercice {{ $analytique['exercice']->annee ?? '—' }}
+                    </h2>
+                    <p class="text-sm text-slate-500 dark:text-slate-400">
+                        Périmètre : cette entité et ses {{ $analytique['nb_entites'] - 1 }} entité(s) rattachée(s).
+                    </p>
+                </div>
+            </div>
+
+            @if (! $analytique['exercice'])
+                <p class="p-6 text-sm text-slate-500 dark:text-slate-400">Aucun exercice actif : sélectionnez un exercice pour afficher l'analytique.</p>
+            @elseif ($analytique['nb_activites'] === 0)
+                <p class="p-6 text-sm text-slate-500 dark:text-slate-400">Aucune activité programmée sur cet exercice pour ce périmètre.</p>
+            @else
+                {{-- Chaîne du cadre logique effectivement portée par le périmètre --}}
+                <div class="grid grid-cols-2 gap-4 border-b border-slate-200 p-6 dark:border-slate-700 lg:grid-cols-4">
+                    <div>
+                        <p class="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">Résultats couverts</p>
+                        <p class="mt-2 text-3xl font-semibold text-slate-900 dark:text-white">{{ $analytique['nb_resultats'] }}</p>
+                    </div>
+                    <div>
+                        <p class="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">Extrants couverts</p>
+                        <p class="mt-2 text-3xl font-semibold text-slate-900 dark:text-white">{{ $analytique['nb_extrants'] }}</p>
+                    </div>
+                    <div>
+                        <p class="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">Activités</p>
+                        <p class="mt-2 text-3xl font-semibold text-slate-900 dark:text-white">{{ $analytique['nb_activites'] }}</p>
+                    </div>
+                    <div>
+                        <p class="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">Taux de validation</p>
+                        <p class="mt-2 text-3xl font-semibold text-slate-900 dark:text-white">{{ number_format($analytique['taux_validation'], 1, ',', ' ') }}%</p>
+                    </div>
+                </div>
+
+                {{-- Budget et circuit de validation --}}
+                <div class="grid grid-cols-1 gap-6 border-b border-slate-200 p-6 dark:border-slate-700 lg:grid-cols-2">
+                    <div>
+                        <p class="text-sm font-medium text-slate-700 dark:text-slate-200">Budget</p>
+                        <dl class="mt-3 space-y-2 text-sm">
+                            <div class="flex justify-between">
+                                <dt class="text-slate-500 dark:text-slate-400">Planifié</dt>
+                                <dd class="font-semibold text-slate-900 dark:text-white">{{ number_format($analytique['budget_planifie'], 0, ',', ' ') }} FCFA</dd>
+                            </div>
+                            <div class="flex justify-between">
+                                <dt class="text-slate-500 dark:text-slate-400">Consommé (évalué)</dt>
+                                <dd class="font-semibold text-slate-900 dark:text-white">{{ number_format($analytique['budget_consomme'], 0, ',', ' ') }} FCFA</dd>
+                            </div>
+                        </dl>
+                        <div class="mt-3 h-2 w-full overflow-hidden rounded-full bg-slate-200 dark:bg-slate-800">
+                            <div class="h-full rounded-full bg-emerald-500" style="width: {{ min(100, $analytique['taux_consommation']) }}%"></div>
+                        </div>
+                        <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">{{ number_format($analytique['taux_consommation'], 1, ',', ' ') }}% du budget planifié.</p>
+                    </div>
+
+                    <div>
+                        <p class="text-sm font-medium text-slate-700 dark:text-slate-200">Circuit de validation</p>
+                        @php
+                            $libellesStatut = ['brouillon' => 'Brouillon', 'en_attente' => 'En attente', 'valide' => 'Validé', 'rejete' => 'Rejeté'];
+                            $libellesExecution = ['realise' => 'Réalisée', 'en_cours' => 'En cours', 'non_realise' => 'Non réalisée', 'non_evaluee' => 'Non évaluée'];
+                        @endphp
+                        <dl class="mt-3 space-y-2 text-sm">
+                            @foreach ($analytique['statuts'] as $statut => $nombre)
+                                <div class="flex justify-between">
+                                    <dt class="text-slate-500 dark:text-slate-400">{{ $libellesStatut[$statut] }}</dt>
+                                    <dd class="font-semibold text-slate-900 dark:text-white">{{ $nombre }}</dd>
+                                </div>
+                            @endforeach
+                        </dl>
+
+                        <p class="mt-4 text-sm font-medium text-slate-700 dark:text-slate-200">Exécution des validées (fin d'année)</p>
+                        <dl class="mt-3 space-y-2 text-sm">
+                            @foreach ($analytique['execution'] as $statut => $nombre)
+                                <div class="flex justify-between">
+                                    <dt class="text-slate-500 dark:text-slate-400">{{ $libellesExecution[$statut] }}</dt>
+                                    <dd class="font-semibold text-slate-900 dark:text-white">{{ $nombre }}</dd>
+                                </div>
+                            @endforeach
+                        </dl>
+                    </div>
+                </div>
+
+                {{-- Contribution de chaque entité du sous-arbre --}}
+                @if ($analytique['par_entite']->count() > 1)
+                    <div class="overflow-x-auto p-6">
+                        <p class="mb-3 text-sm font-medium text-slate-700 dark:text-slate-200">Ventilation par entité</p>
+                        <table class="min-w-full divide-y divide-slate-200 dark:divide-slate-700">
+                            <thead class="bg-slate-50 dark:bg-slate-950">
+                                <tr>
+                                    <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">Entité</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">Activités</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">Validées</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">Budget</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-200 dark:divide-slate-700">
+                                @foreach ($analytique['par_entite'] as $ligne)
+                                    <tr>
+                                        <td class="px-4 py-3 text-sm text-slate-800 dark:text-slate-100">{{ $ligne['nom'] }}</td>
+                                        <td class="px-4 py-3 text-sm text-slate-700 dark:text-slate-200">{{ $ligne['nb_activites'] }}</td>
+                                        <td class="px-4 py-3 text-sm text-slate-700 dark:text-slate-200">{{ $ligne['validees'] }}</td>
+                                        <td class="px-4 py-3 text-sm text-slate-700 dark:text-slate-200">{{ number_format($ligne['budget'], 0, ',', ' ') }} FCFA</td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                @endif
+            @endif
+        </div>
+
         <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
             <div class="rounded-xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900">
                 <div class="border-b border-slate-200 px-6 py-4 dark:border-slate-700">

@@ -99,6 +99,25 @@ class Departement extends Model
     }
 
     /**
+     * Entité de rattachement pour l'arbitrage : les activités d'un service sont
+     * concentrées dans l'entité qui le chapeaute, c'est-à-dire son plus proche
+     * ancêtre qui n'est pas lui-même un service. Selon la hiérarchie réelle, ce
+     * peut être une Direction Centrale (ex. DBCGOQ) comme une Direction (ex. DAGRH).
+     *
+     * Toute entité qui n'est pas un service se représente elle-même. Un service
+     * orphelin (sans ancêtre non-service) se représente également lui-même, faute
+     * de quoi ses activités disparaîtraient de l'arbitrage.
+     */
+    public function entiteDeRattachement(): self
+    {
+        if ($this->type !== self::TYPE_SERVICE) {
+            return $this;
+        }
+
+        return $this->ancetres()->last(fn (self $ancetre) => $ancetre->type !== self::TYPE_SERVICE) ?? $this;
+    }
+
+    /**
      * Chaîne des ancêtres, de la racine jusqu'au parent direct.
      *
      * @return \Illuminate\Support\Collection<int, Departement>

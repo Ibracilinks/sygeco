@@ -66,15 +66,24 @@ class EvaluationController extends Controller
         $peutSaisir = Auth::user()->can('validate_activites')
             || ($exercice?->enPeriodeEvaluationPour($periode) ?? false);
 
-        // L'autre période, en lecture seule, pour comparaison.
-        $autrePeriode = $periode === ActiviteEvaluation::PERIODE_MI_PARCOURS
-            ? ActiviteEvaluation::PERIODE_FIN_ANNEE
-            : ActiviteEvaluation::PERIODE_MI_PARCOURS;
+        // Chaque période a sa propre page, strictement cloisonnée : mi-parcours et
+        // fin d'année ne montrent jamais les données de l'autre période.
+        $peutSaisirBudget = $this->peutSaisirBudget();
 
-        return view('pages.evaluations.index', compact(
+        return view('pages.evaluations.'.ActiviteEvaluation::slugDePeriode($periode), compact(
             'activites', 'extrants', 'departements', 'departementsGroupes', 'summary', 'filters',
-            'exercice', 'periode', 'autrePeriode', 'peutSaisir', 'debutFenetre', 'finFenetre'
+            'exercice', 'periode', 'peutSaisir', 'peutSaisirBudget', 'debutFenetre', 'finFenetre'
         ));
+    }
+
+    /**
+     * Seule l'administration (superadmin / DBCGOQ) renseigne le budget consommé lors
+     * de l'évaluation : les chefs et agents saisissent l'état d'exécution, l'observation
+     * et la valeur d'indicateur, pas le montant utilisé.
+     */
+    private function peutSaisirBudget(): bool
+    {
+        return Auth::user()?->hasAnyRole(['superadmin', 'dbcgoq']) ?? false;
     }
 
     /**
@@ -114,6 +123,13 @@ class EvaluationController extends Controller
             'montant_utilise' => ['nullable', 'numeric', 'min:0', 'max:'.Activite::MONTANT_MAX],
             'valeur_indicateur' => ['nullable', 'numeric', 'max:'.Activite::MONTANT_MAX],
         ]);
+
+        // Le budget consommé est réservé à l'administration : pour les autres profils
+        // le champ est absent du formulaire et une valeur postée est ignorée, sans
+        // écraser le montant déjà enregistré.
+        if (! $this->peutSaisirBudget()) {
+            unset($validated['montant_utilise']);
+        }
 
         $activite->evaluations()->updateOrCreate(
             ['periode' => $periode],
