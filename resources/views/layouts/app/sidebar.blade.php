@@ -67,7 +67,7 @@
                     </flux:sidebar.item>
                 @endif
 
-                @if ($currentUser->hasAnyRole(['superadmin', 'dbcgoq', 'chef']))
+                @if ($currentUser->hasAnyRole(['superadmin', 'dbcgoq', 'chef', 'agent-planification', 'suivi-evaluation']))
                     <flux:sidebar.item icon="chart-pie" href="{{ route('objectifs.index') }}"
                         :current="request()->routeIs('objectifs.*')">
                         {{ __('Objectifs') }}
@@ -110,15 +110,17 @@
                     </flux:sidebar.item>
                 @endif
 
-                <flux:sidebar.item icon="chart-bar" href="{{ route('evaluations.index', 'mi-parcours') }}"
-                    :current="request()->fullUrlIs(route('evaluations.index', 'mi-parcours').'*')">
-                    {{ __('Évaluation : Mi-parcours') }}
-                </flux:sidebar.item>
+                @unless ($currentUser->hasRole('agent-planification'))
+                    <flux:sidebar.item icon="chart-bar" href="{{ route('evaluations.index', 'mi-parcours') }}"
+                        :current="request()->fullUrlIs(route('evaluations.index', 'mi-parcours').'*')">
+                        {{ __('Évaluation : Mi-parcours') }}
+                    </flux:sidebar.item>
 
-                <flux:sidebar.item icon="chart-bar-square" href="{{ route('evaluations.index', 'fin-annee') }}"
-                    :current="request()->fullUrlIs(route('evaluations.index', 'fin-annee').'*')">
-                    {{ __("Évaluation : Fin d'année") }}
-                </flux:sidebar.item>
+                    <flux:sidebar.item icon="chart-bar-square" href="{{ route('evaluations.index', 'fin-annee') }}"
+                        :current="request()->fullUrlIs(route('evaluations.index', 'fin-annee').'*')">
+                        {{ __("Évaluation : Fin d'année") }}
+                    </flux:sidebar.item>
+                @endunless
 
                 @php($nbNonLues = auth()->user()?->unreadNotifications()->count() ?? 0)
                 <flux:sidebar.item icon="bell" href="{{ route('notifications.index') }}"

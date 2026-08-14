@@ -7,15 +7,16 @@ use App\Models\Extrant;
 use App\Models\Objectif;
 use App\Models\Resultat;
 use App\Support\ActiveExercice;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 
-uses(\Illuminate\Foundation\Testing\RefreshDatabase::class);
+uses(RefreshDatabase::class);
 
 /**
  * Crée une activité rattachée au cadre logique d'un exercice donné.
  */
 function activitePourAnalytique(Exercice $exercice, Departement $departement, array $attributs = []): Activite
 {
-    $objectif = Objectif::factory()->create(['exercice_id' => $exercice->id, 'annee' => $exercice->annee]);
+    $objectif = Objectif::factory()->pourExercice($exercice)->create(['annee' => $exercice->annee]);
     $resultat = Resultat::factory()->forObjectif($objectif)->create();
     $extrant = Extrant::factory()->forResultat($resultat)->create();
 

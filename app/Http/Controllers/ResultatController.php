@@ -4,8 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\StoreResultatRequest;
 use App\Http\Requests\UpdateResultatRequest;
-use App\Models\Resultat;
 use App\Models\Objectif;
+use App\Models\Resultat;
 use App\Support\ActiveExercice;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
@@ -31,11 +31,11 @@ class ResultatController extends Controller
         ];
 
         $query = Resultat::query()
-            ->with(['objectif:id,code,annee,libelle'])
+            ->with(['objectif:id,code,annee,libelle', 'objectif.exercices:id,annee'])
             ->withCount('extrants');
 
         if ($exerciceId !== null) {
-            $query->whereHas('objectif', fn (Builder $builder) => $builder->where('exercice_id', $exerciceId));
+            $query->whereHas('objectif.exercices', fn (Builder $builder) => $builder->where('exercices.id', $exerciceId));
         }
 
         if ($this->isChefDepartement($user)) {
@@ -49,7 +49,7 @@ class ResultatController extends Controller
 
         $summaryQuery = Resultat::query();
         if ($exerciceId !== null) {
-            $summaryQuery->whereHas('objectif', fn (Builder $builder) => $builder->where('exercice_id', $exerciceId));
+            $summaryQuery->whereHas('objectif.exercices', fn (Builder $builder) => $builder->where('exercices.id', $exerciceId));
         }
         if ($this->isChefDepartement($user)) {
             $this->applyDepartmentScopeToResultatQuery($summaryQuery, (int) $user->departement_id);
@@ -64,8 +64,9 @@ class ResultatController extends Controller
         ];
 
         $objectifs = Objectif::query()
+            ->with('exercices:id,annee')
             ->where('statut', 'actif')
-            ->when($exerciceId !== null, fn ($q) => $q->where('exercice_id', $exerciceId))
+            ->forExercice($exerciceId)
             ->when($this->isChefDepartement($user), fn ($q) => $q->whereHas('resultats.extrants.activites', fn (Builder $builder) => $builder->where('departement_id', $user->departement_id)))
             ->orderBy('annee', 'desc')
             ->orderBy('code')
@@ -81,8 +82,9 @@ class ResultatController extends Controller
     {
         $exerciceId = ActiveExercice::id();
         $objectifs = Objectif::query()
+            ->with('exercices:id,annee')
             ->where('statut', 'actif')
-            ->when($exerciceId !== null, fn ($q) => $q->where('exercice_id', $exerciceId))
+            ->forExercice($exerciceId)
             ->orderBy('annee', 'desc')
             ->get();
         $selectedObjectif = $request->get('objectif_id');
@@ -156,8 +158,8 @@ class ResultatController extends Controller
         }
 
         $budgetParDepartement = $activites
-            ->groupBy(fn($activite) => $activite->departement?->nom ?? 'Non affecté')
-            ->map(fn($group) => $group->sum('cout'))
+            ->groupBy(fn ($activite) => $activite->departement?->nom ?? 'Non affecté')
+            ->map(fn ($group) => $group->sum('cout'))
             ->sortDesc()
             ->toArray();
 
@@ -223,8 +225,9 @@ class ResultatController extends Controller
     {
         $exerciceId = ActiveExercice::id();
         $objectifs = Objectif::query()
+            ->with('exercices:id,annee')
             ->where('statut', 'actif')
-            ->when($exerciceId !== null, fn ($q) => $q->where('exercice_id', $exerciceId))
+            ->forExercice($exerciceId)
             ->orderBy('annee', 'desc')
             ->get();
 
@@ -267,7 +270,7 @@ class ResultatController extends Controller
      */
     public function toggleStatus(Resultat $resultat)
     {
-        $resultat->update(['is_active' => !$resultat->is_active]);
+        $resultat->update(['is_active' => ! $resultat->is_active]);
 
         $status = $resultat->is_active ? 'activé' : 'désactivé';
 
@@ -276,7 +279,7 @@ class ResultatController extends Controller
     }
 
     /**
-     * @param array{search: string, objectif_id: string, is_active: string, sort?: string, direction?: string} $filters
+     * @param  array{search: string, objectif_id: string, is_active: string, sort?: string, direction?: string}  $filters
      */
     private function applyFilters(Builder $query, array $filters): void
     {
@@ -289,7 +292,7 @@ class ResultatController extends Controller
         }
 
         if ($filters['search'] !== '') {
-            $term = '%' . str_replace(' ', '%', $filters['search']) . '%';
+            $term = '%'.str_replace(' ', '%', $filters['search']).'%';
             $query->where(function (Builder $builder) use ($term) {
                 $builder
                     ->where('code', 'like', $term)

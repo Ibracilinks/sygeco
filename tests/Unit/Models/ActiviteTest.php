@@ -3,10 +3,12 @@
 use App\Models\Activite;
 use App\Models\Departement;
 use App\Models\Extrant;
+use App\Models\Objectif;
 use App\Models\User;
 use App\Models\ValidationHistorique;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 
-uses(\Illuminate\Foundation\Testing\RefreshDatabase::class);
+uses(RefreshDatabase::class);
 
 /*
 |--------------------------------------------------------------------------
@@ -219,13 +221,13 @@ test('le scope byDepartement filtre par département', function () {
     expect(Activite::byDepartement($dep->id)->count())->toBe(2);
 });
 
-test('le scope forExercice filtre via extrant -> objectif', function () {
+test('le scope forExercice filtre sur l\'exercice porté par l\'activité', function () {
     // Deux exercices distincts et explicites pour éviter toute collision d'année aléatoire.
-    $objectifA = \App\Models\Objectif::factory()->pourAnnee(2024)->create();
+    $objectifA = Objectif::factory()->pourAnnee(2024)->create();
     $extrantA = Extrant::factory()->create(['objectif_id' => $objectifA->id]);
-    $exerciceId = $objectifA->exercice_id;
+    $exerciceId = $objectifA->exercices()->value('exercices.id');
 
-    $objectifB = \App\Models\Objectif::factory()->pourAnnee(2025)->create();
+    $objectifB = Objectif::factory()->pourAnnee(2025)->create();
     $extrantB = Extrant::factory()->create(['objectif_id' => $objectifB->id]);
 
     Activite::factory()->pourExtrant($extrantA)->count(2)->create();

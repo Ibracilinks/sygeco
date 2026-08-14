@@ -3,7 +3,12 @@
         <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
             <div>
                 <h1 class="text-2xl font-semibold text-slate-900 dark:text-white">{{ $objectif->libelle }}</h1>
-                <p class="text-sm text-slate-500 dark:text-slate-400">Code: {{ $objectif->code }} • Année: {{ $objectif->annee }}</p>
+                <p class="text-sm text-slate-500 dark:text-slate-400">
+                    Code: {{ $objectif->code }} • Période: {{ $objectif->periode_libelle }}
+                    @if ($objectif->est_pluriannuel)
+                        <span class="ml-1 rounded bg-sky-100 px-1.5 py-0.5 text-xs font-medium text-sky-800 dark:bg-sky-950 dark:text-sky-200">pluriannuel</span>
+                    @endif
+                </p>
             </div>
             <div class="flex flex-wrap gap-2">
                 @can('edit_objectifs')

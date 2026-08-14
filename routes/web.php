@@ -1,12 +1,12 @@
 <?php
 
+use App\Http\Controllers\ActiviteController;
 use App\Http\Controllers\BudgetAnalysisController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DepartementController;
 use App\Http\Controllers\EvaluationController;
 use App\Http\Controllers\ExerciceController;
 use App\Http\Controllers\ExtrantController;
-use App\Http\Controllers\ActiviteController;
 use App\Http\Controllers\JournalController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\ObjectifController;
@@ -81,7 +81,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
         });
     });
 
-    Route::middleware(['role:superadmin|dbcgoq|chef'])->group(function () {
+    // Lecture du cadre logique : les cellules planification et suivi & évaluation
+    // en ont besoin pour rattacher / lire les activités, sans droit d'écriture.
+    Route::middleware(['role:superadmin|dbcgoq|chef|agent-planification|suivi-evaluation'])->group(function () {
         Route::resource('objectifs', ObjectifController::class)->only(['index', 'show']);
         Route::resource('resultats', ResultatController::class)->only(['index', 'show']);
         Route::resource('extrants', ExtrantController::class)->only(['index', 'show']);
@@ -92,13 +94,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::resource('users', UserController::class)->only(['index', 'show']);
     });
 
-    Route::middleware(['role:superadmin|dbcgoq|chef|agent'])->prefix('evaluations')->name('evaluations.')->group(function () {
+    // L'évaluation est fermée à la cellule planification (agent-planification).
+    Route::middleware(['role:superadmin|dbcgoq|chef|agent|suivi-evaluation'])->prefix('evaluations')->name('evaluations.')->group(function () {
         Route::get('/{periode}', [EvaluationController::class, 'index'])->name('index')->where('periode', 'mi-parcours|fin-annee');
         Route::get('/{periode}/export', [EvaluationController::class, 'exporter'])->name('export')->where('periode', 'mi-parcours|fin-annee');
         Route::post('/{activite}/{periode}', [EvaluationController::class, 'enregistrer'])->name('enregistrer')->where('periode', 'mi-parcours|fin-annee');
     });
 
-    Route::middleware(['role:superadmin|dbcgoq|chef|agent'])->prefix('activites')->name('activites.')->group(function () {
+    Route::middleware(['role:superadmin|dbcgoq|chef|agent|agent-planification|suivi-evaluation'])->prefix('activites')->name('activites.')->group(function () {
         Route::get('/', [ActiviteController::class, 'index'])->name('index');
         Route::get('/create', [ActiviteController::class, 'create'])->name('create');
         Route::post('/', [ActiviteController::class, 'store'])->name('store');
@@ -118,4 +121,4 @@ Route::middleware(['auth', 'verified'])->group(function () {
     });
 });
 
-require __DIR__ . '/settings.php';
+require __DIR__.'/settings.php';

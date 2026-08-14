@@ -5,12 +5,13 @@ use App\Models\Exercice;
 use App\Models\Extrant;
 use App\Models\Objectif;
 use App\Models\Resultat;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 
-uses(\Illuminate\Foundation\Testing\RefreshDatabase::class);
+uses(RefreshDatabase::class);
 
 test('les activités coûteuses des alertes budgétaires sont cliquables et affichent le nom complet', function () {
     $exercice = Exercice::factory()->actif()->create(['annee' => 2026]);
-    $objectif = Objectif::factory()->create(['exercice_id' => $exercice->id, 'annee' => 2026]);
+    $objectif = Objectif::factory()->pourExercice($exercice)->create(['annee' => 2026]);
     $resultat = Resultat::factory()->forObjectif($objectif)->create();
     $extrant = Extrant::factory()->forResultat($resultat)->create();
 

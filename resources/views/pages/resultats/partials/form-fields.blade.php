@@ -10,7 +10,7 @@
             <option value="">Sélectionnez un objectif</option>
             @foreach ($objectifs as $objectif)
                 <option value="{{ $objectif->id }}" @selected((string) old('objectif_id', $resultat?->objectif_id ?? $selectedObjectif ?? '') === (string) $objectif->id)>
-                    {{ $objectif->code }} - {{ $objectif->annee }} - {{ Str::limit($objectif->libelle, 60) }}
+                    {{ $objectif->code }} - {{ $objectif->periode_libelle }} - {{ Str::limit($objectif->libelle, 60) }}
                 </option>
             @endforeach
         </select>

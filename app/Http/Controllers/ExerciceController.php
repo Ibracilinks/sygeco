@@ -61,7 +61,7 @@ class ExerciceController extends Controller
     {
         $exercice->loadCount('objectifs');
 
-        $objectifs = Objectif::where('exercice_id', $exercice->id)
+        $objectifs = Objectif::forExercice($exercice->id)
             ->withCount(['resultats', 'extrants'])
             ->orderBy('ordre')
             ->orderBy('code')
@@ -208,7 +208,7 @@ class ExerciceController extends Controller
     {
         $this->authorize('view', $exercice);
 
-        $objectifs = Objectif::where('exercice_id', $exercice->id)
+        $objectifs = Objectif::forExercice($exercice->id)
             ->orderBy('ordre')
             ->orderBy('code')
             ->with(['resultats' => function ($q) {
@@ -224,11 +224,11 @@ class ExerciceController extends Controller
 
         $html = view('pages.exercices.export', compact('exercice', 'objectifs'))->render();
 
-        $filename = 'PTA_exercice_' . $exercice->annee . '_' . now()->format('Ymd') . '.xls';
+        $filename = 'PTA_exercice_'.$exercice->annee.'_'.now()->format('Ymd').'.xls';
 
         return response($html, 200, [
             'Content-Type' => 'application/vnd.ms-excel; charset=UTF-8',
-            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+            'Content-Disposition' => 'attachment; filename="'.$filename.'"',
         ]);
     }
 

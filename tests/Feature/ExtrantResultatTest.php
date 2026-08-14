@@ -11,7 +11,7 @@ uses(RefreshDatabase::class);
 test('créer un extrant le rattache au résultat et dérive automatiquement l\'objectif', function () {
     $admin = userWithRole('dbcgoq');
     $exercice = Exercice::factory()->actif()->create();
-    $objectif = Objectif::factory()->create(['exercice_id' => $exercice->id, 'statut' => 'actif']);
+    $objectif = Objectif::factory()->pourExercice($exercice)->create(['statut' => 'actif']);
     $resultat = Resultat::factory()->create(['objectif_id' => $objectif->id, 'is_active' => true]);
 
     $this->actingAs($admin)->post(route('extrants.store'), [

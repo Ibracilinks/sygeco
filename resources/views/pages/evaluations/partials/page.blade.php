@@ -25,7 +25,7 @@
                     class="inline-flex items-center rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-emerald-500">
                     Exporter (Cadre logique)
                 </a>
-                @can('edit_activites')
+                @can('create_activites')
                     <button type="button" onclick="document.getElementById('nonProgrammeeModal').classList.remove('hidden')"
                         class="inline-flex items-center gap-2 rounded-lg bg-slate-800 px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-700 dark:bg-slate-200 dark:text-slate-900 dark:hover:bg-white">
                         + Activité non programmée
@@ -52,16 +52,10 @@
                     🟢 Fenêtre de saisie {{ $periodeLibelle }} ouverte{{ $finFenetre ? " — jusqu'au ".$finFenetre->format('d/m/Y') : '' }}.
                 </p>
             </div>
-        @elseif ($peutSaisir)
+        @else
             <div class="rounded-lg border border-indigo-200 bg-indigo-50 p-4 dark:border-indigo-800 dark:bg-indigo-950/40">
                 <p class="text-sm font-medium text-indigo-800 dark:text-indigo-200">
-                    ✎ Fenêtre {{ $periodeLibelle }} fermée{{ $debutFenetre && $finFenetre ? ' ('.$debutFenetre->format('d/m/Y').' → '.$finFenetre->format('d/m/Y').')' : '' }}, saisie autorisée pour votre profil.
-                </p>
-            </div>
-        @else
-            <div class="rounded-lg border border-amber-200 bg-amber-50 p-4 dark:border-amber-800 dark:bg-amber-950/40">
-                <p class="text-sm font-medium text-amber-800 dark:text-amber-200">
-                    🔒 Fenêtre de saisie {{ $periodeLibelle }} fermée{{ $debutFenetre && $finFenetre ? ' ('.$debutFenetre->format('d/m/Y').' → '.$finFenetre->format('d/m/Y').')' : '' }} — consultation uniquement.
+                    ✎ Hors période {{ $periodeLibelle }}{{ $debutFenetre && $finFenetre ? ' ('.$debutFenetre->format('d/m/Y').' → '.$finFenetre->format('d/m/Y').')' : '' }} — la saisie reste ouverte en permanence.
                 </p>
             </div>
         @endif
@@ -190,7 +184,7 @@
                                         {{ $evaluation?->valeur_indicateur !== null ? rtrim(rtrim(number_format($evaluation->valeur_indicateur, 2, ',', ' '), '0'), ',') : '—' }}
                                     </p>
                                 </div>
-                                @if (auth()->user()->can('edit_activites') && $peutSaisir)
+                                @if (auth()->user()->can('evaluate_activites') && $peutSaisir)
                                     @php
                                         $evalData = [
                                             'action' => route('evaluations.enregistrer', [$activite, $slug]),
@@ -220,7 +214,7 @@
         <div class="mt-2">{{ $activites->links() }}</div>
     </div>
 
-    @can('edit_activites')
+    @can('create_activites')
         {{-- Modale : création d'une activité non programmée (hors PTA) --}}
         <div id="nonProgrammeeModal" class="fixed inset-0 z-50 hidden overflow-y-auto bg-black/40 p-4">
             <div class="mx-auto my-10 max-w-2xl rounded-2xl bg-white p-6 shadow-xl dark:bg-zinc-900">
@@ -241,7 +235,7 @@
                             class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 focus:border-slate-500 focus:outline-none dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100">
                     </div>
 
-                    @unless (auth()->user()->hasRole('chef'))
+                    @unless (auth()->user()->perimetreActivitesIds() === null)
                         <div>
                             <label class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-200">Structure *</label>
                             <select name="departement_id" required

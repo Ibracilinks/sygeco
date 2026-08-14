@@ -272,7 +272,7 @@
                     </div>
                 @endif
 
-                @if (auth()->user()->can('edit_activites') || auth()->user()->can('validate_activites'))
+                @if (auth()->user()->canAny(['edit_activites', 'validate_activites', 'evaluate_activites']))
                     <form action="{{ route('activites.pieces-jointes.store', $activite) }}" method="POST" enctype="multipart/form-data" class="mt-5 space-y-3 border-t border-slate-200 pt-5 dark:border-slate-700">
                         @csrf
                         <div class="grid grid-cols-1 gap-3 md:grid-cols-2">

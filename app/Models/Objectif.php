@@ -14,7 +14,6 @@ class Objectif extends Model
     protected $table = 'objectifs';
 
     protected $fillable = [
-        'exercice_id',
         'code',
         'libelle',
         'description',
@@ -28,9 +27,14 @@ class Objectif extends Model
     ];
 
     // Relations
-    public function exercice()
+
+    /**
+     * Exercices couverts par l'objectif. Un objectif de plan stratégique en couvre
+     * plusieurs (ex. 2026 → 2030) ; un objectif annuel n'en couvre qu'un.
+     */
+    public function exercices()
     {
-        return $this->belongsTo(Exercice::class);
+        return $this->belongsToMany(Exercice::class, 'exercice_objectif')->withTimestamps();
     }
 
     public function resultats()
@@ -54,9 +58,12 @@ class Objectif extends Model
         return $query->where('statut', 'actif');
     }
 
+    /**
+     * Objectifs couvrant l'année donnée (et non plus seulement ceux qui en sont issus).
+     */
     public function scopeByAnnee($query, $annee)
     {
-        return $query->where('annee', $annee);
+        return $query->whereHas('exercices', fn ($q) => $q->where('exercices.annee', $annee));
     }
 
     public function scopeForExercice($query, ?int $exerciceId)
@@ -65,7 +72,7 @@ class Objectif extends Model
             return $query;
         }
 
-        return $query->where('exercice_id', $exerciceId);
+        return $query->whereHas('exercices', fn ($q) => $q->where('exercices.id', $exerciceId));
     }
 
     public function scopeOrdered($query)
@@ -92,6 +99,30 @@ class Objectif extends Model
         };
     }
 
+    /**
+     * Période couverte, sous forme « 2026 » ou « 2026-2030 ».
+     */
+    public function getPeriodeLibelleAttribute(): string
+    {
+        $annees = $this->relationLoaded('exercices')
+            ? $this->exercices->pluck('annee')
+            : $this->exercices()->pluck('annee');
+
+        if ($annees->isEmpty()) {
+            return (string) $this->annee;
+        }
+
+        $min = (int) $annees->min();
+        $max = (int) $annees->max();
+
+        return $min === $max ? (string) $min : "{$min}-{$max}";
+    }
+
+    public function getEstPluriannuelAttribute(): bool
+    {
+        return ($this->relationLoaded('exercices') ? $this->exercices->count() : $this->exercices()->count()) > 1;
+    }
+
     // Méthodes métier
     public function getBudgetTotalAttribute()
     {
@@ -101,6 +132,7 @@ class Objectif extends Model
                 $total += $extrant->activites->sum('cout');
             }
         }
+
         return $total;
     }
 
@@ -115,6 +147,7 @@ class Objectif extends Model
         foreach ($this->resultats as $resultat) {
             $total += $resultat->extrants()->count();
         }
+
         return $total;
     }
 
@@ -126,6 +159,7 @@ class Objectif extends Model
                 $total += $extrant->activites()->count();
             }
         }
+
         return $total;
     }
 }

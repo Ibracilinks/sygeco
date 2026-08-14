@@ -2,9 +2,13 @@
 
 use App\Models\Activite;
 use App\Models\Exercice;
+use App\Models\Extrant;
+use App\Models\Objectif;
+use App\Models\Resultat;
 use App\Models\User;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 
-uses(\Illuminate\Foundation\Testing\RefreshDatabase::class);
+uses(RefreshDatabase::class);
 
 test('un invité est redirigé vers la connexion', function () {
     $this->get(route('sap.analytics'))->assertRedirect(route('login'));
@@ -18,7 +22,7 @@ test('un utilisateur connecté accède au dashboard SAP', function () {
         ->assertOk()
         ->assertSee('SAP', false)
         ->assertSee('Analytics Cloud', false)
-        ->assertSee("Plan de Travail Annuel", false);
+        ->assertSee('Plan de Travail Annuel', false);
 });
 
 test('le dashboard SAP n\'utilise pas le layout de base (page autonome)', function () {
@@ -35,9 +39,9 @@ test('le dashboard SAP n\'utilise pas le layout de base (page autonome)', functi
 test('les vraies données du projet alimentent le dashboard', function () {
     $exercice = Exercice::factory()->actif()->create(['annee' => 2026]);
     // Une activité reliée à l'exercice 2026 via extrant -> objectif.
-    $objectif = \App\Models\Objectif::factory()->create(['exercice_id' => $exercice->id, 'annee' => 2026]);
-    $resultat = \App\Models\Resultat::factory()->forObjectif($objectif)->create();
-    $extrant = \App\Models\Extrant::factory()->forResultat($resultat)->create();
+    $objectif = Objectif::factory()->pourExercice($exercice)->create(['annee' => 2026]);
+    $resultat = Resultat::factory()->forObjectif($objectif)->create();
+    $extrant = Extrant::factory()->forResultat($resultat)->create();
     Activite::factory()->pourExtrant($extrant)->avecCout(5000000)->create();
 
     $user = User::factory()->create();

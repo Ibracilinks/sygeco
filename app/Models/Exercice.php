@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Concerns\LogsActivityWithDefaults;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Carbon;
 
 class Exercice extends Model
 {
@@ -44,9 +45,21 @@ class Exercice extends Model
         ];
     }
 
+    /**
+     * Objectifs couverts par l'exercice. Un objectif pluriannuel (plan stratégique)
+     * est rattaché à chacun des exercices de sa période.
+     */
     public function objectifs()
     {
-        return $this->hasMany(Objectif::class);
+        return $this->belongsToMany(Objectif::class, 'exercice_objectif')->withTimestamps();
+    }
+
+    /**
+     * Activités rattachées directement à l'exercice.
+     */
+    public function activites()
+    {
+        return $this->hasMany(Activite::class);
     }
 
     public function relances()
@@ -120,7 +133,7 @@ class Exercice extends Model
     /**
      * Bornes de la fenêtre de saisie d'une période d'évaluation.
      *
-     * @return array{0: ?\Illuminate\Support\Carbon, 1: ?\Illuminate\Support\Carbon}
+     * @return array{0: ?Carbon, 1: ?Carbon}
      */
     public function fenetreEvaluation(string $periode): array
     {

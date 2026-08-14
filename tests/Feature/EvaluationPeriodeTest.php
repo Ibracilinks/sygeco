@@ -9,9 +9,10 @@ use App\Models\Resultat;
 use App\Models\User;
 use App\Notifications\EvaluationOuverteNotification;
 use App\Notifications\MiParcoursOuvertNotification;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Notification;
 
-uses(\Illuminate\Foundation\Testing\RefreshDatabase::class);
+uses(RefreshDatabase::class);
 
 /**
  * Construit une activité validée (seul statut évaluable) rattachée à un exercice
@@ -19,7 +20,7 @@ uses(\Illuminate\Foundation\Testing\RefreshDatabase::class);
  */
 function activitePourExercice(Exercice $exercice, Departement $departement): Activite
 {
-    $objectif = Objectif::factory()->create(['exercice_id' => $exercice->id, 'annee' => $exercice->annee]);
+    $objectif = Objectif::factory()->pourExercice($exercice)->create(['annee' => $exercice->annee]);
     $resultat = Resultat::factory()->forObjectif($objectif)->create();
     $extrant = Extrant::factory()->forResultat($resultat)->create();
 
@@ -57,12 +58,13 @@ test('un chef peut renseigner l\'évaluation mi-parcours pendant sa fenêtre', f
     expect($activite->fresh()->statut_execution)->toBe('realise');
 });
 
-test('un chef ne peut pas renseigner l\'évaluation hors fenêtre', function () {
+test('un chef peut renseigner l\'évaluation hors fenêtre : la saisie reste ouverte en permanence', function () {
     seedRolesAndPermissions();
     $dep = Departement::factory()->create();
     $chef = User::factory()->dansDepartement($dep)->create();
     $chef->assignRole('chef');
 
+    // Fenêtre mi-parcours close depuis 15 jours : la saisie doit rester possible.
     $exercice = Exercice::factory()->actif()->create([
         'date_debut_mi_parcours' => now()->subDays(20)->toDateString(),
         'date_fin_mi_parcours' => now()->subDays(15)->toDateString(),
@@ -73,10 +75,9 @@ test('un chef ne peut pas renseigner l\'évaluation hors fenêtre', function () 
 
     $this->actingAs($chef)->post(route('evaluations.enregistrer', [$activite, 'mi-parcours']), [
         'statut_execution' => 'realise',
-    ])->assertSessionHas('error');
+    ])->assertSessionHas('success');
 
-    expect($activite->evaluation('mi_parcours'))->toBeNull();
-    expect($activite->fresh()->statut_execution)->not->toBe('realise');
+    expect($activite->evaluation('mi_parcours')->statut_execution)->toBe('realise');
 });
 
 test('le dbcgoq peut renseigner l\'évaluation même hors fenêtre', function () {
@@ -200,7 +201,7 @@ test('une activité non validée ne peut pas être évaluée', function () {
     $exercice = Exercice::factory()->actif()->create();
     $dep = Departement::factory()->create();
 
-    $objectif = Objectif::factory()->create(['exercice_id' => $exercice->id, 'annee' => $exercice->annee]);
+    $objectif = Objectif::factory()->pourExercice($exercice)->create(['annee' => $exercice->annee]);
     $resultat = Resultat::factory()->forObjectif($objectif)->create();
     $extrant = Extrant::factory()->forResultat($resultat)->create();
     $activite = Activite::factory()->brouillon()->pourExtrant($extrant)->pourDepartement($dep)->create();
@@ -217,7 +218,7 @@ test('seules les activités validées apparaissent dans l\'évaluation', functio
     $exercice = Exercice::factory()->actif()->create();
     $dep = Departement::factory()->create();
 
-    $objectif = Objectif::factory()->create(['exercice_id' => $exercice->id, 'annee' => $exercice->annee]);
+    $objectif = Objectif::factory()->pourExercice($exercice)->create(['annee' => $exercice->annee]);
     $resultat = Resultat::factory()->forObjectif($objectif)->create();
     $extrant = Extrant::factory()->forResultat($resultat)->create();
 
@@ -237,7 +238,7 @@ test('une activité non évaluée n\'est pas comptée comme non réalisée', fun
     $exercice = Exercice::factory()->actif()->create();
     $dep = Departement::factory()->create();
 
-    $objectif = Objectif::factory()->create(['exercice_id' => $exercice->id, 'annee' => $exercice->annee]);
+    $objectif = Objectif::factory()->pourExercice($exercice)->create(['annee' => $exercice->annee]);
     $resultat = Resultat::factory()->forObjectif($objectif)->create();
     $extrant = Extrant::factory()->forResultat($resultat)->create();
 

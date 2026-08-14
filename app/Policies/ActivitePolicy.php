@@ -41,7 +41,7 @@ class ActivitePolicy
             return true;
         }
 
-        return $user->hasRole('chef')
+        return $user->hasAnyRole(['chef', 'agent-planification'])
             && (int) $user->departement_id === (int) $activite->departement_id
             && $activite->peutEtreModifie();
     }
@@ -56,7 +56,7 @@ class ActivitePolicy
             return true;
         }
 
-        return $user->hasRole('chef')
+        return $user->hasAnyRole(['chef', 'agent-planification'])
             && (int) $user->departement_id === (int) $activite->departement_id
             && $activite->peutEtreModifie();
     }
@@ -67,7 +67,7 @@ class ActivitePolicy
             return $activite->peutEtreSoumis();
         }
 
-        return $user->hasRole('chef')
+        return $user->hasAnyRole(['chef', 'agent-planification'])
             && (int) $user->departement_id === (int) $activite->departement_id
             && $activite->peutEtreSoumis();
     }

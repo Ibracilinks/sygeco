@@ -30,7 +30,7 @@ class ObjectifController extends Controller
         ];
 
         $query = Objectif::query()
-            ->with('exercice:id,annee,statut')
+            ->with('exercices:id,annee,statut')
             ->withCount(['resultats', 'extrants']);
 
         if ($this->isChefDepartement($user)) {
@@ -55,9 +55,9 @@ class ObjectifController extends Controller
             'avec_resultats' => (clone $summaryQuery)->has('resultats')->count('*'),
         ];
 
-        $annees = Objectif::query()
-            ->when($this->isChefDepartement($user), fn ($q) => $this->applyDepartmentScopeToObjectifQuery($q, (int) $user->departement_id))
-            ->select('annee')->distinct()->orderBy('annee', 'desc')->pluck('annee');
+        // Les années sélectionnables sont celles des exercices : un objectif
+        // pluriannuel est proposé sous chacune des années qu'il couvre.
+        $annees = Exercice::query()->orderBy('annee', 'desc')->distinct()->pluck('annee');
         $exercices = Exercice::query()->ordered()->get(['id', 'annee', 'statut']);
 
         return view('pages.objectifs.index', compact('objectifs', 'annees', 'exercices', 'summary', 'filters'));
@@ -69,9 +69,10 @@ class ObjectifController extends Controller
     public function create()
     {
         $exercices = Exercice::query()->ordered()->get(['id', 'annee', 'statut']);
-        $defaultExerciceId = ActiveExercice::id();
+        // Pré-sélection sur l'exercice courant : le cas mono-exercice reste le plus fréquent.
+        $selectedExerciceIds = array_filter([ActiveExercice::id()]);
 
-        return view('pages.objectifs.create', compact('exercices', 'defaultExerciceId'));
+        return view('pages.objectifs.create', compact('exercices', 'selectedExerciceIds'));
     }
 
     /**
@@ -81,10 +82,14 @@ class ObjectifController extends Controller
     {
         $validated = $request->validated();
 
-        $exercice = Exercice::query()->findOrFail($validated['exercice_id']);
-        $validated['annee'] = $exercice->annee;
+        $exerciceIds = $validated['exercice_ids'];
+        unset($validated['exercice_ids']);
+
+        // `annee` reste l'année de départ de l'objectif (tri et libellé de période).
+        $validated['annee'] = (int) Exercice::query()->whereIn('id', $exerciceIds)->min('annee');
 
         $objectif = Objectif::create($validated);
+        $objectif->exercices()->sync($exerciceIds);
 
         return redirect()->route('objectifs.index')
             ->with('success', "Objectif {$objectif->code} créé avec succès.");
@@ -116,19 +121,19 @@ class ObjectifController extends Controller
                                     $a->where('departement_id', $user->departement_id);
                                 }
                                 $a->orderBy('created_at', 'desc');
-                            }
+                            },
                         ]);
                         $q->withCount(['activites' => function ($a) use ($user) {
                             if ($this->isChefDepartement($user) && $user?->departement_id) {
                                 $a->where('departement_id', $user->departement_id);
                             }
                         }]);
-                    }
+                    },
                 ]);
                 $query->withCount(['extrants' => function ($q) use ($user) {
                     $this->applyDepartmentScopeToExtrantQuery($q, $user?->departement_id);
                 }]);
-            }
+            },
         ]);
 
         // Calcul des statistiques globales
@@ -166,8 +171,9 @@ class ObjectifController extends Controller
     public function edit(Objectif $objectif)
     {
         $exercices = Exercice::query()->ordered()->get(['id', 'annee', 'statut']);
+        $selectedExerciceIds = $objectif->exercices()->pluck('exercices.id')->all();
 
-        return view('pages.objectifs.edit', compact('objectif', 'exercices'));
+        return view('pages.objectifs.edit', compact('objectif', 'exercices', 'selectedExerciceIds'));
     }
 
     /**
@@ -177,10 +183,13 @@ class ObjectifController extends Controller
     {
         $validated = $request->validated();
 
-        $exercice = Exercice::query()->findOrFail($validated['exercice_id']);
-        $validated['annee'] = $exercice->annee;
+        $exerciceIds = $validated['exercice_ids'];
+        unset($validated['exercice_ids']);
+
+        $validated['annee'] = (int) Exercice::query()->whereIn('id', $exerciceIds)->min('annee');
 
         $objectif->update($validated);
+        $objectif->exercices()->sync($exerciceIds);
 
         return redirect()->route('objectifs.index')
             ->with('success', "Objectif {$objectif->code} mis à jour.");
@@ -218,16 +227,17 @@ class ObjectifController extends Controller
     }
 
     /**
-     * @param array{search: string, exercice_id: string, annee: string, statut: string, sort?: string, direction?: string} $filters
+     * @param  array{search: string, exercice_id: string, annee: string, statut: string, sort?: string, direction?: string}  $filters
      */
     private function applyFilters(Builder $query, array $filters): void
     {
+        // Un objectif est retenu dès qu'il couvre l'exercice / l'année demandé.
         if ($filters['exercice_id'] !== '') {
-            $query->where('exercice_id', (int) $filters['exercice_id']);
+            $query->forExercice((int) $filters['exercice_id']);
         }
 
         if ($filters['annee'] !== '') {
-            $query->where('annee', (int) $filters['annee']);
+            $query->byAnnee((int) $filters['annee']);
         }
 
         if ($filters['statut'] !== '') {
@@ -235,7 +245,7 @@ class ObjectifController extends Controller
         }
 
         if ($filters['search'] !== '') {
-            $term = '%' . str_replace(' ', '%', $filters['search']) . '%';
+            $term = '%'.str_replace(' ', '%', $filters['search']).'%';
             $query->where(function (Builder $builder) use ($term) {
                 $builder
                     ->where('code', 'like', $term)

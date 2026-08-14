@@ -6,6 +6,7 @@ use App\Concerns\LogsActivityWithDefaults;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 
 class Activite extends Model
@@ -126,13 +127,18 @@ class Activite extends Model
      */
     public function exercice(): ?Exercice
     {
-        // Une activité non programmée est rattachée directement à un exercice ;
-        // une activité planifiée l'est via son extrant → objectif.
+        // `exercice_id` fait foi pour toutes les activités : un objectif pouvant
+        // couvrir plusieurs exercices (plan stratégique), il ne permet plus de
+        // déduire l'année d'exécution d'une activité.
         if ($this->exercice_id) {
             return $this->exerciceDirect ?? Exercice::find($this->exercice_id);
         }
 
-        return $this->extrant?->objectif?->exercice;
+        // Filet pour les activités antérieures au backfill dont l'objectif
+        // ne couvre qu'un seul exercice.
+        $exercices = $this->extrant?->objectif?->exercices;
+
+        return $exercices?->count() === 1 ? $exercices->first() : null;
     }
 
     /**
@@ -206,18 +212,17 @@ class Activite extends Model
         return $query->where('statut', $statut);
     }
 
+    /**
+     * Restreint aux activités d'un exercice. Le rattachement est porté par l'activité
+     * elle-même : un objectif pluriannuel ne permet plus de le déduire.
+     */
     public function scopeForExercice($query, ?int $exerciceId)
     {
         if ($exerciceId === null) {
             return $query;
         }
 
-        // Activités planifiées (via extrant → objectif) OU non programmées (lien direct à l'exercice).
-        return $query->where(function ($outer) use ($exerciceId) {
-            $outer->whereHas('extrant.objectif', function ($q) use ($exerciceId) {
-                $q->where('exercice_id', $exerciceId);
-            })->orWhere('exercice_id', $exerciceId);
-        });
+        return $query->where('activites.exercice_id', $exerciceId);
     }
 
     public function scopeBrouillon($query)
@@ -248,7 +253,8 @@ class Activite extends Model
 
     public function scopePourTrimestre($query, $trimestre)
     {
-        $field = 'trimestre_' . $trimestre;
+        $field = 'trimestre_'.$trimestre;
+
         return $query->where($field, 'oui');
     }
 
@@ -256,16 +262,25 @@ class Activite extends Model
     public function getTrimestresSelectionnesAttribute()
     {
         $trimestres = [];
-        if ($this->trimestre_1 == 'oui') $trimestres[] = 'T1';
-        if ($this->trimestre_2 == 'oui') $trimestres[] = 'T2';
-        if ($this->trimestre_3 == 'oui') $trimestres[] = 'T3';
-        if ($this->trimestre_4 == 'oui') $trimestres[] = 'T4';
+        if ($this->trimestre_1 == 'oui') {
+            $trimestres[] = 'T1';
+        }
+        if ($this->trimestre_2 == 'oui') {
+            $trimestres[] = 'T2';
+        }
+        if ($this->trimestre_3 == 'oui') {
+            $trimestres[] = 'T3';
+        }
+        if ($this->trimestre_4 == 'oui') {
+            $trimestres[] = 'T4';
+        }
+
         return implode(', ', $trimestres);
     }
 
     public function getCoutFormateAttribute()
     {
-        return number_format($this->cout, 0, ',', ' ') . ' FCFA';
+        return number_format($this->cout, 0, ',', ' ').' FCFA';
     }
 
     public function getStatutLabelAttribute()
@@ -395,9 +410,9 @@ class Activite extends Model
      * le chef du service concerné (responsable de la structure de l'activité) et le
      * directeur de la Direction Centrale de rattachement.
      *
-     * @return \Illuminate\Support\Collection<int, \App\Models\User>
+     * @return Collection<int, User>
      */
-    public function destinatairesChangementBudget(): \Illuminate\Support\Collection
+    public function destinatairesChangementBudget(): Collection
     {
         $structure = $this->departement;
 

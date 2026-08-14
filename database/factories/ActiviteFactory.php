@@ -3,8 +3,9 @@
 namespace Database\Factories;
 
 use App\Models\Activite;
-use App\Models\Extrant;
 use App\Models\Departement;
+use App\Models\Exercice;
+use App\Models\Extrant;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
@@ -56,7 +57,7 @@ class ActiviteFactory extends Factory
      */
     public function brouillon(): static
     {
-        return $this->state(fn(array $attributes) => [
+        return $this->state(fn (array $attributes) => [
             'statut' => 'brouillon',
         ]);
     }
@@ -66,7 +67,7 @@ class ActiviteFactory extends Factory
      */
     public function soumis(): static
     {
-        return $this->state(fn(array $attributes) => [
+        return $this->state(fn (array $attributes) => [
             'statut' => 'en_attente',
         ]);
     }
@@ -76,7 +77,7 @@ class ActiviteFactory extends Factory
      */
     public function enAttente(): static
     {
-        return $this->state(fn(array $attributes) => [
+        return $this->state(fn (array $attributes) => [
             'statut' => 'en_attente',
         ]);
     }
@@ -86,7 +87,7 @@ class ActiviteFactory extends Factory
      */
     public function valide(): static
     {
-        return $this->state(fn(array $attributes) => [
+        return $this->state(fn (array $attributes) => [
             'statut' => 'valide',
         ]);
     }
@@ -96,7 +97,7 @@ class ActiviteFactory extends Factory
      */
     public function rejete(): static
     {
-        return $this->state(fn(array $attributes) => [
+        return $this->state(fn (array $attributes) => [
             'statut' => 'rejete',
             'motif_refus' => $this->faker->sentence(),
             'refuse_le' => now(),
@@ -108,8 +109,9 @@ class ActiviteFactory extends Factory
      */
     public function pourTrimestre(int $trimestre): static
     {
-        $field = 'trimestre_' . $trimestre;
-        return $this->state(fn(array $attributes) => [
+        $field = 'trimestre_'.$trimestre;
+
+        return $this->state(fn (array $attributes) => [
             $field => 'oui',
         ]);
     }
@@ -119,7 +121,7 @@ class ActiviteFactory extends Factory
      */
     public function tousTrimestres(): static
     {
-        return $this->state(fn(array $attributes) => [
+        return $this->state(fn (array $attributes) => [
             'trimestre_1' => 'oui',
             'trimestre_2' => 'oui',
             'trimestre_3' => 'oui',
@@ -132,7 +134,7 @@ class ActiviteFactory extends Factory
      */
     public function avecCout(float $cout): static
     {
-        return $this->state(fn(array $attributes) => [
+        return $this->state(fn (array $attributes) => [
             'cout' => $cout,
         ]);
     }
@@ -142,7 +144,7 @@ class ActiviteFactory extends Factory
      */
     public function coutEleve(): static
     {
-        return $this->state(fn(array $attributes) => [
+        return $this->state(fn (array $attributes) => [
             'cout' => $this->faker->randomFloat(2, 10000000, 100000000),
         ]);
     }
@@ -152,7 +154,7 @@ class ActiviteFactory extends Factory
      */
     public function coutFaible(): static
     {
-        return $this->state(fn(array $attributes) => [
+        return $this->state(fn (array $attributes) => [
             'cout' => $this->faker->randomFloat(2, 100000, 1000000),
         ]);
     }
@@ -162,8 +164,26 @@ class ActiviteFactory extends Factory
      */
     public function pourExtrant(Extrant $extrant): static
     {
-        return $this->state(fn(array $attributes) => [
-            'extrant_id' => $extrant->id,
+        return $this->state(function (array $attributes) use ($extrant) {
+            // L'activité porte son exercice : un objectif pouvant couvrir plusieurs
+            // exercices, on retient le premier de sa période comme défaut.
+            $exerciceId = $attributes['exercice_id']
+                ?? $extrant->objectif?->exercices()->orderBy('annee')->value('exercices.id');
+
+            return [
+                'extrant_id' => $extrant->id,
+                'exercice_id' => $exerciceId,
+            ];
+        });
+    }
+
+    /**
+     * Rattache explicitement l'activité à un exercice.
+     */
+    public function pourExercice(Exercice|int $exercice): static
+    {
+        return $this->state(fn () => [
+            'exercice_id' => $exercice instanceof Exercice ? $exercice->id : (int) $exercice,
         ]);
     }
 
@@ -172,7 +192,7 @@ class ActiviteFactory extends Factory
      */
     public function pourDepartement(Departement $departement): static
     {
-        return $this->state(fn(array $attributes) => [
+        return $this->state(fn (array $attributes) => [
             'departement_id' => $departement->id,
         ]);
     }
@@ -182,7 +202,7 @@ class ActiviteFactory extends Factory
      */
     public function saisiePar(User $user): static
     {
-        return $this->state(fn(array $attributes) => [
+        return $this->state(fn (array $attributes) => [
             'saisi_par' => $user->id,
         ]);
     }
@@ -212,7 +232,7 @@ class ActiviteFactory extends Factory
             'Sensibiliser',
             'Former',
             'Recruter',
-            'Équiper'
+            'Équiper',
         ];
 
         $objects = [
@@ -233,10 +253,10 @@ class ActiviteFactory extends Factory
             'une mission de contrôle',
             'une session de formation',
             'un atelier de renforcement',
-            'une étude de faisabilité'
+            'une étude de faisabilité',
         ];
 
-        return $this->faker->randomElement($actions) . ' ' . $this->faker->randomElement($objects);
+        return $this->faker->randomElement($actions).' '.$this->faker->randomElement($objects);
     }
 
     /**
@@ -258,7 +278,7 @@ class ActiviteFactory extends Factory
             'Taux de couverture (%)',
             'Nombre de bénéficiaires touchés',
             'Qualité des livrables (note/10)',
-            'Respect des délais (%)'
+            'Respect des délais (%)',
         ];
 
         return $this->faker->randomElement($indicators);
@@ -283,7 +303,7 @@ class ActiviteFactory extends Factory
             'Tableau de bord',
             'Relevé de notes',
             'Procès-verbal',
-            'État des lieux'
+            'État des lieux',
         ];
 
         return $this->faker->randomElement($moyens);

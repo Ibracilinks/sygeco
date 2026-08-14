@@ -3,15 +3,16 @@
 namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
-use Spatie\Permission\Models\Role;
 use Spatie\Permission\Models\Permission;
+use Spatie\Permission\Models\Role;
+use Spatie\Permission\PermissionRegistrar;
 
 class RoleAndPermissionSeeder extends Seeder
 {
     public function run(): void
     {
         // Reset cached roles and permissions
-        app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
+        app()[PermissionRegistrar::class]->forgetCachedPermissions();
 
         // Idempotent : firstOrCreate + syncPermissions, pour coexister avec la
         // migration de réconciliation des rôles et pouvoir être rejoué sans erreur.
@@ -21,7 +22,7 @@ class RoleAndPermissionSeeder extends Seeder
             // Extrants
             'view_extrants', 'create_extrants', 'edit_extrants', 'delete_extrants',
             // Activités
-            'view_activites', 'create_activites', 'edit_activites', 'delete_activites', 'submit_activites', 'validate_activites',
+            'view_activites', 'create_activites', 'edit_activites', 'delete_activites', 'submit_activites', 'validate_activites', 'evaluate_activites',
             // Départements
             'view_departements', 'create_departements', 'edit_departements', 'delete_departements',
             // Utilisateurs
@@ -45,6 +46,12 @@ class RoleAndPermissionSeeder extends Seeder
         // le niveau découle du type de l'entité rattachée à l'utilisateur
         $roleChef = Role::firstOrCreate(['name' => 'chef']);
         $roleAgent = Role::firstOrCreate(['name' => 'agent']);
+        // agent-planification : saisit et soumet la programmation de son entité.
+        // Il ne voit ni l'évaluation, ni l'arbitrage, ni l'administration.
+        $roleAgentPlanification = Role::firstOrCreate(['name' => 'agent-planification']);
+        // suivi-evaluation : renseigne le suivi d'exécution et les évaluations
+        // (mi-parcours / fin d'année) de son entité, en lecture seule sur le PTA.
+        $roleSuiviEvaluation = Role::firstOrCreate(['name' => 'suivi-evaluation']);
 
         // Attribution des permissions
         $roleSuperadmin->syncPermissions(Permission::all());
@@ -59,11 +66,36 @@ class RoleAndPermissionSeeder extends Seeder
             'create_activites',
             'edit_activites',
             'submit_activites',
+            'evaluate_activites',
             'view_departements',
             'view_users',
             'view_exercices',
         ]);
 
         $roleAgent->syncPermissions(['view_activites']);
+
+        // Cellule planification : chaîne « cadre logique » en lecture, activités en
+        // écriture jusqu'à la soumission. Pas d'évaluation, pas de validation.
+        $roleAgentPlanification->syncPermissions([
+            'view_objectifs',
+            'view_extrants',
+            'view_activites',
+            'create_activites',
+            'edit_activites',
+            'submit_activites',
+            'view_exercices',
+        ]);
+
+        // Cellule suivi & évaluation : lecture du PTA, écriture sur les évaluations
+        // et les indicateurs uniquement.
+        $roleSuiviEvaluation->syncPermissions([
+            'view_objectifs',
+            'view_extrants',
+            'view_activites',
+            'evaluate_activites',
+            'view_indicateurs',
+            'edit_indicateurs',
+            'view_exercices',
+        ]);
     }
 }

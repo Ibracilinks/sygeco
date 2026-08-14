@@ -103,8 +103,14 @@
                                 <p class="mt-1 text-sm text-slate-700 dark:text-slate-200">{{ Str::limit($objectif->libelle, 90) }}</p>
                             </td>
                             <td class="px-5 py-4 text-sm text-slate-700 dark:text-slate-200">
-                                <p>{{ $objectif->annee }}</p>
-                                <p class="text-xs text-slate-500 dark:text-slate-400">Exercice: {{ $objectif->exercice?->annee ?? '-' }}</p>
+                                <p>{{ $objectif->periode_libelle }}</p>
+                                <p class="text-xs text-slate-500 dark:text-slate-400">
+                                    @if ($objectif->exercices->isEmpty())
+                                        Aucun exercice
+                                    @else
+                                        {{ $objectif->exercices->count() }} exercice(s) : {{ $objectif->exercices->pluck('annee')->sort()->implode(', ') }}
+                                    @endif
+                                </p>
                             </td>
                             <td class="px-5 py-4 text-sm text-slate-700 dark:text-slate-200">
                                 <p>Ordre: {{ $objectif->ordre ?? '-' }}</p>

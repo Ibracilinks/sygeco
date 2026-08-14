@@ -12,9 +12,9 @@ use App\Notifications\ActiviteRefusee;
 use App\Notifications\ActiviteSoumiseNotification;
 use App\Notifications\ActiviteValidee;
 use App\Support\ActiveExercice;
-use App\Support\CadreLogique;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Storage;
@@ -99,7 +99,7 @@ class ActiviteController extends Controller
         $extrants = Extrant::query()
             ->with('objectif')
             ->actif()
-            ->when($exerciceId !== null, fn ($q) => $q->whereHas('objectif', fn ($oq) => $oq->where('exercice_id', $exerciceId)))
+            ->when($exerciceId !== null, fn ($q) => $q->whereHas('objectif.exercices', fn ($oq) => $oq->where('exercices.id', $exerciceId)))
             ->ordered()
             ->get();
         $departements = $this->departementsVisibles();
@@ -119,7 +119,7 @@ class ActiviteController extends Controller
         $extrants = Extrant::query()
             ->with('objectif')
             ->actif()
-            ->when($exerciceId !== null, fn ($q) => $q->whereHas('objectif', fn ($oq) => $oq->where('exercice_id', $exerciceId)))
+            ->when($exerciceId !== null, fn ($q) => $q->whereHas('objectif.exercices', fn ($oq) => $oq->where('exercices.id', $exerciceId)))
             ->ordered()
             ->get();
         $departements = $this->departementsVisibles();
@@ -156,8 +156,11 @@ class ActiviteController extends Controller
 
         $validated['departement_id'] = $this->departementAutorise($validated['departement_id']);
 
-        $activite = new Activite();
+        $activite = new Activite;
         $activite->extrant_id = $validated['extrant_id'];
+        // L'activité porte son propre exercice : l'objectif peut être pluriannuel
+        // et ne permet donc plus de déduire l'année d'exécution.
+        $activite->exercice_id = ActiveExercice::id();
         $activite->departement_id = $validated['departement_id'];
         $activite->nom_activite = $validated['nom_activite'];
         $activite->indicateur_objectivement_verifiable = $validated['indicateur_objectivement_verifiable'];
@@ -210,7 +213,7 @@ class ActiviteController extends Controller
 
         $validated['departement_id'] = $this->departementAutorise($validated['departement_id']);
 
-        $activite = new Activite();
+        $activite = new Activite;
         $activite->extrant_id = null;
         $activite->exercice_id = $exerciceId;
         $activite->non_programmee = true;
@@ -266,7 +269,7 @@ class ActiviteController extends Controller
         $extrants = Extrant::query()
             ->with('objectif')
             ->actif()
-            ->when($exerciceId !== null, fn ($q) => $q->whereHas('objectif', fn ($oq) => $oq->where('exercice_id', $exerciceId)))
+            ->when($exerciceId !== null, fn ($q) => $q->whereHas('objectif.exercices', fn ($oq) => $oq->where('exercices.id', $exerciceId)))
             ->ordered()
             ->get();
         $departements = $this->departementsVisibles();
@@ -374,7 +377,7 @@ class ActiviteController extends Controller
      */
     public function valider(Activite $activite)
     {
-        if (!Auth::user()->can('validate_activites')) {
+        if (! Auth::user()->can('validate_activites')) {
             return redirect()->route('activites.index')
                 ->with('error', 'Vous ne pouvez pas valider cette activité.');
         }
@@ -397,7 +400,7 @@ class ActiviteController extends Controller
      */
     public function refuser(Request $request, Activite $activite)
     {
-        if (!Auth::user()->can('validate_activites')) {
+        if (! Auth::user()->can('validate_activites')) {
             return redirect()->route('activites.show', $activite)
                 ->with('error', 'Vous ne pouvez pas refuser cette activité.');
         }
@@ -430,7 +433,7 @@ class ActiviteController extends Controller
      * Départements proposés dans les filtres, restreints au périmètre de
      * l'utilisateur (sous-arbre pour un chef, entité propre pour un agent).
      *
-     * @return \Illuminate\Support\Collection<int, Departement>
+     * @return Collection<int, Departement>
      */
     /**
      * Valide une saisie de programmation en exigeant, en plus des règles fournies,
@@ -461,10 +464,10 @@ class ActiviteController extends Controller
      * Regroupe une page d'activités en cadre logique : Résultat → Extrant → activités.
      * L'ordre des blocs suit celui de la collection reçue (déjà trié en SQL).
      *
-     * @param  \Illuminate\Support\Collection<int, Activite>  $activites
-     * @return \Illuminate\Support\Collection<int, array<string, mixed>>
+     * @param  Collection<int, Activite>  $activites
+     * @return Collection<int, array<string, mixed>>
      */
-    private function grouperParCadreLogique($activites): \Illuminate\Support\Collection
+    private function grouperParCadreLogique($activites): Collection
     {
         return $activites
             ->groupBy(fn (Activite $activite) => $activite->extrant?->resultat_id ?? 'sans-resultat')
@@ -563,7 +566,9 @@ class ActiviteController extends Controller
     {
         $this->authorize('view', $activite);
 
-        if (! Auth::user()->can('edit_activites') && ! Auth::user()->can('validate_activites')) {
+        // La cellule suivi & évaluation joint les justificatifs d'exécution sans
+        // avoir le droit de modifier l'activité elle-même.
+        if (! Auth::user()->canAny(['edit_activites', 'validate_activites', 'evaluate_activites'])) {
             return back()->with('error', "Vous n'êtes pas autorisé à ajouter des fichiers.");
         }
 

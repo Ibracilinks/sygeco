@@ -7,8 +7,9 @@ use App\Models\Extrant;
 use App\Models\Objectif;
 use App\Models\Resultat;
 use App\Support\ActiveExercice;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 
-uses(\Illuminate\Foundation\Testing\RefreshDatabase::class);
+uses(RefreshDatabase::class);
 
 /*
 |--------------------------------------------------------------------------
@@ -43,7 +44,7 @@ test('un chef ne peut pas renseigner le budget consommé par soumission directe'
     $departement = Departement::factory()->create();
     $chef = userWithRole('chef', ['departement_id' => $departement->id]);
 
-    $objectif = Objectif::factory()->create(['exercice_id' => $exercice->id, 'annee' => $exercice->annee]);
+    $objectif = Objectif::factory()->pourExercice($exercice)->create(['annee' => $exercice->annee]);
     $resultat = Resultat::factory()->forObjectif($objectif)->create();
     $extrant = Extrant::factory()->forResultat($resultat)->create();
 

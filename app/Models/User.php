@@ -12,7 +12,7 @@ use Spatie\Permission\Traits\HasRoles;
 
 class User extends Authenticatable
 {
-    use HasFactory, LogsActivityWithDefaults, Notifiable, HasRoles, TwoFactorAuthenticatable;
+    use HasFactory, HasRoles, LogsActivityWithDefaults, Notifiable, TwoFactorAuthenticatable;
 
     protected $fillable = [
         'name',
@@ -44,7 +44,7 @@ class User extends Authenticatable
         return Str::of($this->name)
             ->explode(' ')
             ->take(2)
-            ->map(fn($word) => Str::substr($word, 0, 1))
+            ->map(fn ($word) => Str::substr($word, 0, 1))
             ->implode('');
     }
 
@@ -76,6 +76,22 @@ class User extends Authenticatable
     }
 
     /**
+     * Cellule planification : saisit et soumet le PTA de son entité.
+     */
+    public function isAgentPlanification()
+    {
+        return $this->hasRole('agent-planification');
+    }
+
+    /**
+     * Cellule suivi & évaluation : renseigne l'exécution et les évaluations.
+     */
+    public function isSuiviEvaluation()
+    {
+        return $this->hasRole('suivi-evaluation');
+    }
+
+    /**
      * Entités dont l'utilisateur est le chef hiérarchique direct,
      * c'est-à-dire les enfants de son entité de rattachement.
      * Le flux d'approbation est montant : un chef valide les
@@ -93,10 +109,10 @@ class User extends Authenticatable
     /**
      * Périmètre de visibilité des activités (par departement_id) :
      * - un chef voit son entité ET toutes les entités situées en dessous (sous-arbre) ;
-     * - un agent ne voit que sa propre entité ;
+     * - un agent (y compris agent-planification / suivi-evaluation) ne voit que sa propre entité ;
      * - les autres (dbcgoq, superadmin…) ne sont pas restreints → null.
      *
-     * @return array<int, int>|null  null = aucune restriction
+     * @return array<int, int>|null null = aucune restriction
      */
     public function perimetreActivitesIds(): ?array
     {
@@ -116,7 +132,9 @@ class User extends Authenticatable
                 ?? [$this->departement_id];
         }
 
-        if ($this->isAgent()) {
+        // Agent, cellule planification et cellule suivi & évaluation travaillent
+        // tous les trois sur le périmètre de leur seule entité de rattachement.
+        if ($this->isAgent() || $this->isAgentPlanification() || $this->isSuiviEvaluation()) {
             return [$this->departement_id];
         }
 

@@ -6,8 +6,11 @@ use App\Models\Exercice;
 use App\Models\Extrant;
 use App\Models\Objectif;
 use App\Models\Resultat;
+use App\Models\User;
+use App\Support\ActiveExercice;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 
-uses(\Illuminate\Foundation\Testing\RefreshDatabase::class);
+uses(RefreshDatabase::class);
 
 /**
  * Crée une activité nommée, rattachée à un exercice et un département donnés,
@@ -15,7 +18,7 @@ uses(\Illuminate\Foundation\Testing\RefreshDatabase::class);
  */
 function activiteNommee(Exercice $exercice, Departement $departement, string $nom): Activite
 {
-    $objectif = Objectif::factory()->create(['exercice_id' => $exercice->id, 'annee' => $exercice->annee]);
+    $objectif = Objectif::factory()->pourExercice($exercice)->create(['annee' => $exercice->annee]);
     $resultat = Resultat::factory()->forObjectif($objectif)->create();
     $extrant = Extrant::factory()->forResultat($resultat)->create();
 
@@ -37,7 +40,7 @@ test('un invité est redirigé vers la connexion', function () {
 
 test('un utilisateur sans rôle ne peut pas accéder à la liste', function () {
     seedRolesAndPermissions();
-    $user = \App\Models\User::factory()->create();
+    $user = User::factory()->create();
 
     $this->actingAs($user)->get(route('activites.index'))->assertForbidden();
 });
@@ -105,7 +108,7 @@ test('un chef de département voit son département forcé à la création', fun
     seedRolesAndPermissions();
     $dep = Departement::factory()->create();
     $autreDep = Departement::factory()->create();
-    $chef = \App\Models\User::factory()->dansDepartement($dep)->create();
+    $chef = User::factory()->dansDepartement($dep)->create();
     $chef->assignRole('chef');
     $extrant = Extrant::factory()->create();
 
@@ -200,7 +203,7 @@ test('une structure intervenante inexistante est refusée', function () {
 test('un chef peut soumettre une activité de son département', function () {
     seedRolesAndPermissions();
     $dep = Departement::factory()->create();
-    $chef = \App\Models\User::factory()->dansDepartement($dep)->create();
+    $chef = User::factory()->dansDepartement($dep)->create();
     $chef->assignRole('chef');
     $activite = Activite::factory()->brouillon()->pourDepartement($dep)->create();
 
@@ -214,7 +217,7 @@ test('un chef ne peut pas soumettre une activité d\'un autre département', fun
     seedRolesAndPermissions();
     $dep = Departement::factory()->create();
     $autreDep = Departement::factory()->create();
-    $chef = \App\Models\User::factory()->dansDepartement($dep)->create();
+    $chef = User::factory()->dansDepartement($dep)->create();
     $chef->assignRole('chef');
     $activite = Activite::factory()->brouillon()->pourDepartement($autreDep)->create();
 
@@ -267,7 +270,7 @@ test('un chef voit les activités de son sous-arbre (entité + entités en desso
     $service = Departement::factory()->service()->enfantDe($departement)->create();
     $horsArbre = Departement::factory()->direction()->create();
 
-    $chef = \App\Models\User::factory()->dansDepartement($departement)->create();
+    $chef = User::factory()->dansDepartement($departement)->create();
     $chef->assignRole('chef');
 
     activiteNommee($exercice, $departement, 'ACTPROPRE');
@@ -275,7 +278,7 @@ test('un chef voit les activités de son sous-arbre (entité + entités en desso
     activiteNommee($exercice, $horsArbre, 'ACTHORS');
 
     $this->actingAs($chef)
-        ->withSession([\App\Support\ActiveExercice::SESSION_KEY => $exercice->id])
+        ->withSession([ActiveExercice::SESSION_KEY => $exercice->id])
         ->get(route('activites.index'))
         ->assertOk()
         ->assertSee('ACTPROPRE')
@@ -289,14 +292,14 @@ test('un agent ne voit que les activités de sa propre entité', function () {
     $direction = Departement::factory()->direction()->create();
     $service = Departement::factory()->service()->enfantDe($direction)->create();
 
-    $agent = \App\Models\User::factory()->dansDepartement($direction)->create();
+    $agent = User::factory()->dansDepartement($direction)->create();
     $agent->assignRole('agent');
 
     activiteNommee($exercice, $direction, 'ACTDIR');
     activiteNommee($exercice, $service, 'ACTSRV');
 
     $this->actingAs($agent)
-        ->withSession([\App\Support\ActiveExercice::SESSION_KEY => $exercice->id])
+        ->withSession([ActiveExercice::SESSION_KEY => $exercice->id])
         ->get(route('activites.index'))
         ->assertOk()
         ->assertSee('ACTDIR')
@@ -307,7 +310,7 @@ test('un chef peut voir (policy) une activité d\'une entité en dessous', funct
     seedRolesAndPermissions();
     $departement = Departement::factory()->departement()->create();
     $service = Departement::factory()->service()->enfantDe($departement)->create();
-    $chef = \App\Models\User::factory()->dansDepartement($departement)->create();
+    $chef = User::factory()->dansDepartement($departement)->create();
     $chef->assignRole('chef');
     $activite = Activite::factory()->pourDepartement($service)->create();
 
@@ -334,7 +337,7 @@ test("l'index groupe les activités par résultat puis extrant et affiche la dat
     $admin = userWithRole('dbcgoq');
     $exercice = Exercice::factory()->actif()->create();
 
-    $objectif = Objectif::factory()->create(['exercice_id' => $exercice->id, 'annee' => $exercice->annee]);
+    $objectif = Objectif::factory()->pourExercice($exercice)->create(['annee' => $exercice->annee]);
     $resultat = Resultat::factory()->forObjectif($objectif)->create(['code' => 'RES-CADRE', 'libelle' => 'Résultat du cadre']);
     $extrant = Extrant::factory()->forResultat($resultat)->create(['code' => 'EXT-CADRE']);
 
@@ -345,7 +348,7 @@ test("l'index groupe les activités par résultat puis extrant et affiche la dat
     ]);
 
     $this->actingAs($admin)
-        ->withSession([\App\Support\ActiveExercice::SESSION_KEY => $exercice->id])
+        ->withSession([ActiveExercice::SESSION_KEY => $exercice->id])
         ->get(route('activites.index'))
         ->assertOk()
         ->assertSee('Transmis le')
@@ -379,14 +382,14 @@ test('le sélecteur de structures intervenantes est rendu sur la création et la
     );
 });
 
-test("un chef de Direction Centrale voit sa DC et ses services dans le champ Structure", function () {
+test('un chef de Direction Centrale voit sa DC et ses services dans le champ Structure', function () {
     seedRolesAndPermissions();
     $dc = Departement::factory()->departement()->create(['nom' => 'DC Ressources']);
     $serviceA = Departement::factory()->service()->enfantDe($dc)->create(['nom' => 'Service Paie']);
     $serviceB = Departement::factory()->service()->enfantDe($dc)->create(['nom' => 'Service Formation']);
     $horsPerimetre = Departement::factory()->departement()->create(['nom' => 'DC Etrangere']);
 
-    $chef = \App\Models\User::factory()->dansDepartement($dc)->create();
+    $chef = User::factory()->dansDepartement($dc)->create();
     $chef->assignRole('chef');
 
     foreach ([route('activites.create'), route('activites.edit', Activite::factory()->pourDepartement($dc)->create(['statut' => 'brouillon']))] as $url) {
@@ -414,7 +417,7 @@ test('un chef peut rattacher une activité à un service de sa Direction Central
     $service = Departement::factory()->service()->enfantDe($dc)->create();
     $extrant = Extrant::factory()->create();
 
-    $chef = \App\Models\User::factory()->dansDepartement($dc)->create();
+    $chef = User::factory()->dansDepartement($dc)->create();
     $chef->assignRole('chef');
 
     $this->actingAs($chef)->post(route('activites.store'), [

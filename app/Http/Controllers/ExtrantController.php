@@ -9,7 +9,6 @@ use App\Support\ActiveExercice;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Validation\Rule;
 
 class ExtrantController extends Controller
 {
@@ -25,7 +24,7 @@ class ExtrantController extends Controller
 
         $exerciceId = ActiveExercice::id();
         if ($exerciceId !== null) {
-            $query->whereHas('objectif', fn ($q) => $q->where('exercice_id', $exerciceId));
+            $query->whereHas('objectif.exercices', fn ($q) => $q->where('exercices.id', $exerciceId));
         }
 
         if ($this->isChefDepartement($user)) {
@@ -60,8 +59,9 @@ class ExtrantController extends Controller
         $filters = $request->only(['search', 'objectif_id', 'is_active']);
 
         $objectifs = Objectif::query()
+            ->with('exercices:id,annee')
             ->where('statut', 'actif')
-            ->when($exerciceId !== null, fn ($q) => $q->where('exercice_id', $exerciceId))
+            ->forExercice($exerciceId)
             ->when($this->isChefDepartement($user), fn ($q) => $q->whereHas('extrants.activites', fn (Builder $builder) => $builder->where('departement_id', $user->departement_id)))
             ->orderBy('annee', 'desc')
             ->get();
@@ -85,14 +85,7 @@ class ExtrantController extends Controller
      */
     public function store(Request $request)
     {
-        $validated = $request->validate([
-            'resultat_id' => 'required|exists:resultats,id',
-            'code' => 'required|string|max:20|unique:extrants',
-            'libelle' => 'required|string|max:500',
-            'description' => 'nullable|string',
-            'ordre' => 'nullable|integer',
-            'is_active' => 'boolean',
-        ]);
+        $validated = $request->validate($this->reglesExtrant($request));
 
         // L'objectif est dérivé du résultat sélectionné (cohérence Objectif → Résultat → Extrant).
         $validated['objectif_id'] = Resultat::whereKey($validated['resultat_id'])->value('objectif_id');
@@ -159,8 +152,8 @@ class ExtrantController extends Controller
 
         return Resultat::query()
             ->actif()
-            ->with('objectif:id,code,annee,libelle')
-            ->when($exerciceId !== null, fn ($q) => $q->whereHas('objectif', fn ($o) => $o->where('exercice_id', $exerciceId)))
+            ->with(['objectif:id,code,annee,libelle', 'objectif.exercices:id,annee'])
+            ->when($exerciceId !== null, fn ($q) => $q->whereHas('objectif.exercices', fn ($o) => $o->where('exercices.id', $exerciceId)))
             ->ordered()
             ->get();
     }
@@ -170,14 +163,7 @@ class ExtrantController extends Controller
      */
     public function update(Request $request, Extrant $extrant)
     {
-        $validated = $request->validate([
-            'resultat_id' => 'required|exists:resultats,id',
-            'code' => ['required', 'string', 'max:20', Rule::unique('extrants')->ignore($extrant->id)],
-            'libelle' => 'required|string|max:500',
-            'description' => 'nullable|string',
-            'ordre' => 'nullable|integer',
-            'is_active' => 'boolean',
-        ]);
+        $validated = $request->validate($this->reglesExtrant($request, $extrant));
 
         // L'objectif suit le résultat sélectionné.
         $validated['objectif_id'] = Resultat::whereKey($validated['resultat_id'])->value('objectif_id');
@@ -186,6 +172,79 @@ class ExtrantController extends Controller
 
         return redirect()->route('extrants.index')
             ->with('success', "Extrant {$extrant->code} mis à jour.");
+    }
+
+    /**
+     * Règles de saisie d'un extrant.
+     *
+     * Le code n'est pas unique dans toute la base : la même nomenclature
+     * (« EXT_001 », « Extrant 1.1 ») est réutilisée d'un exercice à l'autre.
+     * L'unicité s'apprécie **par exercice**, en remontant Extrant → Résultat →
+     * Objectif → exercices couverts.
+     *
+     * @return array<string, mixed>
+     */
+    private function reglesExtrant(Request $request, ?Extrant $extrant = null): array
+    {
+        return [
+            'resultat_id' => 'required|exists:resultats,id',
+            'code' => [
+                'required', 'string', 'max:20',
+                function (string $attribute, mixed $value, callable $fail) use ($request, $extrant) {
+                    $conflit = $this->codeDejaUtiliseDansExercice(
+                        (string) $value,
+                        (int) $request->input('resultat_id'),
+                        $extrant?->id
+                    );
+
+                    if ($conflit !== null) {
+                        $fail("Le code « {$value} » est déjà utilisé par un extrant de l'exercice {$conflit}.");
+                    }
+                },
+            ],
+            'libelle' => 'required|string|max:500',
+            'description' => 'nullable|string',
+            'ordre' => 'nullable|integer',
+            'is_active' => 'boolean',
+        ];
+    }
+
+    /**
+     * Année du premier exercice où le code est déjà porté par un autre extrant,
+     * ou null si le code est libre.
+     */
+    private function codeDejaUtiliseDansExercice(string $code, int $resultatId, ?int $extrantIdIgnore): ?int
+    {
+        $objectifId = Resultat::whereKey($resultatId)->value('objectif_id');
+
+        if ($objectifId === null) {
+            return null;
+        }
+
+        $exerciceIds = Objectif::whereKey($objectifId)
+            ->firstOrFail()
+            ->exercices()
+            ->pluck('exercices.id');
+
+        if ($exerciceIds->isEmpty()) {
+            return null;
+        }
+
+        // Un extrant en conflit est un extrant de même code dont l'objectif couvre
+        // au moins un des exercices visés.
+        $conflit = Extrant::query()
+            ->where('code', $code)
+            ->when($extrantIdIgnore !== null, fn ($q) => $q->whereKeyNot($extrantIdIgnore))
+            ->whereHas('objectif.exercices', fn ($q) => $q->whereIn('exercices.id', $exerciceIds))
+            ->first();
+
+        if ($conflit === null) {
+            return null;
+        }
+
+        return (int) $conflit->objectif?->exercices()
+            ->whereIn('exercices.id', $exerciceIds)
+            ->min('annee');
     }
 
     /**
@@ -210,7 +269,7 @@ class ExtrantController extends Controller
      */
     public function toggleStatus(Extrant $extrant)
     {
-        $extrant->update(['is_active' => !$extrant->is_active]);
+        $extrant->update(['is_active' => ! $extrant->is_active]);
 
         $status = $extrant->is_active ? 'activé' : 'désactivé';
 

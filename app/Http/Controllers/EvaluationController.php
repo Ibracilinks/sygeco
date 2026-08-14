@@ -48,7 +48,7 @@ class EvaluationController extends Controller
         $extrants = Extrant::query()
             ->with('objectif')
             ->actif()
-            ->when($exerciceId !== null, fn ($q) => $q->whereHas('objectif', fn ($oq) => $oq->where('exercice_id', $exerciceId)))
+            ->when($exerciceId !== null, fn ($q) => $q->whereHas('objectif.exercices', fn ($oq) => $oq->where('exercices.id', $exerciceId)))
             ->ordered()
             ->get();
 
@@ -61,10 +61,10 @@ class EvaluationController extends Controller
             ? $exercice->fenetreEvaluation($periode)
             : [null, null];
 
-        // Fenêtre de saisie : ouverte en permanence pour le dbcgoq / superadmin,
-        // sinon uniquement pendant la fenêtre de la période concernée.
-        $peutSaisir = Auth::user()->can('validate_activites')
-            || ($exercice?->enPeriodeEvaluationPour($periode) ?? false);
+        // La saisie mi-parcours et fin d'année est ouverte en permanence : les dates
+        // de l'exercice ne sont plus qu'indicatives (bandeau d'information), elles ne
+        // ferment plus le formulaire. Seule la permission décide.
+        $peutSaisir = true;
 
         // Chaque période a sa propre page, strictement cloisonnée : mi-parcours et
         // fin d'année ne montrent jamais les données de l'autre période.
@@ -95,7 +95,7 @@ class EvaluationController extends Controller
 
         $user = Auth::user();
 
-        if (! $user->can('edit_activites') && ! $user->can('validate_activites')) {
+        if (! $user->can('evaluate_activites') && ! $user->can('validate_activites')) {
             return back()->with('error', "Vous n'êtes pas autorisé à renseigner l'évaluation.");
         }
 
@@ -104,18 +104,11 @@ class EvaluationController extends Controller
         }
 
         if ($activite->statut !== 'valide') {
-            return back()->with('error', "Seules les activités validées peuvent être évaluées.");
+            return back()->with('error', 'Seules les activités validées peuvent être évaluées.');
         }
 
-        // La fenêtre s'apprécie sur l'exercice de l'activité, pas sur celui que
-        // l'utilisateur a sélectionné dans son contexte de navigation.
-        $exercice = $activite->exercice();
-        $peutSaisir = $user->can('validate_activites')
-            || ($exercice?->enPeriodeEvaluationPour($periode) ?? false);
-
-        if (! $peutSaisir) {
-            return back()->with('error', 'La fenêtre de saisie '.ActiviteEvaluation::PERIODES[$periode].' est fermée.');
-        }
+        // Les fenêtres mi-parcours / fin d'année ne bloquent plus la saisie : elles
+        // restent ouvertes en permanence et ne servent qu'à informer l'utilisateur.
 
         $validated = $request->validate([
             'statut_execution' => ['required', 'in:non_realise,en_cours,realise'],
