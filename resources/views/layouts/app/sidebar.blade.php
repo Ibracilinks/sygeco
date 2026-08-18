@@ -57,6 +57,16 @@
                 </flux:sidebar.group>
             @endif
 
+            @can('view_missions')
+                <flux:sidebar.group expandable icon="document-duplicate" :heading="__('Missions')"
+                    class="app-sidebar-group grid" data-groupe="missions">
+                    <flux:sidebar.item icon="document-duplicate" href="{{ route('missions.index') }}"
+                        :current="request()->routeIs('missions.*')">
+                        {{ __('Ordres de mission') }}
+                    </flux:sidebar.item>
+                </flux:sidebar.group>
+            @endcan
+
             <!-- Planification Stratégique -->
             <flux:sidebar.group expandable icon="chart-bar-square" :heading="__('Planification Stratégique')"
                 class="app-sidebar-group grid" data-groupe="planification">

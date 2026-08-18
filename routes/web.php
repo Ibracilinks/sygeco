@@ -8,6 +8,7 @@ use App\Http\Controllers\EvaluationController;
 use App\Http\Controllers\ExerciceController;
 use App\Http\Controllers\ExtrantController;
 use App\Http\Controllers\JournalController;
+use App\Http\Controllers\MissionController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\ObjectifController;
 use App\Http\Controllers\ResultatController;
@@ -118,6 +119,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('/{activite}/refuser', [ActiviteController::class, 'refuser'])->name('refuser');
         Route::post('/{activite}/pieces-jointes', [ActiviteController::class, 'storePieceJointe'])->name('pieces-jointes.store');
         Route::get('/{activite}/pieces-jointes/{pieceJointe}', [ActiviteController::class, 'downloadPieceJointe'])->name('pieces-jointes.download');
+    });
+
+    Route::middleware(['role:superadmin|dbcgoq|chef'])->group(function () {
+        Route::resource('missions', MissionController::class);
     });
 });
 

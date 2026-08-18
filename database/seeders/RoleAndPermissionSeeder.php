@@ -31,6 +31,8 @@ class RoleAndPermissionSeeder extends Seeder
             'view_exercices', 'manage_exercices',
             // Indicateurs
             'view_indicateurs', 'create_indicateurs', 'edit_indicateurs', 'delete_indicateurs', 'validate_indicateurs',
+            // Missions
+            'view_missions', 'create_missions', 'edit_missions', 'delete_missions', 'generate_missions_pdf',
         ];
 
         foreach ($permissions as $permission) {
@@ -70,6 +72,10 @@ class RoleAndPermissionSeeder extends Seeder
             'view_departements',
             'view_users',
             'view_exercices',
+            'view_missions',
+            'create_missions',
+            'edit_missions',
+            'generate_missions_pdf',
         ]);
 
         $roleAgent->syncPermissions(['view_activites']);
