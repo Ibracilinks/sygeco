@@ -63,46 +63,95 @@
             </div>
 
             @if ($mission->estMemeVille())
-                <div class="mx-auto max-w-5xl border border-slate-300 bg-white p-6 text-[13px] leading-relaxed text-black shadow-sm">
-                    <div class="border border-black px-4 py-3 text-center text-sm font-bold uppercase">
-                        Dotation en tickets de carburant relative a l'ordre de mission n°{{ $mission->reference }}
+                {{-- Reproduction du budget officiel « même ville » : mêmes colonnes que le modèle CANAM,
+                     les colonnes monétaires restant vides puisque seul le carburant est doté. --}}
+                <div class="mx-auto max-w-5xl border border-slate-300 bg-white p-8 text-[13px] leading-relaxed text-black shadow-sm">
+                    <div class="grid grid-cols-2 gap-6 text-center text-[11px] font-bold uppercase">
+                        <div>
+                            <p>Ministère de la Santé et du Développement Social</p>
+                            <p class="my-0.5">------------------------</p>
+                            <p>Caisse Nationale d'Assurance Maladie</p>
+                            <img src="{{ asset('logo_canam.png') }}" alt="CANAM" class="mx-auto mt-2 h-16 w-16 object-contain">
+                        </div>
+                        <div>
+                            <p>République du Mali</p>
+                            <p class="my-0.5">----------------------</p>
+                            <p>Un Peuple – Un But – Une Foi</p>
+                        </div>
                     </div>
-                    <div class="mt-4 border border-black px-4 py-3">
-                        <span class="font-bold uppercase">Objet de la mission:</span>
-                        <span class="uppercase">{{ $mission->objet }}</span>
+
+                    <h3 class="mt-6 text-center text-base font-bold uppercase underline">
+                        Budget relatif a l'ordre de mission n°<span class="text-red-600">{{ $mission->reference }}</span>
+                    </h3>
+
+                    <p class="mt-5 text-justify text-[12px] font-bold uppercase underline">
+                        Objet de la mission: {{ $mission->objet }}
+                    </p>
+
+                    <div class="mt-5 text-[12px]">
+                        <p><span class="font-bold uppercase underline">Durée :</span> <span class="font-bold">{{ $mission->nombre_jours }} jour(s) ouvrable(s)</span></p>
+                        <p>{{ $mission->date_depart?->format('d/m/Y') }} au {{ $mission->date_retour?->format('d/m/Y') }}</p>
                     </div>
-                    <div class="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
-                        <div class="border border-black px-4 py-3"><span class="font-bold uppercase">Durée:</span> {{ $mission->nombre_jours }} jour(s)</div>
-                        <div class="border border-black px-4 py-3">{{ $mission->duree_texte }}</div>
-                    </div>
-                    {{-- Mission même ville : aucune indemnité, uniquement le décompte des tickets de carburant. --}}
-                    <table class="mt-5 w-full border-collapse text-xs">
+
+                    <table class="mt-4 w-full border-collapse text-[11px]">
                         <thead>
-                            <tr><th colspan="2" class="border border-black px-2 py-2 text-left font-bold uppercase">I- Participants</th></tr>
-                            <tr><th class="border border-black px-2 py-2">N°</th><th class="border border-black px-2 py-2 text-left">PRENOMS ET NOMS</th></tr>
+                            <tr class="font-bold">
+                                <th class="border border-black px-1 py-1">N°</th>
+                                <th class="border border-black px-1 py-1">LIBELLE</th>
+                                <th class="border border-black px-1 py-1">Nbre de pers.</th>
+                                <th class="border border-black px-1 py-1">Mtant par jour</th>
+                                <th class="border border-black px-1 py-1">Nbre de Jrs</th>
+                                <th class="border border-black px-1 py-1">Frais de mission</th>
+                                <th class="border border-black px-1 py-1">Mtant par nuitée</th>
+                                <th class="border border-black px-1 py-1">Nbre de nuitées</th>
+                                <th class="border border-black px-1 py-1">Indemnités de Mission</th>
+                                <th class="border border-black px-1 py-1">TOTAL</th>
+                            </tr>
                         </thead>
                         <tbody>
+                            <tr><td colspan="10" class="border border-black px-1 py-1 text-center font-bold uppercase">I- Frais et indemnites</td></tr>
+                            <tr><td class="border border-black px-1 py-1"></td><td class="border border-black px-1 py-1 text-center font-bold uppercase">Prénoms et noms</td><td colspan="8" class="border border-black px-1 py-1"></td></tr>
                             @foreach ($mission->participants as $participant)
                                 <tr>
-                                    <td class="border border-black px-2 py-2 text-center">{{ $loop->iteration }}</td>
-                                    <td class="border border-black px-2 py-2">{{ $participant->nom_complet }}</td>
+                                    <td class="border border-black px-1 py-1 text-center">{{ $loop->iteration }}</td>
+                                    <td class="border border-black px-1 py-1 italic">{{ $participant->nom_complet }}</td>
+                                    <td class="border border-black px-1 py-1 text-center font-bold">1</td>
+                                    <td class="border border-black px-1 py-1"></td>
+                                    <td class="border border-black px-1 py-1 text-center font-bold">{{ $mission->nombre_jours }}</td>
+                                    <td class="border border-black px-1 py-1"></td>
+                                    <td class="border border-black px-1 py-1"></td>
+                                    <td class="border border-black px-1 py-1"></td>
+                                    <td class="border border-black px-1 py-1"></td>
+                                    <td class="border border-black px-1 py-1"></td>
                                 </tr>
                             @endforeach
-                            <tr class="font-semibold"><td class="border border-black px-2 py-2 text-right">Total</td><td class="border border-black px-2 py-2">{{ $mission->nombre_personnes }} personne(s)</td></tr>
-                            <tr><td colspan="2" class="border border-black px-2 py-2 text-left font-bold uppercase">II- Carburant</td></tr>
-                            <tr><td class="border border-black px-2 py-2">NBRE DE JOURS OUVRABLE</td><td class="border border-black px-2 py-2">{{ $mission->nombre_jours }}</td></tr>
-                            <tr><td class="border border-black px-2 py-2">NOMBRE DE TICKET PAR JOUR</td><td class="border border-black px-2 py-2">{{ $mission->tickets_carburant_par_jour }}</td></tr>
-                            <tr class="font-bold"><td class="border border-black px-2 py-2">NOMBRE TOTAL DE TICKETS</td><td class="border border-black px-2 py-2">{{ $mission->nombre_tickets_carburant }}</td></tr>
+                            <tr class="font-bold"><td colspan="9" class="border border-black px-1 py-1 text-center uppercase">Sous-total 1</td><td class="border border-black px-1 py-1 text-right">-</td></tr>
+                            <tr><td colspan="10" class="border border-black px-1 py-1 text-center font-bold uppercase">II- Carburant</td></tr>
+                            <tr class="font-bold">
+                                <td colspan="4" class="border border-black px-1 py-1 text-center uppercase">Nbre de jours ouvrable</td>
+                                <td colspan="6" class="border border-black px-1 py-1 text-center uppercase">Nombre de ticket par jour</td>
+                            </tr>
+                            <tr>
+                                <td colspan="2" class="border border-black px-1 py-1 font-bold uppercase">Tickets de carburant</td>
+                                <td colspan="2" class="border border-black px-1 py-1 text-center">{{ $mission->nombre_jours }}</td>
+                                <td colspan="5" class="border border-black px-1 py-1 text-center">{{ $mission->tickets_carburant_par_jour }}</td>
+                                <td class="border border-black px-1 py-1 text-center font-bold">{{ $mission->nombre_tickets_carburant }}</td>
+                            </tr>
+                            <tr class="font-bold"><td colspan="9" class="border border-black px-1 py-1 text-center uppercase">Sous-total 2</td><td class="border border-black px-1 py-1 text-center">{{ $mission->nombre_tickets_carburant }}</td></tr>
+                            <tr class="font-bold"><td colspan="9" class="border border-black px-1 py-1 text-center text-base uppercase">Total</td><td class="border border-black bg-sky-100 px-1 py-1 text-center">{{ $mission->nombre_tickets_carburant }}</td></tr>
                         </tbody>
                     </table>
-                    <div class="mt-3 border border-black px-4 py-2 text-center text-sm font-semibold uppercase">{{ $mission->tickets_carburant_en_lettres }}</div>
-                    <div class="mt-6 text-right text-sm">{{ $mission->lieu_signature }} le {{ $mission->date_document?->format('d/m/Y') }}</div>
-                    <div class="mt-8 grid grid-cols-1 gap-6 md:grid-cols-3">
+
+                    <p class="mt-4 text-center text-[12px] font-bold uppercase">{{ $mission->tickets_carburant_en_lettres }}</p>
+
+                    <p class="mt-6 text-right text-[12px]">{{ $mission->lieu_signature }} le {{ $mission->date_document?->format('d/m/Y') }}</p>
+
+                    <div class="mt-6 grid gap-6" style="grid-template-columns: repeat({{ max(1, $mission->signataires->count()) }}, minmax(0, 1fr));">
                         @foreach ($mission->signataires as $signataire)
-                            <div class="text-center">
-                                <div class="min-h-10 text-sm font-semibold uppercase">{{ $signataire->libelle }}</div>
-                                <div class="mt-20 text-sm font-bold uppercase">{{ $signataire->nom }}</div>
-                                <div class="mt-1 text-xs">{{ $signataire->fonction }}</div>
+                            <div class="text-center text-[11px]">
+                                <div class="min-h-8 font-bold uppercase">{{ $signataire->libelle }}</div>
+                                <div class="mt-16 font-bold uppercase underline">{{ $signataire->nom }}</div>
+                                <div class="mt-0.5 italic">{{ $signataire->fonction }}</div>
                             </div>
                         @endforeach
                     </div>
@@ -257,6 +306,8 @@
             ];
         @endphp
         <script id="mission-meme-ville-data" type="application/json">@json($missionPdf, JSON_UNESCAPED_UNICODE)</script>
+        {{-- Logo repris tel quel dans le PDF (même origine : lisible par le canvas). --}}
+        <img id="mission-logo" src="{{ asset('logo_canam.png') }}" alt="" class="hidden" aria-hidden="true">
     @elseif ($mission->estExterieure())
         @php
             $missionPdf = $missionBase + [

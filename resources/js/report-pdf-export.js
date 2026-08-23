@@ -246,20 +246,23 @@ window.exportMissionMemeVillePDF = async function exportMissionMemeVillePDF(butt
     const fmt = (value) => new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 0 }).format(Number(value || 0));
     const text = (doc, value, x, y, options = {}) => doc.text(String(value ?? ''), x, y, options);
 
+    // Logo officiel : présent en clair dans la page (même origine), donc utilisable tel quel.
+    const chargerLogo = async () => {
+        const img = document.getElementById('mission-logo');
+        if (!img) return null;
+        try {
+            if (!img.complete) await img.decode();
+            return img.naturalWidth ? img : null;
+        } catch (e) {
+            return null;
+        }
+    };
+
     try {
         const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
         const pageW = doc.internal.pageSize.getWidth();
         const margin = 10;
         const fullW = pageW - margin * 2;
-        // Mission même ville : document de dotation en tickets, sans aucun montant.
-        const colWidths = [14, fullW - 14];
-        const colX = [];
-        let cursor = margin;
-
-        colWidths.forEach((width) => {
-            colX.push(cursor);
-            cursor += width;
-        });
 
         const drawCell = (x, y, w, h, value = '', options = {}) => {
             doc.rect(x, y, w, h);
@@ -274,61 +277,159 @@ window.exportMissionMemeVillePDF = async function exportMissionMemeVillePDF(butt
             });
         };
 
-        doc.setFont('helvetica', 'normal');
-        doc.setFontSize(10);
-        drawCell(margin, 12, fullW, 10, `DOTATION EN TICKETS DE CARBURANT RELATIVE A L'ORDRE DE MISSION N°${mission.reference}`.toUpperCase(), { align: 'center', valignMiddle: true });
-        drawCell(margin, 26, fullW, 18, `OBJET DE LA MISSION: ${mission.objet}`.toUpperCase());
-        drawCell(margin, 48, fullW / 2, 8, `DUREE : ${mission.nombre_jours} jour(s) ouvrable(s)`.toUpperCase(), { valignMiddle: true });
-        drawCell(margin + fullW / 2, 48, fullW / 2, 8, `${mission.date_depart} au ${mission.date_retour}`, { valignMiddle: true });
+        // Texte centré, souligné à la largeur réelle du texte.
+        const souligne = (value, x, y, size) => {
+            const largeur = doc.getStringUnitWidth(value) * size / doc.internal.scaleFactor;
+            doc.line(x - largeur / 2, y + 1, x + largeur / 2, y + 1);
+        };
 
-        let y = 60;
+        // ── En-tête officiel ────────────────────────────────────────────────
+        const colonne = fullW / 2;
+        const centreGauche = margin + colonne / 2;
+        const centreDroite = margin + colonne + colonne / 2;
+
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(8);
+        doc.text(doc.splitTextToSize('MINISTERE DE LA SANTE ET DU DEVELOPPEMENT SOCIAL', colonne - 6), centreGauche, 14, { align: 'center' });
+        doc.text('------------------------', centreGauche, 21, { align: 'center' });
+        doc.text("CAISSE NATIONALE D'ASSURANCE MALADIE", centreGauche, 25, { align: 'center' });
+
+        doc.text('REPUBLIQUE DU MALI', centreDroite, 14, { align: 'center' });
+        doc.text('----------------------', centreDroite, 18, { align: 'center' });
+        doc.text('UN PEUPLE – UN BUT – UNE FOI', centreDroite, 22, { align: 'center' });
+
+        const logo = await chargerLogo();
+        if (logo) {
+            doc.addImage(logo, 'PNG', centreGauche - 8, 27, 16, 16);
+        }
+
+        // ── Titre ───────────────────────────────────────────────────────────
+        let y = 50;
+        doc.setFontSize(12);
+        const titre = "BUDGET RELATIF A L'ORDRE DE MISSION N°";
+        const reference = String(mission.reference || '');
+        const largeurTitre = doc.getStringUnitWidth(titre) * 12 / doc.internal.scaleFactor;
+        const largeurRef = doc.getStringUnitWidth(reference) * 12 / doc.internal.scaleFactor;
+        const departTitre = (pageW - (largeurTitre + largeurRef)) / 2;
+
+        doc.text(titre, departTitre, y);
+        doc.setTextColor(200, 0, 0);
+        doc.text(reference, departTitre + largeurTitre, y);
+        doc.setTextColor(0, 0, 0);
+        doc.line(departTitre, y + 1, departTitre + largeurTitre + largeurRef, y + 1);
+
+        // ── Objet et durée ──────────────────────────────────────────────────
+        y += 8;
         doc.setFontSize(9);
-        drawCell(margin, y, fullW, 7, 'I-  PARTICIPANTS', { valignMiddle: true });
-        y += 7;
-        drawCell(colX[0], y, colWidths[0], 7, 'N°', { align: 'center', valignMiddle: true });
-        drawCell(colX[1], y, colWidths[1], 7, 'PRENOMS ET NOMS', { valignMiddle: true });
-        y += 7;
-
-        mission.participants.forEach((participant, index) => {
-            drawCell(colX[0], y, colWidths[0], 7, index + 1, { align: 'center', valignMiddle: true });
-            drawCell(colX[1], y, colWidths[1], 7, participant.nom, { valignMiddle: true });
-            y += 7;
+        const objet = doc.splitTextToSize(`OBJET DE LA MISSION: ${String(mission.objet || '').toUpperCase()}`, fullW);
+        doc.text(objet, margin, y);
+        objet.forEach((ligne, index) => {
+            const largeur = doc.getStringUnitWidth(ligne) * 9 / doc.internal.scaleFactor;
+            doc.line(margin, y + index * 4.2 + 1, margin + largeur, y + index * 4.2 + 1);
         });
 
-        drawCell(colX[0], y, colWidths[0], 7, '', { valignMiddle: true });
-        drawCell(colX[1], y, colWidths[1], 7, `TOTAL : ${mission.nombre_personnes} personne(s)`, { valignMiddle: true });
-        y += 7;
+        y += objet.length * 4.2 + 6;
+        doc.text('DUREE :', margin, y);
+        doc.line(margin, y + 1, margin + doc.getStringUnitWidth('DUREE :') * 9 / doc.internal.scaleFactor, y + 1);
+        doc.text(`${mission.nombre_jours} jour(s) ouvrable(s)`, margin + 18, y);
+        doc.setFont('helvetica', 'normal');
+        doc.text(`${mission.date_depart} au ${mission.date_retour}`, margin, y + 5);
 
-        drawCell(margin, y, fullW, 7, 'II-  CARBURANT', { valignMiddle: true });
-        y += 7;
-        drawCell(margin, y, fullW / 2, 7, `NBRE DE JOURS OUVRABLE : ${mission.nombre_jours}`, { valignMiddle: true });
-        drawCell(margin + fullW / 2, y, fullW / 2, 7, `NOMBRE DE TICKET PAR JOUR : ${mission.tickets_par_jour}`, { valignMiddle: true });
-        y += 7;
-        drawCell(margin, y, fullW / 2, 7, 'NOMBRE TOTAL DE TICKETS', { valignMiddle: true });
-        drawCell(margin + fullW / 2, y, fullW / 2, 7, String(mission.nombre_tickets), { valignMiddle: true });
+        // ── Tableau (mêmes colonnes que le modèle officiel) ──────────────────
         y += 11;
+        const colWidths = [9, 46, 13, 15, 13, 16, 17, 15, 19, 27];
+        const colX = [];
+        let cursor = margin;
+        colWidths.forEach((width) => {
+            colX.push(cursor);
+            cursor += width;
+        });
+        const largeurTable = cursor - margin;
+        const derniere = colWidths.length - 1;
 
-        drawCell(margin, y, fullW, 7, mission.tickets_en_lettres, { align: 'center', valignMiddle: true });
-        y += 14;
+        doc.setFontSize(6.5);
+        doc.setFont('helvetica', 'bold');
+        const entetes = ['N°', 'LIBELLE', 'Nbre de\npers.', 'Mtant\npar jour', 'Nbre\nde Jrs', 'Frais de\nmission',
+            'Mtant\npar nuitée', 'Nbre de\nnuitées', 'Indemnités\nde Mission', 'TOTAL'];
+        entetes.forEach((entete, index) => drawCell(colX[index], y, colWidths[index], 9, entete.split('\n'), { align: 'center', valignMiddle: true }));
+        y += 9;
 
+        drawCell(margin, y, largeurTable, 5, 'I-  FRAIS ET INDEMNITES', { align: 'center', valignMiddle: true });
+        y += 5;
+        drawCell(colX[0], y, colWidths[0], 5, '');
+        drawCell(colX[1], y, colWidths[1], 5, 'PRENOMS ET NOMS', { align: 'center', valignMiddle: true });
+        drawCell(colX[2], y, largeurTable - colWidths[0] - colWidths[1], 5, '');
+        y += 5;
+
+        doc.setFont('helvetica', 'italic');
+        doc.setFontSize(7);
+        mission.participants.forEach((participant, index) => {
+            colWidths.forEach((largeur, colonneIndex) => drawCell(colX[colonneIndex], y, largeur, 5, ''));
+            doc.setFont('helvetica', 'normal');
+            drawCell(colX[0], y, colWidths[0], 5, index + 1, { align: 'center', valignMiddle: true });
+            doc.setFont('helvetica', 'italic');
+            drawCell(colX[1], y, colWidths[1], 5, participant.nom, { valignMiddle: true });
+            doc.setFont('helvetica', 'bold');
+            drawCell(colX[2], y, colWidths[2], 5, '1', { align: 'center', valignMiddle: true });
+            drawCell(colX[4], y, colWidths[4], 5, mission.nombre_jours, { align: 'center', valignMiddle: true });
+            doc.setFont('helvetica', 'italic');
+            y += 5;
+        });
+
+        doc.setFont('helvetica', 'bold');
+        drawCell(margin, y, largeurTable - colWidths[derniere], 5, 'SOUS-TOTAL 1', { align: 'center', valignMiddle: true });
+        drawCell(colX[derniere], y, colWidths[derniere], 5, '-', { align: 'right', valignMiddle: true });
+        y += 5;
+
+        drawCell(margin, y, largeurTable, 5, 'II-  CARBURANT', { align: 'center', valignMiddle: true });
+        y += 5;
+        drawCell(margin, y, largeurTable / 2, 5, 'NBRE DE JOURS OUVRABLE', { align: 'center', valignMiddle: true });
+        drawCell(margin + largeurTable / 2, y, largeurTable / 2, 5, 'NOMBRE DE TICKET PAR JOUR', { align: 'center', valignMiddle: true });
+        y += 5;
+
+        const largeurRestante = largeurTable - colWidths[derniere];
+        drawCell(margin, y, largeurRestante / 3, 5, 'TICKETS DE CARBURANT', { valignMiddle: true });
+        doc.setFont('helvetica', 'normal');
+        drawCell(margin + largeurRestante / 3, y, largeurRestante / 3, 5, mission.nombre_jours, { align: 'center', valignMiddle: true });
+        drawCell(margin + (largeurRestante * 2) / 3, y, largeurRestante / 3, 5, mission.tickets_par_jour, { align: 'center', valignMiddle: true });
+        doc.setFont('helvetica', 'bold');
+        drawCell(colX[derniere], y, colWidths[derniere], 5, mission.nombre_tickets, { align: 'center', valignMiddle: true });
+        y += 5;
+
+        drawCell(margin, y, largeurRestante, 5, 'SOUS-TOTAL 2', { align: 'center', valignMiddle: true });
+        drawCell(colX[derniere], y, colWidths[derniere], 5, mission.nombre_tickets, { align: 'center', valignMiddle: true });
+        y += 5;
+        doc.setFontSize(9);
+        drawCell(margin, y, largeurRestante, 6, 'TOTAL', { align: 'center', valignMiddle: true });
+        drawCell(colX[derniere], y, colWidths[derniere], 6, mission.nombre_tickets, { align: 'center', valignMiddle: true });
+        y += 12;
+
+        // ── Total en lettres, lieu et signatures ────────────────────────────
+        doc.setFontSize(9);
+        doc.text(String(mission.tickets_en_lettres || ''), pageW / 2, y, { align: 'center' });
+        y += 10;
+
+        doc.setFont('helvetica', 'normal');
         text(doc, `${mission.lieu_signature} le ${mission.date_document}`, pageW - margin, y, { align: 'right' });
         y += 12;
 
         const signataires = Array.isArray(mission.signataires) ? mission.signataires : [];
         const blockWidth = fullW / Math.max(1, signataires.length || 1);
         signataires.forEach((signataire, index) => {
-            const startX = margin + blockWidth * index;
-            const centerX = startX + blockWidth / 2;
+            const centerX = margin + blockWidth * index + blockWidth / 2;
 
             doc.setFont('helvetica', 'bold');
-            doc.setFontSize(9);
-            text(doc, String(signataire.libelle || ''), centerX, y, { align: 'center' });
-            doc.setFontSize(10);
-            text(doc, String(signataire.nom || ''), centerX, y + 28, { align: 'center' });
-            doc.setFont('helvetica', 'normal');
             doc.setFontSize(8);
-            const fonction = doc.splitTextToSize(String(signataire.fonction || ''), blockWidth - 6);
-            text(doc, fonction, centerX, y + 34, { align: 'center' });
+            doc.text(doc.splitTextToSize(String(signataire.libelle || ''), blockWidth - 6), centerX, y, { align: 'center' });
+
+            const nom = String(signataire.nom || '');
+            doc.setFontSize(9);
+            doc.text(nom, centerX, y + 28, { align: 'center' });
+            souligne(nom, centerX, y + 28, 9);
+
+            doc.setFont('helvetica', 'italic');
+            doc.setFontSize(7.5);
+            doc.text(doc.splitTextToSize(String(signataire.fonction || ''), blockWidth - 6), centerX, y + 33, { align: 'center' });
         });
 
         doc.save(`mission-${String(mission.reference || 'meme-ville').replace(/[^\w-]+/g, '_')}.pdf`);

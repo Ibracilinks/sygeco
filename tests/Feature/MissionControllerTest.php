@@ -376,3 +376,33 @@ test('une mission créée sans statut part en brouillon', function () {
 
     expect(Mission::where('reference', '263/MSDS-CANAM-DAGRH')->firstOrFail()->statut)->toBe('brouillon');
 });
+
+test('le document même ville reprend l\'en-tête officiel et le tableau du modèle', function () {
+    $admin = userWithRole('dbcgoq');
+
+    $this->actingAs($admin)->post(route('missions.store'), [
+        'type' => Mission::TYPE_MEME_VILLE,
+        'reference' => '005/MSDS-CANAM-DAGRH',
+        'objet' => 'Pointage contradictoire',
+        'date_document' => '2026-01-20',
+        'date_depart' => '2026-01-21',
+        'date_retour' => '2026-02-20',
+        'tickets_carburant_par_jour' => 1,
+        'lieu_signature' => 'Bamako',
+        'statut' => 'brouillon',
+        'participants' => [['nom_complet' => 'MOULAYE I BA']],
+        'signataires' => missionSignatairesPayload(),
+    ])->assertSessionHasNoErrors();
+
+    $mission = Mission::where('reference', '005/MSDS-CANAM-DAGRH')->firstOrFail();
+
+    $this->actingAs($admin)->get(route('missions.show', $mission))
+        ->assertOk()
+        ->assertSee('Ministère de la Santé et du Développement Social')
+        ->assertSee('République du Mali')
+        ->assertSee("Budget relatif a l'ordre de mission", false)
+        ->assertSee('Mtant par nuitée')
+        ->assertSee('Nombre de ticket par jour')
+        ->assertSee('MOULAYE I BA')
+        ->assertSee('logo_canam.png', false);
+});
