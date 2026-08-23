@@ -8,10 +8,13 @@
 <body class="app-shell min-h-screen bg-white dark:bg-zinc-950">
     @php
         $currentUser = auth()->user();
+        // Exercice de travail courant (session), et non l'année de l'URL.
+        $exerciceCourant = \App\Support\ActiveExercice::model();
     @endphp
 
+    {{-- w-72 remplace le w-64 par défaut de Flux ; l'état replié (w-14) reste prioritaire. --}}
     <flux:sidebar sticky collapsible="mobile"
-        class="app-sidebar border-e border-zinc-200 bg-zinc-50/95 dark:border-zinc-800 dark:bg-zinc-900/95">
+        class="app-sidebar w-72 border-e border-zinc-200 bg-zinc-50/95 dark:border-zinc-800 dark:bg-zinc-900/95">
         <flux:sidebar.header class="app-sidebar-header">
             <x-app-logo :sidebar="true" href="{{ route('dashboard') }}" wire:navigate />
             {{-- Réduction de la sidebar : en panneau sur mobile, en bande d'icônes sur desktop. --}}
@@ -23,7 +26,7 @@
             <p class="app-sidebar-intro-title">Centre de pilotage</p>
             <div class="app-sidebar-intro-chip">
                 <span>{{ __('Exercice') }}</span>
-                <span>{{ request()->get('annee', now()->year) }}</span>
+                <span>{{ $exerciceCourant?->annee ?? now()->year }}</span>
             </div>
         </div>
 
@@ -60,10 +63,37 @@
             @can('view_missions')
                 <flux:sidebar.group expandable icon="document-duplicate" :heading="__('Missions')"
                     class="app-sidebar-group grid" data-groupe="missions">
-                    <flux:sidebar.item icon="document-duplicate" href="{{ route('missions.index') }}"
-                        :current="request()->routeIs('missions.*')">
-                        {{ __('Ordres de mission') }}
+                    {{-- Un accès direct par type de mission : chaque entrée filtre la liste. --}}
+                    @php
+                        $typeMissionCourant = request()->routeIs('missions.index') ? (string) request('type') : null;
+                    @endphp
+
+                    <flux:sidebar.item icon="building-office" href="{{ route('missions.index', ['type' => \App\Models\Mission::TYPE_MEME_VILLE]) }}"
+                        :current="$typeMissionCourant === \App\Models\Mission::TYPE_MEME_VILLE">
+                        {{ __('Missions même ville') }}
                     </flux:sidebar.item>
+
+                    <flux:sidebar.item icon="globe-alt" href="{{ route('missions.index', ['type' => \App\Models\Mission::TYPE_EXTERIEURE]) }}"
+                        :current="$typeMissionCourant === \App\Models\Mission::TYPE_EXTERIEURE">
+                        {{ __('Missions à l\'étranger') }}
+                    </flux:sidebar.item>
+
+                    <flux:sidebar.item icon="map" href="{{ route('missions.index', ['type' => \App\Models\Mission::TYPE_REGION]) }}"
+                        :current="$typeMissionCourant === \App\Models\Mission::TYPE_REGION">
+                        {{ __('Missions intérieur du pays') }}
+                    </flux:sidebar.item>
+
+                    <flux:sidebar.item icon="document-duplicate" href="{{ route('missions.index') }}"
+                        :current="request()->routeIs('missions.*') && $typeMissionCourant === null">
+                        {{ __('Toutes les missions') }}
+                    </flux:sidebar.item>
+
+                    @if ($currentUser->hasAnyRole(['superadmin', 'dbcgoq']))
+                        <flux:sidebar.item icon="adjustments-horizontal" href="{{ route('mission-baremes.index') }}"
+                            :current="request()->routeIs('mission-baremes.*')">
+                            {{ __('Barèmes des missions') }}
+                        </flux:sidebar.item>
+                    @endif
                 </flux:sidebar.group>
             @endcan
 
@@ -120,18 +150,6 @@
                     </flux:sidebar.item>
                 @endif
 
-                @unless ($currentUser->hasRole('agent-planification'))
-                    <flux:sidebar.item icon="chart-bar" href="{{ route('evaluations.index', 'mi-parcours') }}"
-                        :current="request()->fullUrlIs(route('evaluations.index', 'mi-parcours').'*')">
-                        {{ __('Évaluation : Mi-parcours') }}
-                    </flux:sidebar.item>
-
-                    <flux:sidebar.item icon="chart-bar-square" href="{{ route('evaluations.index', 'fin-annee') }}"
-                        :current="request()->fullUrlIs(route('evaluations.index', 'fin-annee').'*')">
-                        {{ __("Évaluation : Fin d'année") }}
-                    </flux:sidebar.item>
-                @endunless
-
                 @php($nbNonLues = auth()->user()?->unreadNotifications()->count() ?? 0)
                 <flux:sidebar.item icon="bell" href="{{ route('notifications.index') }}"
                     :badge="$nbNonLues > 0 ? $nbNonLues : null"
@@ -139,6 +157,22 @@
                     {{ __('Notifications') }}
                 </flux:sidebar.item>
             </flux:sidebar.group>
+
+            <!-- Suivi & Évaluation -->
+            @unless ($currentUser->hasRole('agent-planification'))
+                <flux:sidebar.group expandable icon="chart-bar" :heading="__('Suivi & Évaluation')"
+                    class="app-sidebar-group grid" data-groupe="evaluation">
+                    <flux:sidebar.item icon="chart-bar" href="{{ route('evaluations.index', 'mi-parcours') }}"
+                        :current="request()->fullUrlIs(route('evaluations.index', 'mi-parcours').'*')">
+                        {{ __('Mi-parcours') }}
+                    </flux:sidebar.item>
+
+                    <flux:sidebar.item icon="chart-bar-square" href="{{ route('evaluations.index', 'fin-annee') }}"
+                        :current="request()->fullUrlIs(route('evaluations.index', 'fin-annee').'*')">
+                        {{ __("Fin d'année") }}
+                    </flux:sidebar.item>
+                </flux:sidebar.group>
+            @endunless
         </flux:sidebar.nav>
 
         <flux:spacer />

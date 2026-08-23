@@ -142,7 +142,7 @@
     </div>
 
     <div>
-        <p class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-200">Chronogramme * <span class="font-normal text-slate-500 dark:text-slate-400">(au moins un trimestre)</span></p>
+        <p class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-200">Chronogramme * <span class="font-normal text-slate-500 dark:text-slate-400">(au moins une période)</span></p>
         <div class="grid grid-cols-2 gap-2 text-sm text-slate-700 dark:text-slate-200">
             <label class="inline-flex items-center gap-2"><input type="checkbox" name="trimestre_1" value="on" @checked(old('trimestre_1', isset($activite) ? $activite->trimestre_1 === 'oui' : false)) class="rounded border-slate-300 text-slate-800 dark:border-slate-700">T1</label>
             <label class="inline-flex items-center gap-2"><input type="checkbox" name="trimestre_2" value="on" @checked(old('trimestre_2', isset($activite) ? $activite->trimestre_2 === 'oui' : false)) class="rounded border-slate-300 text-slate-800 dark:border-slate-700">T2</label>

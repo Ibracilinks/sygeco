@@ -135,23 +135,23 @@
             </div>
         </div>
 
-        <!-- Section 4: Planification Trimestrielle -->
+        <!-- Section 4: Planification du chronogramme -->
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <!-- Répartition Trimestrielle -->
+            <!-- Répartition par chronogramme -->
             <div class="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-6">
                 <div class="border-b border-slate-200 dark:border-slate-700 pb-4 mb-4">
-                    <h2 class="text-lg font-semibold dark:text-white">Répartition Trimestrielle</h2>
-                    <p class="text-sm text-slate-500 dark:text-slate-400">Activités par trimestre</p>
+                    <h2 class="text-lg font-semibold dark:text-white">Répartition par chronogramme</h2>
+                    <p class="text-sm text-slate-500 dark:text-slate-400">Activités par période du chronogramme</p>
                 </div>
                 <div id="chart-repartition-trimestre">
-                <x-charts.pie-chart :labels="['Trimestre 1', 'Trimestre 2', 'Trimestre 3', 'Trimestre 4']" :data="$quarterlyBudgetPlanning['quarterly_distribution']" type="pie" :height="300" />
+                <x-charts.pie-chart :labels="['T1', 'T2', 'T3', 'T4']" :data="$quarterlyBudgetPlanning['quarterly_distribution']" type="pie" :height="300" />
                 </div>
             </div>
 
-            <!-- Performance Trimestrielle -->
+            <!-- Performance par chronogramme -->
             <div class="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-6">
                 <div class="border-b border-slate-200 dark:border-slate-700 pb-4 mb-4">
-                    <h2 class="text-lg font-semibold dark:text-white">Performance Trimestrielle</h2>
+                    <h2 class="text-lg font-semibold dark:text-white">Performance par chronogramme</h2>
                     <p class="text-sm text-slate-500 dark:text-slate-400">Budget vs Réalisé</p>
                 </div>
                 <div id="chart-performance-trimestre">
@@ -332,8 +332,8 @@
                 ['containerId' => 'chart-evolution-mensuelle', 'title' => 'Évolution Mensuelle des Dépenses'],
                 ['containerId' => 'chart-depenses-departement', 'title' => 'Dépenses par structure'],
                 ['containerId' => 'chart-efficacite-departement', 'title' => 'Efficacité par structure'],
-                ['containerId' => 'chart-repartition-trimestre', 'title' => 'Répartition Trimestrielle'],
-                ['containerId' => 'chart-performance-trimestre', 'title' => 'Performance Trimestrielle'],
+                ['containerId' => 'chart-repartition-trimestre', 'title' => 'Répartition par chronogramme'],
+                ['containerId' => 'chart-performance-trimestre', 'title' => 'Performance par chronogramme'],
                 ['containerId' => 'chart-tendances-annuelles', 'title' => 'Tendances Annuelles'],
             ],
             'alerts' => [

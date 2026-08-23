@@ -34,6 +34,8 @@
                 \App\Models\Departement::TYPE_DIRECTION => \App\Models\Departement::GROUPE_DIRECTIONS,
                 \App\Models\Departement::TYPE_DEPARTEMENT => \App\Models\Departement::GROUPE_DIRECTIONS_CENTRALES,
                 \App\Models\Departement::TYPE_SERVICE => 'Services',
+                \App\Models\Departement::TYPE_AGENCE_COMPTABLE => \App\Models\Departement::GROUPE_AGENCE_COMPTABLE,
+                \App\Models\Departement::TYPE_BUREAU_REGIONAL => \App\Models\Departement::GROUPE_BUREAUX_REGIONAUX,
                 'autres' => 'Autres structures',
             ];
         @endphp

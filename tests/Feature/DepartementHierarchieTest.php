@@ -93,3 +93,83 @@ test('la fiche affiche le fil d\'ariane et les sous-entités', function () {
         ->assertSee('Sous-entités')
         ->assertSee('Service Gamma');
 });
+
+test('l\'agence comptable et un bureau régional se rattachent à la Direction Générale', function () {
+    $admin = userWithRole('dbcgoq');
+    $dg = Departement::factory()->direction()->create(['nom' => 'Direction Générale']);
+
+    foreach ([
+        ['AC', 'Agence Comptable', Departement::TYPE_AGENCE_COMPTABLE],
+        ['BR_BKO', 'Bureau Régional de Bamako', Departement::TYPE_BUREAU_REGIONAL],
+    ] as [$code, $nom, $type]) {
+        $this->actingAs($admin)
+            ->from(route('departements.create'))
+            ->post(route('departements.store'), [
+                'code' => $code,
+                'nom' => $nom,
+                'type' => $type,
+                'parent_id' => $dg->id,
+            ])->assertRedirect(route('departements.index'));
+
+        $entite = Departement::where('code', $code)->first();
+        expect($entite->type)->toBe($type);
+        expect($entite->parent->is($dg))->toBeTrue();
+        expect($entite->estRattacheeDg())->toBeTrue();
+        expect($entite->peutAvoirDesEnfants())->toBeFalse();
+    }
+});
+
+test('un bureau régional rattaché à une direction centrale est refusé', function () {
+    $admin = userWithRole('dbcgoq');
+    $dg = Departement::factory()->direction()->create();
+    $directionCentrale = Departement::factory()->departement()->enfantDe($dg)->create();
+
+    $this->actingAs($admin)
+        ->from(route('departements.create'))
+        ->post(route('departements.store'), [
+            'code' => 'BR_KO',
+            'nom' => 'Bureau mal rattaché',
+            'type' => Departement::TYPE_BUREAU_REGIONAL,
+            'parent_id' => $directionCentrale->id,
+        ])->assertSessionHasErrors('parent_id');
+});
+
+test('un service ne peut pas être rattaché à un bureau régional', function () {
+    $admin = userWithRole('dbcgoq');
+    $dg = Departement::factory()->direction()->create();
+    $bureau = Departement::factory()->bureauRegional()->enfantDe($dg)->create();
+
+    $this->actingAs($admin)
+        ->from(route('departements.create'))
+        ->post(route('departements.store'), [
+            'code' => 'SRV_KO',
+            'nom' => 'Service sous bureau régional',
+            'type' => Departement::TYPE_SERVICE,
+            'parent_id' => $bureau->id,
+        ])->assertSessionHasErrors('parent_id');
+});
+
+test('une seconde Direction Générale est refusée', function () {
+    $admin = userWithRole('dbcgoq');
+    Departement::factory()->direction()->create(['nom' => 'Direction Générale']);
+
+    $this->actingAs($admin)
+        ->from(route('departements.create'))
+        ->post(route('departements.store'), [
+            'code' => 'DG_BIS',
+            'nom' => 'Seconde Direction Générale',
+            'type' => Departement::TYPE_DIRECTION,
+        ])->assertSessionHasErrors('type');
+});
+
+test('la Direction Générale ne figure pas parmi les entités qui formulent des activités', function () {
+    $dg = Departement::factory()->direction()->create(['nom' => 'Direction Générale']);
+    $directionCentrale = Departement::factory()->departement()->enfantDe($dg)->create();
+    $bureau = Departement::factory()->bureauRegional()->enfantDe($dg)->create();
+
+    $formulatrices = Departement::query()->formulatrices()->pluck('id');
+
+    expect($formulatrices)->not->toContain($dg->id)
+        ->and($formulatrices)->toContain($directionCentrale->id)
+        ->and($formulatrices)->toContain($bureau->id);
+});

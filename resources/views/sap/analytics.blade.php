@@ -366,7 +366,7 @@
                     <div class="sac-tile-body chart"><canvas data-chart="activites_statut_2"></canvas></div>
                 </div>
                 <div class="sac-tile col-4">
-                    <div class="sac-tile-head"><h3>Activités par trimestre</h3><span class="sub">Planification</span></div>
+                    <div class="sac-tile-head"><h3>Chronogramme des activités</h3><span class="sub">Planification</span></div>
                     <div class="sac-tile-body chart"><canvas data-chart="activites_trimestre"></canvas></div>
                 </div>
                 <div class="sac-tile col-4">

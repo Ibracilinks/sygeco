@@ -427,14 +427,15 @@ class Activite extends Model
             $destinataires->push($structure->responsable);
         }
 
-        // Directeur de la Direction Centrale : la structure elle-même si c'en est une,
-        // sinon la Direction Centrale la plus proche parmi ses ancêtres.
-        $directionCentrale = $structure->type === Departement::TYPE_DEPARTEMENT
+        // Responsable de l'entité rattachée à la DG (Direction Centrale, Agence
+        // Comptable ou Bureau Régional) : la structure elle-même si c'en est une,
+        // sinon la plus proche parmi ses ancêtres.
+        $entiteDg = $structure->estRattacheeDg()
             ? $structure
-            : $structure->ancetres()->firstWhere('type', Departement::TYPE_DEPARTEMENT);
+            : $structure->ancetres()->last(fn (Departement $ancetre) => $ancetre->estRattacheeDg());
 
-        if ($directionCentrale && $directionCentrale->responsable) {
-            $destinataires->push($directionCentrale->responsable);
+        if ($entiteDg && $entiteDg->responsable) {
+            $destinataires->push($entiteDg->responsable);
         }
 
         return $destinataires->filter()->unique('id')->values();

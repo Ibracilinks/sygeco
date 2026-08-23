@@ -319,8 +319,8 @@
 
             <article class="rounded-xl border border-slate-200 bg-white p-6 dark:border-slate-700 dark:bg-slate-900">
                 <div class="mb-4 border-b border-slate-200 pb-4 dark:border-slate-700">
-                    <h3 class="text-base font-semibold text-slate-900 dark:text-white">Activités par trimestre</h3>
-                    <p class="text-sm text-slate-500 dark:text-slate-400">Planification trimestrielle déclarée</p>
+                    <h3 class="text-base font-semibold text-slate-900 dark:text-white">Chronogramme des activités</h3>
+                    <p class="text-sm text-slate-500 dark:text-slate-400">Chronogramme déclaré</p>
                 </div>
                 <x-charts.bar-chart :labels="$charts['activites_trimestre']['labels']" :datasets="[
                     [

@@ -133,12 +133,12 @@
                     @endforeach
                 </div>
                 <p class="mt-2 text-xs text-slate-500 dark:text-slate-400">
-                    {{ $nbTrimestres > 0 ? $nbTrimestres.' trimestre'.($nbTrimestres > 1 ? 's' : '').' planifié'.($nbTrimestres > 1 ? 's' : '') : 'Aucun trimestre planifié' }}
+                    {{ $nbTrimestres > 0 ? $nbTrimestres.' période'.($nbTrimestres > 1 ? 's' : '').' planifiée'.($nbTrimestres > 1 ? 's' : '') : 'Aucune période planifiée' }}
                 </p>
             </div>
 
             <div class="rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-900">
-                <p class="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">Coût moyen / trimestre</p>
+                <p class="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">Coût moyen / période</p>
                 <p class="mt-2 text-2xl font-semibold text-slate-900 dark:text-white">{{ $coutParTrimestre !== null ? number_format($coutParTrimestre, 0, ',', ' ') : '—' }}</p>
                 <p class="text-xs text-slate-500 dark:text-slate-400">Répartition indicative</p>
             </div>
@@ -179,7 +179,7 @@
                         <dd class="mt-1 font-medium text-slate-900 dark:text-white">{{ number_format($activite->cout, 0, ',', ' ') }} FCFA</dd>
                     </div>
                     <div>
-                        <dt class="text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">Trimestres planifiés</dt>
+                        <dt class="text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">Chronogramme</dt>
                         <dd class="mt-1 font-medium text-slate-900 dark:text-white">{{ $activite->trimestres_selectionnes ?: '—' }}</dd>
                     </div>
                     <div>

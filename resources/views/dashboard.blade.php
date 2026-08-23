@@ -55,8 +55,8 @@
         <section class="grid grid-cols-1 gap-6 lg:grid-cols-3">
             <article class="lg:col-span-2 rounded-xl border border-slate-200 bg-white p-6 dark:border-slate-700 dark:bg-slate-900">
                 <div class="mb-4 border-b border-slate-200 pb-4 dark:border-slate-700">
-                    <h2 class="text-lg font-semibold text-slate-900 dark:text-white">Evolution trimestrielle</h2>
-                    <p class="text-sm text-slate-500 dark:text-slate-400">Volume des activites planifiees et dynamique budgetaire par trimestre (T1 - T4)</p>
+                    <h2 class="text-lg font-semibold text-slate-900 dark:text-white">Evolution du chronogramme</h2>
+                    <p class="text-sm text-slate-500 dark:text-slate-400">Volume des activites planifiees et dynamique budgetaire par periode du chronogramme (T1 - T4)</p>
                 </div>
                 <div id="dash-chart-evolution">
                 <x-charts.line-chart :labels="$charts['evolution']['labels']" :datasets="[
@@ -176,8 +176,8 @@
 
             <article class="rounded-xl border border-slate-200 bg-white p-6 dark:border-slate-700 dark:bg-slate-900">
                 <div class="mb-4 border-b border-slate-200 pb-4 dark:border-slate-700">
-                    <h2 class="text-lg font-semibold text-slate-900 dark:text-white">Activites par trimestre</h2>
-                    <p class="text-sm text-slate-500 dark:text-slate-400">Planification trimestrielle declaree</p>
+                    <h2 class="text-lg font-semibold text-slate-900 dark:text-white">Chronogramme des activites</h2>
+                    <p class="text-sm text-slate-500 dark:text-slate-400">Chronogramme declare</p>
                 </div>
                 <div id="dash-chart-trimestre">
                 <x-charts.bar-chart :labels="$charts['activites_trimestre']['labels']" :datasets="[
@@ -248,13 +248,13 @@
                 ['label' => 'Soumission moyenne', 'value' => number_format($insights['soumission_moyenne'], 1, ',', ' ') . ' %'],
             ],
             'charts' => [
-                ['containerId' => 'dash-chart-evolution', 'title' => 'Évolution trimestrielle'],
+                ['containerId' => 'dash-chart-evolution', 'title' => 'Évolution du chronogramme'],
                 ['containerId' => 'dash-chart-execution-validees', 'title' => 'Exécution des activités validées'],
                 ['containerId' => 'dash-chart-budget-objectif', 'title' => 'Budget par objectif'],
                 ['containerId' => 'dash-chart-top-extrants', 'title' => 'Top extrants'],
                 ['containerId' => 'dash-chart-distribution', 'title' => 'Distribution budgétaire'],
                 ['containerId' => 'dash-chart-statut', 'title' => 'Activités par statut'],
-                ['containerId' => 'dash-chart-trimestre', 'title' => 'Activités par trimestre'],
+                ['containerId' => 'dash-chart-trimestre', 'title' => 'Chronogramme des activités'],
             ],
             'tables' => [
                 [

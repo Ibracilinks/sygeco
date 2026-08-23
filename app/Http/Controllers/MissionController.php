@@ -54,7 +54,7 @@ class MissionController extends Controller
         $departements = Departement::query()->active()->ordered()->get(['id', 'nom']);
         $precedente = Mission::query()
             ->where('type', $type)
-            ->with(['participants', 'signataires'])
+            ->with(['participants', 'signataires', 'etapes'])
             ->latest('date_document')
             ->latest('id')
             ->first();
@@ -65,7 +65,7 @@ class MissionController extends Controller
             'date_document' => today(),
             'date_depart' => today(),
             'date_retour' => today(),
-            'nombre_jours' => max(1, (int) ($precedente?->nombre_jours ?? 1)),
+            'nombre_jours' => 1,
             'tickets_carburant_par_jour' => (int) ($precedente?->tickets_carburant_par_jour ?? 1),
             'montant_par_jour' => (float) ($precedente?->montant_par_jour ?? 0),
             'montant_ticket_carburant' => (float) ($precedente?->montant_ticket_carburant ?? 0),
@@ -91,6 +91,24 @@ class MissionController extends Controller
             ])->all()
             : [['nom_complet' => '', 'categorie' => null, 'nombre_nuitees' => null]];
 
+        $etapes = $precedente?->etapes
+            ? $precedente->etapes->map(fn ($etape) => [
+                'type_etape' => $etape->type_etape,
+                'bareme' => $etape->bareme,
+                'localite' => $etape->localite,
+                'date_depart' => optional($etape->date_depart)->format('Y-m-d'),
+                'date_retour' => optional($etape->date_retour)->format('Y-m-d'),
+                'premiere_nuitee_payee' => (bool) $etape->premiere_nuitee_payee,
+            ])->all()
+            : [[
+                'type_etape' => 'region',
+                'bareme' => 'national',
+                'localite' => '',
+                'date_depart' => today()->format('Y-m-d'),
+                'date_retour' => today()->format('Y-m-d'),
+                'premiere_nuitee_payee' => false,
+            ]];
+
         $signataires = $precedente?->signataires
             ? $precedente->signataires->map(fn ($signataire) => [
                 'libelle' => $signataire->libelle,
@@ -99,21 +117,25 @@ class MissionController extends Controller
             ])->all()
             : $this->signatairesParDefaut($type);
 
-        return view('pages.missions.create', compact('mission', 'departements', 'participants', 'signataires', 'precedente'));
+        $formPartial = $this->formPartialFor($type);
+
+        return view('pages.missions.create', compact('mission', 'departements', 'participants', 'signataires', 'etapes', 'precedente', 'formPartial'));
     }
 
     public function store(StoreMissionRequest $request)
     {
         $mission = DB::transaction(function () use ($request) {
             $participants = $request->validated('participants');
+            $etapes = $request->validated('etapes', []);
 
-            $mission = new Mission($request->safe()->except(['participants', 'signataires']));
+            $mission = new Mission($request->safe()->except(['participants', 'signataires', 'etapes']));
             $mission->cree_par = Auth::id();
             $mission->maj_par = Auth::id();
-            $participants = $mission->appliquerCalculs($participants);
+            $participants = $mission->appliquerCalculs($participants, $etapes);
             $mission->save();
 
             $this->syncParticipants($mission, $participants);
+            $this->syncEtapes($mission, $etapes);
             $this->syncSignataires($mission, $request->validated('signataires'));
 
             return $mission;
@@ -130,6 +152,7 @@ class MissionController extends Controller
             'createur:id,name',
             'participants',
             'signataires',
+            'etapes',
         ]);
 
         return view('pages.missions.show', compact('mission'));
@@ -137,13 +160,21 @@ class MissionController extends Controller
 
     public function edit(Mission $mission)
     {
-        $mission->load(['participants', 'signataires']);
+        $mission->load(['participants', 'signataires', 'etapes']);
 
         $departements = Departement::query()->active()->ordered()->get(['id', 'nom']);
         $participants = $mission->participants->map(fn ($participant) => [
             'nom_complet' => $participant->nom_complet,
             'categorie' => $participant->categorie,
             'nombre_nuitees' => $participant->nombre_nuitees,
+        ])->all();
+        $etapes = $mission->etapes->map(fn ($etape) => [
+            'type_etape' => $etape->type_etape,
+            'bareme' => $etape->bareme,
+            'localite' => $etape->localite,
+            'date_depart' => optional($etape->date_depart)->format('Y-m-d'),
+            'date_retour' => optional($etape->date_retour)->format('Y-m-d'),
+            'premiere_nuitee_payee' => (bool) $etape->premiere_nuitee_payee,
         ])->all();
         $signataires = $mission->signataires->map(fn ($signataire) => [
             'libelle' => $signataire->libelle,
@@ -155,24 +186,39 @@ class MissionController extends Controller
             $participants = [['nom_complet' => '', 'categorie' => null, 'nombre_nuitees' => null]];
         }
 
+        if ($etapes === []) {
+            $etapes = [[
+                'type_etape' => 'region',
+                'bareme' => 'national',
+                'localite' => '',
+                'date_depart' => optional($mission->date_depart)->format('Y-m-d'),
+                'date_retour' => optional($mission->date_retour)->format('Y-m-d'),
+                'premiere_nuitee_payee' => false,
+            ]];
+        }
+
         if ($signataires === []) {
             $signataires = $this->signatairesParDefaut($mission->type);
         }
 
-        return view('pages.missions.edit', compact('mission', 'departements', 'participants', 'signataires'));
+        $formPartial = $this->formPartialFor($mission->type);
+
+        return view('pages.missions.edit', compact('mission', 'departements', 'participants', 'signataires', 'etapes', 'formPartial'));
     }
 
     public function update(UpdateMissionRequest $request, Mission $mission)
     {
         DB::transaction(function () use ($request, $mission) {
             $participants = $request->validated('participants');
+            $etapes = $request->validated('etapes', []);
 
-            $mission->fill($request->safe()->except(['participants', 'signataires']));
+            $mission->fill($request->safe()->except(['participants', 'signataires', 'etapes']));
             $mission->maj_par = Auth::id();
-            $participants = $mission->appliquerCalculs($participants);
+            $participants = $mission->appliquerCalculs($participants, $etapes);
             $mission->save();
 
             $this->syncParticipants($mission, $participants);
+            $this->syncEtapes($mission, $etapes);
             $this->syncSignataires($mission, $request->validated('signataires'));
         });
 
@@ -247,6 +293,28 @@ class MissionController extends Controller
     }
 
     /**
+     * @param  array<int, array<string, mixed>>  $etapes
+     */
+    private function syncEtapes(Mission $mission, array $etapes): void
+    {
+        $mission->etapes()->delete();
+
+        foreach (array_values($etapes) as $index => $etape) {
+            $mission->etapes()->create([
+                'ordre' => $index + 1,
+                'type_etape' => $etape['type_etape'],
+                'bareme' => $etape['bareme'] ?? 'national',
+                'localite' => $etape['localite'],
+                'date_depart' => $etape['date_depart'],
+                'date_retour' => $etape['date_retour'],
+                'nombre_jours' => $etape['nombre_jours'] ?? 1,
+                'nombre_nuitees' => $etape['nombre_nuitees'] ?? 0,
+                'premiere_nuitee_payee' => (bool) ($etape['premiere_nuitee_payee'] ?? false),
+            ]);
+        }
+    }
+
+    /**
      * @param  array<int, array{libelle: ?string, nom: string, fonction: string}>  $signataires
      */
     private function syncSignataires(Mission $mission, array $signataires): void
@@ -258,7 +326,7 @@ class MissionController extends Controller
                 'ordre' => $index + 1,
                 'libelle' => $signataire['libelle'],
                 'nom' => $signataire['nom'],
-                'fonction' => $signataire['fonction'],
+                'fonction' => $signataire['fonction'] ?? '',
             ]);
         }
     }
@@ -281,5 +349,14 @@ class MissionController extends Controller
             ['libelle' => "L'AGENT COMPTABLE", 'nom' => '', 'fonction' => ''],
             ['libelle' => 'LE DIRECTEUR GENERAL', 'nom' => '', 'fonction' => ''],
         ];
+    }
+
+    private function formPartialFor(string $type): string
+    {
+        return match ($type) {
+            Mission::TYPE_EXTERIEURE => 'pages.missions.partials.form-exterieure',
+            Mission::TYPE_REGION => 'pages.missions.partials.form-region',
+            default => 'pages.missions.partials.form-meme-ville',
+        };
     }
 }

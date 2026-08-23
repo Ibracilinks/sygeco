@@ -21,8 +21,8 @@ class Mission extends Model
 
     public const TYPES = [
         self::TYPE_MEME_VILLE => 'Même ville',
-        self::TYPE_EXTERIEURE => 'Extérieure',
-        self::TYPE_REGION => 'Régions',
+        self::TYPE_EXTERIEURE => "À l'étranger",
+        self::TYPE_REGION => 'Intérieur du pays',
     ];
 
     public const STATUTS = [
@@ -235,6 +235,33 @@ class Mission extends Model
         return $this->belongsTo(User::class, 'maj_par');
     }
 
+    /**
+     * Barèmes en vigueur. Les constantes ci-dessus restent la référence d'origine :
+     * elles alimentent la table `mission_baremes` et servent de secours si elle est vide.
+     *
+     * @return array<string, array<string, mixed>>
+     */
+    public static function categoriesExterieures(): array
+    {
+        return MissionBareme::categories(MissionBareme::GROUPE_CATEGORIE_EXTERIEURE, self::CATEGORIES_EXTERIEURES);
+    }
+
+    /**
+     * @return array<string, array<string, mixed>>
+     */
+    public static function categoriesNationales(): array
+    {
+        return MissionBareme::categories(MissionBareme::GROUPE_CATEGORIE_NATIONALE, self::CATEGORIES_NATIONALES);
+    }
+
+    /**
+     * @return array<string, array<string, mixed>>
+     */
+    public static function zonesExterieures(): array
+    {
+        return MissionBareme::zones(self::ZONES_EXTERIEURES);
+    }
+
     public function participants()
     {
         return $this->hasMany(MissionParticipant::class)->orderBy('ordre');
@@ -271,7 +298,13 @@ class Mission extends Model
      */
     public function appliquerCalculs(array $participants, array $etapes = []): array
     {
-        $this->nombre_jours = $this->calculerNombreJours($this->date_depart, $this->date_retour);
+        // Le nombre de jours reste ajustable : on ne recalcule que s'il n'a pas été saisi.
+        $this->nombre_jours = self::resoudreNombreJours(
+            $this->type,
+            $this->nombre_jours,
+            $this->date_depart,
+            $this->date_retour
+        );
 
         if ($this->estExterieure()) {
             return $this->appliquerCalculsExterieurs($participants);
@@ -290,18 +323,22 @@ class Mission extends Model
      */
     private function appliquerCalculsMemeVille(array $participants): array
     {
+        // Une mission dans la même ville ne donne lieu à aucune indemnité : elle
+        // ouvre droit à des tickets de carburant, dénombrés et non valorisés.
         $this->nombre_personnes = count($participants);
         $this->nombre_tickets_carburant = $this->nombre_jours * $this->tickets_carburant_par_jour;
-        $this->montant_indemnites = round($this->nombre_personnes * $this->nombre_jours * (float) $this->montant_par_jour, 2);
+        $this->montant_par_jour = 0;
+        $this->montant_ticket_carburant = 0;
+        $this->montant_indemnites = 0;
         $this->montant_majoration = 0;
-        $this->montant_carburant = round($this->nombre_tickets_carburant * (float) $this->montant_ticket_carburant, 2);
+        $this->montant_carburant = 0;
         $this->montant_autres_frais = 0;
         $this->montant_billets = 0;
         $this->frais_participation_total = 0;
         $this->frais_visa_total = 0;
         $this->billets_affaire_total = 0;
         $this->billets_economique_total = 0;
-        $this->montant_total = round((float) $this->montant_indemnites + (float) $this->montant_carburant, 2);
+        $this->montant_total = 0;
 
         return array_map(function (array $participant): array {
             return array_merge($participant, [
@@ -323,7 +360,7 @@ class Mission extends Model
      */
     private function appliquerCalculsExterieurs(array $participants): array
     {
-        $zone = self::ZONES_EXTERIEURES[$this->zone_code] ?? ['label' => null, 'taux' => 0];
+        $zone = self::zonesExterieures()[$this->zone_code] ?? ['label' => null, 'taux' => 0];
         $this->zone_label = $zone['label'];
         $this->zone_taux = (float) $zone['taux'];
         $this->nombre_personnes = count($participants);
@@ -339,10 +376,11 @@ class Mission extends Model
         $defaultNuitees = max(0, $jours - 1);
 
         $participants = array_map(function (array $participant) use ($jours, $defaultNuitees): array {
-            $categorie = self::CATEGORIES_EXTERIEURES[$participant['categorie'] ?? ''] ?? null;
+            $categorie = self::categoriesExterieures()[$participant['categorie'] ?? ''] ?? null;
             $fraisMission = (float) ($categorie['frais_mission'] ?? 0);
             $indemnites = (float) ($categorie['indemnites'] ?? 0);
-            $nuites = max(0, (int) ($participant['nombre_nuitees'] ?? $defaultNuitees));
+            // Les nuitées d'une mission à l'étranger découlent de la durée : jours − 1.
+            $nuites = $defaultNuitees;
             $sousTotal = round(($fraisMission * $jours) + ($indemnites * $nuites), 2);
             $majoration = round($sousTotal * ((float) $this->zone_taux / 100), 2);
             $total = round($sousTotal + $majoration, 2);
@@ -405,7 +443,7 @@ class Mission extends Model
         $this->billets_economique_total = 0;
 
         $participants = array_map(function (array $participant) use ($etapes): array {
-            $categorie = self::CATEGORIES_NATIONALES[$participant['categorie'] ?? ''] ?? null;
+            $categorie = self::categoriesNationales()[$participant['categorie'] ?? ''] ?? null;
             $montantMission = 0.0;
             $montantNuitee = 0.0;
             $totalNuitees = 0;
@@ -457,6 +495,46 @@ class Mission extends Model
         $retour = $dateRetour instanceof Carbon ? $dateRetour : Carbon::parse($dateRetour);
 
         return max(1, $depart->startOfDay()->diffInDays($retour->startOfDay()) + 1);
+    }
+
+    /**
+     * Jours ouvrables : les samedis et dimanches ne comptent pas. Utilisé par défaut
+     * pour les missions dans la même ville, qui se déroulent sur les jours ouvrés.
+     */
+    public static function calculerNombreJoursOuvrables($dateDepart, $dateRetour): int
+    {
+        $depart = ($dateDepart instanceof Carbon ? $dateDepart->copy() : Carbon::parse($dateDepart))->startOfDay();
+        $retour = ($dateRetour instanceof Carbon ? $dateRetour->copy() : Carbon::parse($dateRetour))->startOfDay();
+
+        if ($retour->lessThan($depart)) {
+            return 1;
+        }
+
+        $jours = 0;
+
+        for ($jour = $depart->copy(); $jour->lessThanOrEqualTo($retour); $jour->addDay()) {
+            if (! $jour->isWeekend()) {
+                $jours++;
+            }
+        }
+
+        return max(1, $jours);
+    }
+
+    /**
+     * Nombre de jours retenu : la valeur saisie prime (elle reste ajustable à la main),
+     * sinon on déduit des dates — en jours ouvrables pour une mission même ville,
+     * en jours calendaires pour les autres types.
+     */
+    public static function resoudreNombreJours(?string $type, $saisi, $dateDepart, $dateRetour): int
+    {
+        if (is_numeric($saisi) && (int) $saisi >= 1) {
+            return (int) $saisi;
+        }
+
+        return $type === self::TYPE_MEME_VILLE
+            ? self::calculerNombreJoursOuvrables($dateDepart, $dateRetour)
+            : self::calculerNombreJours($dateDepart, $dateRetour);
     }
 
     public static function calculerNombreNuitees($dateDepart, $dateRetour, bool $premiereNuiteePayee = false): int

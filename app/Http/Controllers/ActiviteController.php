@@ -437,7 +437,7 @@ class ActiviteController extends Controller
      */
     /**
      * Valide une saisie de programmation en exigeant, en plus des règles fournies,
-     * au moins un trimestre coché dans le chronogramme.
+     * au moins une période cochée dans le chronogramme.
      *
      * @param  array<string, mixed>  $regles
      * @return array<string, mixed>
@@ -452,7 +452,7 @@ class ActiviteController extends Controller
             if (! collect($trimestres)->contains(fn ($trimestre) => $request->filled($trimestre))) {
                 $validator->errors()->add(
                     'chronogramme',
-                    'Le chronogramme est obligatoire : sélectionnez au moins un trimestre.'
+                    'Le chronogramme est obligatoire : sélectionnez au moins une période.'
                 );
             }
         });
@@ -536,7 +536,9 @@ class ActiviteController extends Controller
 
     private function departementsVisibles()
     {
-        $query = Departement::active()->ordered();
+        // La Direction Générale ne formule pas d'activités : elle reçoit celles des
+        // entités qui lui sont rattachées.
+        $query = Departement::active()->formulatrices()->ordered();
 
         if ($perimetre = Auth::user()?->perimetreActivitesIds()) {
             $query->whereIn('id', $perimetre);

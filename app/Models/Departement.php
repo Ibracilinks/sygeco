@@ -16,22 +16,49 @@ class Departement extends Model
     public const TYPE_DIRECTION = 'direction';
     public const TYPE_DEPARTEMENT = 'departement';
     public const TYPE_SERVICE = 'service';
+    public const TYPE_AGENCE_COMPTABLE = 'agence_comptable';
+    public const TYPE_BUREAU_REGIONAL = 'bureau_regional';
 
     public const TYPES = [
         self::TYPE_DIRECTION,
         self::TYPE_DEPARTEMENT,
         self::TYPE_SERVICE,
+        self::TYPE_AGENCE_COMPTABLE,
+        self::TYPE_BUREAU_REGIONAL,
     ];
 
     public const TYPE_LABELS = [
-        self::TYPE_DIRECTION => 'Direction',
+        self::TYPE_DIRECTION => 'Direction Générale',
         self::TYPE_DEPARTEMENT => 'Direction Centrale',
         self::TYPE_SERVICE => 'Service',
+        self::TYPE_AGENCE_COMPTABLE => 'Agence Comptable',
+        self::TYPE_BUREAU_REGIONAL => 'Bureau Régional',
+    ];
+
+    /**
+     * Entités rattachées directement à la Direction Générale et qui lui soumettent
+     * leurs activités : Directions Centrales, Agence Comptable, Bureaux Régionaux.
+     * L'Agence Comptable et les Bureaux Régionaux ne sont pas des Directions
+     * Centrales mais jouent le même rôle dans le circuit de planification.
+     */
+    public const TYPES_RATTACHES_DG = [
+        self::TYPE_DEPARTEMENT,
+        self::TYPE_AGENCE_COMPTABLE,
+        self::TYPE_BUREAU_REGIONAL,
+    ];
+
+    /** Types qui ne peuvent jamais avoir d'entité enfant. */
+    public const TYPES_FEUILLES = [
+        self::TYPE_SERVICE,
+        self::TYPE_AGENCE_COMPTABLE,
+        self::TYPE_BUREAU_REGIONAL,
     ];
 
     /** Libellés des groupes utilisés dans les listes déroulantes hiérarchiques. */
-    public const GROUPE_DIRECTIONS = 'Directions';
+    public const GROUPE_DIRECTIONS = 'Direction Générale';
     public const GROUPE_DIRECTIONS_CENTRALES = 'Directions Centrales';
+    public const GROUPE_AGENCE_COMPTABLE = 'Agence Comptable';
+    public const GROUPE_BUREAUX_REGIONAUX = 'Bureaux Régionaux';
 
     protected $fillable = [
         'code',
@@ -68,11 +95,23 @@ class Departement extends Model
     }
 
     /**
-     * Libellé lisible du type (Direction / Département / Service).
+     * Libellé lisible du type (Direction Générale / Direction Centrale / Service / …).
      */
     public function typeLibelle(): string
     {
         return self::TYPE_LABELS[$this->type] ?? ucfirst((string) $this->type);
+    }
+
+    /** Une entité feuille (service, agence comptable, bureau régional) n'a jamais d'enfant. */
+    public function peutAvoirDesEnfants(): bool
+    {
+        return ! in_array($this->type, self::TYPES_FEUILLES, true);
+    }
+
+    /** Soumet-elle ses activités directement à la Direction Générale ? */
+    public function estRattacheeDg(): bool
+    {
+        return in_array($this->type, self::TYPES_RATTACHES_DG, true);
     }
 
     /**
@@ -189,6 +228,25 @@ class Departement extends Model
     }
 
     /**
+     * Entités susceptibles de porter un PTA. La Direction Générale n'existe dans le
+     * système que comme sommet de l'organigramme : elle ne formule pas d'activités,
+     * elle reçoit celles des entités qui lui sont rattachées.
+     */
+    public function scopeFormulatrices($query)
+    {
+        return $query->where('type', '!=', self::TYPE_DIRECTION);
+    }
+
+    /**
+     * Entités qui soumettent directement à la Direction Générale : Directions
+     * Centrales, Agence Comptable et Bureaux Régionaux.
+     */
+    public function scopeRattacheesDg($query)
+    {
+        return $query->whereIn('type', self::TYPES_RATTACHES_DG);
+    }
+
+    /**
      * Regroupe des entités par Direction Centrale de rattachement, pour alimenter
      * les <optgroup> des listes déroulantes. Groupes et entités triés par nom.
      *
@@ -230,8 +288,9 @@ class Departement extends Model
     }
 
     /**
-     * Nom de la Direction Centrale dont dépend l'entité (elle-même si c'en est une),
-     * sinon le groupe des entités situées au-dessus des Directions Centrales.
+     * Nom de la Direction Centrale dont dépend l'entité (elle-même si c'en est une).
+     * L'Agence Comptable et les Bureaux Régionaux, rattachés directement à la DG,
+     * ont leur propre groupe ; le reste retombe sur le groupe de la DG.
      */
     protected static function libelleGroupeHierarchique(self $departement, \Illuminate\Support\Collection $carte): string
     {
@@ -240,6 +299,14 @@ class Departement extends Model
         while ($courant) {
             if ($courant->type === self::TYPE_DEPARTEMENT) {
                 return $courant->nom;
+            }
+
+            if ($courant->type === self::TYPE_AGENCE_COMPTABLE) {
+                return self::GROUPE_AGENCE_COMPTABLE;
+            }
+
+            if ($courant->type === self::TYPE_BUREAU_REGIONAL) {
+                return self::GROUPE_BUREAUX_REGIONAUX;
             }
 
             $courant = $courant->parent_id ? ($carte[$courant->parent_id] ?? null) : null;

@@ -1,15 +1,34 @@
 <x-layouts::app title="Missions">
     <div class="flex h-full w-full flex-1 flex-col gap-5 rounded-xl">
+        {{-- La rubrique en cours pilote le titre et le type de la mission créée. --}}
+        @php
+            $typeCourant = in_array($filters['type'], array_keys(\App\Models\Mission::TYPES), true) ? $filters['type'] : null;
+            $libelleTypeCourant = $typeCourant ? \App\Models\Mission::TYPES[$typeCourant] : null;
+        @endphp
+
         <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
             <div>
-                <h1 class="text-2xl font-semibold text-slate-900 dark:text-white">Missions</h1>
-                <p class="text-sm text-slate-500 dark:text-slate-400">Ordres de mission même ville et extérieurs, avec participants, signataires et génération PDF.</p>
+                <h1 class="text-2xl font-semibold text-slate-900 dark:text-white">
+                    {{ $libelleTypeCourant ? 'Missions '.mb_strtolower($libelleTypeCourant) : 'Toutes les missions' }}
+                </h1>
+                <p class="text-sm text-slate-500 dark:text-slate-400">Ordres de mission avec participants, signataires et génération PDF.</p>
             </div>
             @can('create_missions')
-                <a href="{{ route('missions.create') }}"
-                    class="inline-flex items-center rounded-lg bg-slate-800 px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-700 dark:bg-slate-200 dark:text-slate-900 dark:hover:bg-white">
-                    Nouvelle mission
-                </a>
+                @if ($typeCourant)
+                    <a href="{{ route('missions.create', ['type' => $typeCourant]) }}"
+                        class="inline-flex items-center rounded-lg bg-slate-800 px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-700 dark:bg-slate-200 dark:text-slate-900 dark:hover:bg-white">
+                        Nouvelle mission {{ mb_strtolower($libelleTypeCourant) }}
+                    </a>
+                @else
+                    <div class="flex flex-wrap gap-2">
+                        @foreach (\App\Models\Mission::TYPES as $code => $label)
+                            <a href="{{ route('missions.create', ['type' => $code]) }}"
+                                class="inline-flex items-center rounded-lg bg-slate-800 px-3 py-2 text-sm font-medium text-white transition hover:bg-slate-700 dark:bg-slate-200 dark:text-slate-900 dark:hover:bg-white">
+                                + {{ $label }}
+                            </a>
+                        @endforeach
+                    </div>
+                @endif
             @endcan
         </div>
 
@@ -110,7 +129,12 @@
                                 </div>
                             </td>
                             <td class="px-5 py-4 text-sm font-medium text-slate-900 dark:text-white">
-                                {{ number_format((float) $mission->montant_total, 0, ',', ' ') }} FCFA
+                                {{-- Une mission même ville ne porte aucun montant : seuls des tickets sont dotés. --}}
+                                @if ($mission->estMemeVille())
+                                    <span class="text-slate-400 dark:text-slate-500">—</span>
+                                @else
+                                    {{ number_format((float) $mission->montant_total, 0, ',', ' ') }} FCFA
+                                @endif
                             </td>
                             <td class="px-5 py-4">
                                 <span class="rounded-full px-2 py-0.5 text-xs font-semibold {{ $mission->statut === 'finalise' ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-200' : 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-200' }}">

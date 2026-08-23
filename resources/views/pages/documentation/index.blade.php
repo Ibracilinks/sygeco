@@ -107,8 +107,8 @@
     <x-doc.section id="dashboard" titre="5. Tableau de bord" chapo="Le tableau de bord synthétise l'exercice sélectionné :">
         <ul class="list-disc space-y-1.5 pl-5">
             <li><strong>Indicateurs clés</strong> : nombre d'objectifs, d'extrants, d'activités, budget total, taux de réalisation.</li>
-            <li><strong>Évolution trimestrielle</strong> : volume d'activités planifiées et dynamique budgétaire par trimestre (T1 → T4).</li>
-            <li><strong>Répartitions</strong> : budget par objectif, activités par statut, par trimestre et par structure.</li>
+            <li><strong>Évolution du chronogramme</strong> : volume d'activités planifiées et dynamique budgétaire par période (T1 → T4).</li>
+            <li><strong>Répartitions</strong> : budget par objectif, activités par statut, par période du chronogramme et par structure.</li>
         </ul>
         <x-doc.astuce>Utilisez le sélecteur d'exercice pour changer d'année de référence.</x-doc.astuce>
     </x-doc.section>
@@ -129,7 +129,7 @@
             </div>
             <div class="flex items-center gap-3 rounded-lg bg-slate-50 p-3 dark:bg-slate-950/40">
                 <span class="rounded bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-800 dark:bg-amber-950/50 dark:text-amber-200">Activité</span>
-                <span class="text-slate-500 dark:text-slate-400">→ action concrète, budgétée et planifiée par trimestre</span>
+                <span class="text-slate-500 dark:text-slate-400">→ action concrète, budgétée et positionnée sur le chronogramme</span>
             </div>
         </div>
     </x-doc.section>
@@ -139,7 +139,7 @@
         <ol class="list-decimal space-y-1.5 pl-5">
             <li>Depuis le menu <strong>Activités → Ajouter</strong>, sélectionnez l'extrant de rattachement.</li>
             <li>Renseignez l'intitulé, le coût (FCFA), l'indicateur objectivement vérifiable et le moyen de vérification.</li>
-            <li>Cochez les trimestres de réalisation prévus (T1 à T4).</li>
+            <li>Cochez les périodes du chronogramme prévues (T1 à T4).</li>
             <li>Enregistrez en <strong>brouillon</strong>, puis soumettez pour validation.</li>
         </ol>
         <h3 class="text-sm font-semibold text-slate-800 dark:text-slate-100">Activité non programmée</h3>

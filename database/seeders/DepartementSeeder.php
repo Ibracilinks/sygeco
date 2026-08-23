@@ -8,82 +8,103 @@ use Illuminate\Database\Seeder;
 class DepartementSeeder extends Seeder
 {
     /**
-     * Construit l'organigramme à trois niveaux :
-     * Direction → Départements → Services.
-     * Chaque entité porte un `type` et un `parent_id` ; le chef de chaque
-     * entité soumet ses éléments pour approbation au chef de l'entité parente.
+     * Construit l'organigramme réel :
+     * Direction Générale (unique, ne formule pas d'activités)
+     *   ├── Directions Centrales → Services
+     *   ├── Services rattachés (directement sous la DG)
+     *   ├── Agence Comptable (indépendante, soumet à la DG)
+     *   └── Bureaux Régionaux (rattachés à la DG, sans sous-entités)
+     * Le chef de chaque entité soumet ses éléments au chef de l'entité parente ;
+     * les entités rattachées à la DG soumettent à l'arbitrage central.
      */
     public function run(): void
     {
-        $organigramme = [
-            'DIR_FIN' => [
-                'nom' => 'Direction des Finances',
-                'departements' => [
-                    'DEP_COMPTA' => ['nom' => 'Département Comptabilité', 'services' => [
-                        'SRV_COMPTA_GEN' => 'Service Comptabilité Générale',
-                        'SRV_COMPTA_ANA' => 'Service Comptabilité Analytique',
-                    ]],
-                    'DEP_BUDGET' => ['nom' => 'Département Budget', 'services' => [
-                        'SRV_BUDGET_PREP' => 'Service Préparation Budgétaire',
-                        'SRV_BUDGET_EXEC' => 'Service Exécution Budgétaire',
-                    ]],
-                ],
-            ],
-            'DIR_RH' => [
-                'nom' => 'Direction des Ressources Humaines',
-                'departements' => [
-                    'DEP_PAIE' => ['nom' => 'Département Paie', 'services' => [
-                        'SRV_PAIE_TRAIT' => 'Service Traitement de la Paie',
-                    ]],
-                    'DEP_CARRIERE' => ['nom' => 'Département Gestion des Carrières', 'services' => [
-                        'SRV_FORMATION' => 'Service Formation',
-                        'SRV_RECRUT' => 'Service Recrutement',
-                    ]],
-                ],
-            ],
-            'DIR_SI' => [
-                'nom' => 'Direction des Systèmes d\'Information',
-                'departements' => [
-                    'DEP_ETUDES' => ['nom' => 'Département Études et Développement', 'services' => [
-                        'SRV_DEV' => 'Service Développement',
-                    ]],
-                    'DEP_EXPLOIT' => ['nom' => 'Département Exploitation', 'services' => [
-                        'SRV_RESEAU' => 'Service Réseau et Infrastructure',
-                        'SRV_SUPPORT' => 'Service Support Utilisateurs',
-                    ]],
-                ],
-            ],
+        $directionsCentrales = [
+            'DC_FIN' => ['nom' => 'Direction Centrale des Finances', 'services' => [
+                'SRV_COMPTA_GEN' => 'Service Comptabilité Générale',
+                'SRV_BUDGET_PREP' => 'Service Préparation Budgétaire',
+                'SRV_BUDGET_EXEC' => 'Service Exécution Budgétaire',
+            ]],
+            'DC_RH' => ['nom' => 'Direction Centrale des Ressources Humaines', 'services' => [
+                'SRV_PAIE_TRAIT' => 'Service Traitement de la Paie',
+                'SRV_FORMATION' => 'Service Formation',
+                'SRV_RECRUT' => 'Service Recrutement',
+            ]],
+            'DC_SI' => ['nom' => 'Direction Centrale des Systèmes d\'Information', 'services' => [
+                'SRV_DEV' => 'Service Développement',
+                'SRV_RESEAU' => 'Service Réseau et Infrastructure',
+                'SRV_SUPPORT' => 'Service Support Utilisateurs',
+            ]],
+        ];
+
+        // Les deux seuls services qui ne dépendent pas d'une Direction Centrale.
+        $servicesRattaches = [
+            'SRV_AUDIT' => 'Service Audit Interne',
+            'SRV_COM' => 'Service Communication',
+        ];
+
+        $bureauxRegionaux = [
+            'BR_BKO' => 'Bureau Régional de Bamako',
+            'BR_SIK' => 'Bureau Régional de Sikasso',
+            'BR_MOP' => 'Bureau Régional de Mopti',
         ];
 
         $ordre = 0;
-        foreach ($organigramme as $codeDir => $dir) {
-            $direction = Departement::create([
-                'code' => $codeDir,
-                'nom' => $dir['nom'],
-                'type' => Departement::TYPE_DIRECTION,
-                'parent_id' => null,
+
+        $directionGenerale = Departement::create([
+            'code' => 'DG',
+            'nom' => 'Direction Générale',
+            'type' => Departement::TYPE_DIRECTION,
+            'parent_id' => null,
+            'ordre' => ++$ordre,
+        ]);
+
+        foreach ($directionsCentrales as $code => $directionCentrale) {
+            $entite = Departement::create([
+                'code' => $code,
+                'nom' => $directionCentrale['nom'],
+                'type' => Departement::TYPE_DEPARTEMENT,
+                'parent_id' => $directionGenerale->id,
                 'ordre' => ++$ordre,
             ]);
 
-            foreach ($dir['departements'] as $codeDep => $dep) {
-                $departement = Departement::create([
-                    'code' => $codeDep,
-                    'nom' => $dep['nom'],
-                    'type' => Departement::TYPE_DEPARTEMENT,
-                    'parent_id' => $direction->id,
+            foreach ($directionCentrale['services'] as $codeService => $nomService) {
+                Departement::create([
+                    'code' => $codeService,
+                    'nom' => $nomService,
+                    'type' => Departement::TYPE_SERVICE,
+                    'parent_id' => $entite->id,
                     'ordre' => ++$ordre,
                 ]);
-
-                foreach ($dep['services'] as $codeSrv => $nomSrv) {
-                    Departement::create([
-                        'code' => $codeSrv,
-                        'nom' => $nomSrv,
-                        'type' => Departement::TYPE_SERVICE,
-                        'parent_id' => $departement->id,
-                        'ordre' => ++$ordre,
-                    ]);
-                }
             }
+        }
+
+        foreach ($servicesRattaches as $code => $nom) {
+            Departement::create([
+                'code' => $code,
+                'nom' => $nom,
+                'type' => Departement::TYPE_SERVICE,
+                'parent_id' => $directionGenerale->id,
+                'ordre' => ++$ordre,
+            ]);
+        }
+
+        Departement::create([
+            'code' => 'AC',
+            'nom' => 'Agence Comptable',
+            'type' => Departement::TYPE_AGENCE_COMPTABLE,
+            'parent_id' => $directionGenerale->id,
+            'ordre' => ++$ordre,
+        ]);
+
+        foreach ($bureauxRegionaux as $code => $nom) {
+            Departement::create([
+                'code' => $code,
+                'nom' => $nom,
+                'type' => Departement::TYPE_BUREAU_REGIONAL,
+                'parent_id' => $directionGenerale->id,
+                'ordre' => ++$ordre,
+            ]);
         }
     }
 }

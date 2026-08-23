@@ -209,7 +209,7 @@
             </div>
         </div>
 
-        @if ($departement->type !== \App\Models\Departement::TYPE_SERVICE)
+        @if ($departement->peutAvoirDesEnfants())
             <div class="rounded-xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900">
                 <div class="border-b border-slate-200 px-6 py-4 dark:border-slate-700">
                     <h2 class="text-lg font-semibold text-slate-900 dark:text-white">

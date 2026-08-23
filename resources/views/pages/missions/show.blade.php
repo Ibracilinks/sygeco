@@ -13,7 +13,7 @@
                     </a>
                 @endcan
                 @can('generate_missions_pdf')
-                    <button type="button" onclick="{{ $mission->estExterieure() ? "window.exportMissionExterieurePDF(this, 'mission-exterieure-data')" : "window.exportMissionMemeVillePDF(this, 'mission-meme-ville-data')" }}"
+                    <button type="button" onclick="{{ $mission->estExterieure() ? "window.exportMissionExterieurePDF(this, 'mission-exterieure-data')" : ($mission->estRegionale() ? "window.exportMissionRegionPDF(this, 'mission-region-data')" : "window.exportMissionMemeVillePDF(this, 'mission-meme-ville-data')") }}"
                         class="inline-flex items-center rounded-lg bg-slate-800 px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-700 dark:bg-slate-200 dark:text-slate-900 dark:hover:bg-white">
                         Générer le PDF
                     </button>
@@ -38,11 +38,11 @@
                 <p class="text-xs text-slate-500 dark:text-slate-400">{{ $mission->duree_texte }}</p>
             </div>
             <div class="rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-900">
-                <p class="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">{{ $mission->estExterieure() ? 'Zone / Destination' : 'Carburant' }}</p>
+                <p class="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">{{ $mission->estExterieure() ? 'Zone / Destination' : ($mission->estRegionale() ? 'Région / Étapes' : 'Carburant') }}</p>
                 <p class="mt-2 text-base font-semibold text-slate-900 dark:text-white">
-                    {{ $mission->estExterieure() ? ($mission->zone_label ?? 'Zone à définir') : $mission->nombre_tickets_carburant.' ticket(s)' }}
+                    {{ $mission->estExterieure() ? ($mission->zone_label ?? 'Zone à définir') : ($mission->estRegionale() ? ($mission->destination ?? 'Région à préciser') : $mission->nombre_tickets_carburant.' ticket(s)') }}
                 </p>
-                <p class="text-xs text-slate-500 dark:text-slate-400">{{ $mission->estExterieure() ? ($mission->destination ?? 'Destination à préciser') : $mission->tickets_carburant_par_jour.' / jour' }}</p>
+                <p class="text-xs text-slate-500 dark:text-slate-400">{{ $mission->estExterieure() ? ($mission->destination ?? 'Destination à préciser') : ($mission->estRegionale() ? $mission->etapes->count().' étape(s)' : $mission->tickets_carburant_par_jour.' / jour') }}</p>
             </div>
             <div class="rounded-xl border border-sky-200 bg-sky-50 p-4 dark:border-sky-900/70 dark:bg-sky-950/30">
                 <p class="text-xs uppercase tracking-wide text-sky-700 dark:text-sky-300">Montant total</p>
@@ -65,7 +65,7 @@
             @if ($mission->estMemeVille())
                 <div class="mx-auto max-w-5xl border border-slate-300 bg-white p-6 text-[13px] leading-relaxed text-black shadow-sm">
                     <div class="border border-black px-4 py-3 text-center text-sm font-bold uppercase">
-                        Budget relatif a l'ordre de mission n°{{ $mission->reference }}
+                        Dotation en tickets de carburant relative a l'ordre de mission n°{{ $mission->reference }}
                     </div>
                     <div class="mt-4 border border-black px-4 py-3">
                         <span class="font-bold uppercase">Objet de la mission:</span>
@@ -75,35 +75,24 @@
                         <div class="border border-black px-4 py-3"><span class="font-bold uppercase">Durée:</span> {{ $mission->nombre_jours }} jour(s)</div>
                         <div class="border border-black px-4 py-3">{{ $mission->duree_texte }}</div>
                     </div>
+                    {{-- Mission même ville : aucune indemnité, uniquement le décompte des tickets de carburant. --}}
                     <table class="mt-5 w-full border-collapse text-xs">
                         <thead>
-                            <tr>
-                                <th class="border border-black px-2 py-2">N°</th><th class="border border-black px-2 py-2 text-left">LIBELLE</th><th class="border border-black px-2 py-2">Nbre de pers.</th><th class="border border-black px-2 py-2">Mtant par jour</th><th class="border border-black px-2 py-2">Nbre de Jrs</th><th class="border border-black px-2 py-2">Frais de mission</th><th class="border border-black px-2 py-2">Mtant par nuitée</th><th class="border border-black px-2 py-2">Nbre de nuitées</th><th class="border border-black px-2 py-2">Indemnités de Mission</th><th class="border border-black px-2 py-2">TOTAL</th>
-                            </tr>
-                            <tr><th colspan="10" class="border border-black px-2 py-2 text-left font-bold uppercase">I- Frais et indemnites</th></tr>
-                            <tr><th class="border border-black px-2 py-2"></th><th class="border border-black px-2 py-2 text-left">PRENOMS ET NOMS</th><th colspan="8" class="border border-black px-2 py-2"></th></tr>
+                            <tr><th colspan="2" class="border border-black px-2 py-2 text-left font-bold uppercase">I- Participants</th></tr>
+                            <tr><th class="border border-black px-2 py-2">N°</th><th class="border border-black px-2 py-2 text-left">PRENOMS ET NOMS</th></tr>
                         </thead>
                         <tbody>
                             @foreach ($mission->participants as $participant)
                                 <tr>
                                     <td class="border border-black px-2 py-2 text-center">{{ $loop->iteration }}</td>
                                     <td class="border border-black px-2 py-2">{{ $participant->nom_complet }}</td>
-                                    <td class="border border-black px-2 py-2 text-center">1</td>
-                                    <td class="border border-black px-2 py-2 text-right">{{ number_format((float) $mission->montant_par_jour, 0, ',', ' ') }}</td>
-                                    <td class="border border-black px-2 py-2 text-center">{{ $mission->nombre_jours }}</td>
-                                    <td class="border border-black px-2 py-2 text-right">{{ number_format((float) $mission->montant_par_jour * $mission->nombre_jours, 0, ',', ' ') }}</td>
-                                    <td class="border border-black px-2 py-2 text-center">-</td>
-                                    <td class="border border-black px-2 py-2 text-center">-</td>
-                                    <td class="border border-black px-2 py-2 text-right">{{ number_format((float) $mission->montant_par_jour * $mission->nombre_jours, 0, ',', ' ') }}</td>
-                                    <td class="border border-black px-2 py-2 text-right">{{ number_format((float) $mission->montant_par_jour * $mission->nombre_jours, 0, ',', ' ') }}</td>
                                 </tr>
                             @endforeach
-                            <tr class="font-semibold"><td colspan="9" class="border border-black px-2 py-2 text-right">SOUS-TOTAL 1</td><td class="border border-black px-2 py-2 text-right">{{ number_format((float) $mission->montant_indemnites, 0, ',', ' ') }}</td></tr>
-                            <tr><td colspan="10" class="border border-black px-2 py-2 text-left font-bold uppercase">II- Carburant</td></tr>
-                            <tr><td colspan="5" class="border border-black px-2 py-2">NBRE DE JOURS OUVRABLE: {{ $mission->nombre_jours }}</td><td colspan="5" class="border border-black px-2 py-2">NOMBRE DE TICKET PAR JOUR: {{ $mission->tickets_carburant_par_jour }}</td></tr>
-                            <tr><td colspan="9" class="border border-black px-2 py-2">MONTANT CARBURANT</td><td class="border border-black px-2 py-2 text-right">{{ number_format((float) $mission->montant_carburant, 0, ',', ' ') }}</td></tr>
-                            <tr class="font-semibold"><td colspan="9" class="border border-black px-2 py-2 text-right">SOUS-TOTAL 2</td><td class="border border-black px-2 py-2 text-right">{{ number_format((float) $mission->montant_carburant, 0, ',', ' ') }}</td></tr>
-                            <tr class="font-bold"><td colspan="9" class="border border-black px-2 py-2 text-right">TOTAL</td><td class="border border-black px-2 py-2 text-right">{{ number_format((float) $mission->montant_total, 0, ',', ' ') }}</td></tr>
+                            <tr class="font-semibold"><td class="border border-black px-2 py-2 text-right">Total</td><td class="border border-black px-2 py-2">{{ $mission->nombre_personnes }} personne(s)</td></tr>
+                            <tr><td colspan="2" class="border border-black px-2 py-2 text-left font-bold uppercase">II- Carburant</td></tr>
+                            <tr><td class="border border-black px-2 py-2">NBRE DE JOURS OUVRABLE</td><td class="border border-black px-2 py-2">{{ $mission->nombre_jours }}</td></tr>
+                            <tr><td class="border border-black px-2 py-2">NOMBRE DE TICKET PAR JOUR</td><td class="border border-black px-2 py-2">{{ $mission->tickets_carburant_par_jour }}</td></tr>
+                            <tr class="font-bold"><td class="border border-black px-2 py-2">NOMBRE TOTAL DE TICKETS</td><td class="border border-black px-2 py-2">{{ $mission->nombre_tickets_carburant }}</td></tr>
                         </tbody>
                     </table>
                     <div class="mt-3 border border-black px-4 py-2 text-center text-sm font-semibold uppercase">{{ $mission->tickets_carburant_en_lettres }}</div>
@@ -118,7 +107,7 @@
                         @endforeach
                     </div>
                 </div>
-            @else
+            @elseif ($mission->estExterieure())
                 <div class="mx-auto max-w-6xl border border-slate-300 bg-white p-6 text-[13px] leading-relaxed text-black shadow-sm">
                     <div class="border border-black px-4 py-3 text-center text-sm font-bold uppercase">
                         Projet de budget relatif a la levee d'ordre de mission n°{{ $mission->reference }}
@@ -141,7 +130,7 @@
                             @foreach ($mission->participants as $participant)
                                 <tr>
                                     <td class="border border-black px-2 py-2 text-center">{{ $loop->iteration }}</td>
-                                    <td class="border border-black px-2 py-2">{{ $participant->nom_complet }} @if($participant->categorie)<div class="text-[10px] text-slate-600">{{ \App\Models\Mission::CATEGORIES_EXTERIEURES[$participant->categorie]['label'] ?? $participant->categorie }}</div>@endif</td>
+                                    <td class="border border-black px-2 py-2">{{ $participant->nom_complet }} @if($participant->categorie)<div class="text-[10px] text-slate-600">{{ \App\Models\Mission::categoriesExterieures()[$participant->categorie]['label'] ?? $participant->categorie }}</div>@endif</td>
                                     <td class="border border-black px-2 py-2 text-center">1</td>
                                     <td class="border border-black px-2 py-2 text-right">{{ number_format((float) $participant->montant_par_jour, 0, ',', ' ') }}</td>
                                     <td class="border border-black px-2 py-2 text-center">{{ $mission->nombre_jours }}</td>
@@ -186,6 +175,56 @@
                         @endforeach
                     </div>
                 </div>
+            @else
+                <div class="mx-auto max-w-6xl border border-slate-300 bg-white p-6 text-[13px] leading-relaxed text-black shadow-sm">
+                    <div class="border border-black px-4 py-3 text-center text-sm font-bold uppercase">
+                        Budget relatif a l'ordre de mission regionale n°{{ $mission->reference }}
+                    </div>
+                    <div class="mt-4 border border-black px-4 py-3"><span class="font-bold uppercase">Objet de la mission:</span> <span class="uppercase">{{ $mission->objet }}</span></div>
+                    <div class="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
+                        <div class="border border-black px-4 py-3"><span class="font-bold uppercase">Durée mission:</span> {{ $mission->nombre_jours }} jour(s)</div>
+                        <div class="border border-black px-4 py-3"><span class="font-bold uppercase">Région:</span> {{ $mission->destination }}</div>
+                    </div>
+                    <table class="mt-5 w-full border-collapse text-xs">
+                        <thead>
+                            <tr>
+                                <th class="border border-black px-2 py-2">N°</th><th class="border border-black px-2 py-2 text-left">Participant</th><th class="border border-black px-2 py-2">Catégorie</th><th class="border border-black px-2 py-2">Jours</th><th class="border border-black px-2 py-2">Nuitées</th><th class="border border-black px-2 py-2">Total</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach ($mission->participants as $participant)
+                                <tr>
+                                    <td class="border border-black px-2 py-2 text-center">{{ $loop->iteration }}</td>
+                                    <td class="border border-black px-2 py-2">{{ $participant->nom_complet }}</td>
+                                    <td class="border border-black px-2 py-2">{{ \App\Models\Mission::categoriesNationales()[$participant->categorie]['label'] ?? $participant->categorie }}</td>
+                                    <td class="border border-black px-2 py-2 text-center">{{ $mission->nombre_jours }}</td>
+                                    <td class="border border-black px-2 py-2 text-center">{{ $participant->nombre_nuitees }}</td>
+                                    <td class="border border-black px-2 py-2 text-right">{{ number_format((float) $participant->total_general, 0, ',', ' ') }}</td>
+                                </tr>
+                            @endforeach
+                            <tr class="font-bold"><td colspan="5" class="border border-black px-2 py-2 text-right">TOTAL</td><td class="border border-black px-2 py-2 text-right">{{ number_format((float) $mission->montant_total, 0, ',', ' ') }}</td></tr>
+                        </tbody>
+                    </table>
+                    <table class="mt-4 w-full border-collapse text-xs">
+                        <thead>
+                            <tr>
+                                <th class="border border-black px-2 py-2">Étape</th><th class="border border-black px-2 py-2">Barème</th><th class="border border-black px-2 py-2">Période</th><th class="border border-black px-2 py-2">Jours</th><th class="border border-black px-2 py-2">Nuitées</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach ($mission->etapes as $etape)
+                                <tr>
+                                    <td class="border border-black px-2 py-2">{{ \App\Models\Mission::TYPES_ETAPES_REGIONALES[$etape->type_etape] ?? $etape->type_etape }} — {{ $etape->localite }}</td>
+                                    <td class="border border-black px-2 py-2">{{ \App\Models\Mission::BAREMES_REGIONAUX[$etape->bareme]['label'] ?? $etape->bareme }}</td>
+                                    <td class="border border-black px-2 py-2">{{ $etape->date_depart?->format('d/m/Y') }} au {{ $etape->date_retour?->format('d/m/Y') }}</td>
+                                    <td class="border border-black px-2 py-2 text-center">{{ $etape->nombre_jours }}</td>
+                                    <td class="border border-black px-2 py-2 text-center">{{ $etape->nombre_nuitees }}</td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                    <div class="mt-6 text-right text-sm">{{ $mission->lieu_signature }}, le {{ $mission->date_document?->format('d/m/Y') }}</div>
+                </div>
             @endif
         </div>
     </div>
@@ -212,17 +251,13 @@
             $missionPdf = $missionBase + [
                 'tickets_par_jour' => $mission->tickets_carburant_par_jour,
                 'nombre_tickets' => $mission->nombre_tickets_carburant,
-                'montant_par_jour' => (float) $mission->montant_par_jour,
-                'montant_ticket' => (float) $mission->montant_ticket_carburant,
-                'montant_indemnites' => (float) $mission->montant_indemnites,
-                'montant_carburant' => (float) $mission->montant_carburant,
-                'montant_total' => (float) $mission->montant_total,
+                'nombre_personnes' => $mission->nombre_personnes,
                 'tickets_en_lettres' => $mission->tickets_carburant_en_lettres,
                 'participants' => $mission->participants->map(fn ($participant) => ['nom' => $participant->nom_complet])->values()->all(),
             ];
         @endphp
         <script id="mission-meme-ville-data" type="application/json">@json($missionPdf, JSON_UNESCAPED_UNICODE)</script>
-    @else
+    @elseif ($mission->estExterieure())
         @php
             $missionPdf = $missionBase + [
                 'destination' => $mission->destination,
@@ -248,7 +283,7 @@
                 'billets_economique_total' => (float) $mission->billets_economique_total,
                 'participants' => $mission->participants->map(fn ($participant) => [
                     'nom' => $participant->nom_complet,
-                    'categorie' => $participant->categorie ? (\App\Models\Mission::CATEGORIES_EXTERIEURES[$participant->categorie]['label'] ?? $participant->categorie) : '',
+                    'categorie' => $participant->categorie ? (\App\Models\Mission::categoriesExterieures()[$participant->categorie]['label'] ?? $participant->categorie) : '',
                     'montant_par_jour' => (float) $participant->montant_par_jour,
                     'montant_par_nuitee' => (float) $participant->montant_par_nuitee,
                     'nombre_nuitees' => $participant->nombre_nuitees,
@@ -259,5 +294,28 @@
             ];
         @endphp
         <script id="mission-exterieure-data" type="application/json">@json($missionPdf, JSON_UNESCAPED_UNICODE)</script>
+    @else
+        @php
+            $missionPdf = $missionBase + [
+                'destination' => $mission->destination,
+                'montant_total' => (float) $mission->montant_total,
+                'participants' => $mission->participants->map(fn ($participant) => [
+                    'nom' => $participant->nom_complet,
+                    'categorie' => $participant->categorie ? (\App\Models\Mission::categoriesNationales()[$participant->categorie]['label'] ?? $participant->categorie) : '',
+                    'nombre_nuitees' => $participant->nombre_nuitees,
+                    'total_general' => (float) $participant->total_general,
+                ])->values()->all(),
+                'etapes' => $mission->etapes->map(fn ($etape) => [
+                    'type_etape' => \App\Models\Mission::TYPES_ETAPES_REGIONALES[$etape->type_etape] ?? $etape->type_etape,
+                    'bareme' => \App\Models\Mission::BAREMES_REGIONAUX[$etape->bareme]['label'] ?? $etape->bareme,
+                    'localite' => $etape->localite,
+                    'date_depart' => $etape->date_depart?->format('d/m/Y'),
+                    'date_retour' => $etape->date_retour?->format('d/m/Y'),
+                    'nombre_jours' => $etape->nombre_jours,
+                    'nombre_nuitees' => $etape->nombre_nuitees,
+                ])->values()->all(),
+            ];
+        @endphp
+        <script id="mission-region-data" type="application/json">@json($missionPdf, JSON_UNESCAPED_UNICODE)</script>
     @endif
 </x-layouts::app>

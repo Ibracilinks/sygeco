@@ -4,6 +4,25 @@
     $parents = $parents ?? collect();
     $typeCourant = old('type', $departement?->type ?? \App\Models\Departement::TYPE_DEPARTEMENT);
     $parentCourant = old('parent_id', $departement?->parent_id);
+
+    // Types de parent autorisés par niveau, partagés avec Alpine pour filtrer la liste.
+    $parentsAutorises = [
+        \App\Models\Departement::TYPE_DEPARTEMENT => [\App\Models\Departement::TYPE_DIRECTION],
+        \App\Models\Departement::TYPE_AGENCE_COMPTABLE => [\App\Models\Departement::TYPE_DIRECTION],
+        \App\Models\Departement::TYPE_BUREAU_REGIONAL => [\App\Models\Departement::TYPE_DIRECTION],
+        \App\Models\Departement::TYPE_SERVICE => [\App\Models\Departement::TYPE_DEPARTEMENT, \App\Models\Departement::TYPE_DIRECTION],
+    ];
+
+    // La Direction Générale est unique : on ne propose son niveau que si elle n'existe
+    // pas encore (ou si c'est justement l'entité en cours d'édition).
+    $dgDejaCreee = \App\Models\Departement::query()
+        ->where('type', \App\Models\Departement::TYPE_DIRECTION)
+        ->when($departement, fn ($query) => $query->whereKeyNot($departement->id))
+        ->exists();
+
+    $aidesRattachement = [
+        \App\Models\Departement::TYPE_SERVICE => '(direction centrale ou Direction Générale)',
+    ];
 @endphp
 
 <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
@@ -35,7 +54,12 @@
         @enderror
     </div>
 
-    <div class="md:col-span-2" x-data="{ type: '{{ $typeCourant }}' }">
+    <div class="md:col-span-2" x-data="{
+        type: '{{ $typeCourant }}',
+        parentsAutorises: {{ \Illuminate\Support\Js::from($parentsAutorises) }},
+        aides: {{ \Illuminate\Support\Js::from($aidesRattachement) }},
+        accepte(typeParent) { return (this.parentsAutorises[this.type] ?? []).includes(typeParent) },
+    }">
         <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
             <div>
                 <label class="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-200">Type d'entité *</label>
@@ -44,9 +68,10 @@
                     x-model="type"
                     class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-800 focus:border-slate-500 focus:outline-none dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
                 >
-                    <option value="{{ \App\Models\Departement::TYPE_DIRECTION }}">Direction</option>
-                    <option value="{{ \App\Models\Departement::TYPE_DEPARTEMENT }}">Direction Centrale</option>
-                    <option value="{{ \App\Models\Departement::TYPE_SERVICE }}">Service</option>
+                    @foreach (\App\Models\Departement::TYPE_LABELS as $valeur => $libelle)
+                        @continue($valeur === \App\Models\Departement::TYPE_DIRECTION && $dgDejaCreee)
+                        <option value="{{ $valeur }}" @selected($typeCourant === $valeur)>{{ $libelle }}</option>
+                    @endforeach
                 </select>
                 @error('type')
                     <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
@@ -56,7 +81,7 @@
             <div x-show="type !== '{{ \App\Models\Departement::TYPE_DIRECTION }}'" x-cloak>
                 <label class="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-200">
                     Rattaché à
-                    <span x-text="type === '{{ \App\Models\Departement::TYPE_SERVICE }}' ? '(direction centrale ou direction générale)' : '(direction)'"
+                    <span x-text="aides[type] ?? '(Direction Générale)'"
                           class="text-slate-400"></span>
                     *
                 </label>
@@ -68,7 +93,7 @@
                     @foreach ($parents as $parent)
                         <option
                             value="{{ $parent->id }}"
-                            x-show="(type === '{{ \App\Models\Departement::TYPE_DEPARTEMENT }}' && '{{ $parent->type }}' === '{{ \App\Models\Departement::TYPE_DIRECTION }}') || (type === '{{ \App\Models\Departement::TYPE_SERVICE }}' && ('{{ $parent->type }}' === '{{ \App\Models\Departement::TYPE_DEPARTEMENT }}' || '{{ $parent->type }}' === '{{ \App\Models\Departement::TYPE_DIRECTION }}'))"
+                            x-show="accepte('{{ $parent->type }}')"
                             @selected((string) $parentCourant === (string) $parent->id)
                         >
                             {{ $parent->nom }}

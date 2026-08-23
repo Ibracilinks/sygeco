@@ -8,6 +8,7 @@ use App\Http\Controllers\EvaluationController;
 use App\Http\Controllers\ExerciceController;
 use App\Http\Controllers\ExtrantController;
 use App\Http\Controllers\JournalController;
+use App\Http\Controllers\MissionBaremeController;
 use App\Http\Controllers\MissionController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\ObjectifController;
@@ -123,6 +124,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::middleware(['role:superadmin|dbcgoq|chef'])->group(function () {
         Route::resource('missions', MissionController::class);
+    });
+
+    // Barèmes des missions : montants révisables, liste des catégories/zones figée.
+    Route::middleware(['role:superadmin|dbcgoq'])->group(function () {
+        Route::get('baremes-missions', [MissionBaremeController::class, 'index'])->name('mission-baremes.index');
+        Route::put('baremes-missions', [MissionBaremeController::class, 'update'])->name('mission-baremes.update');
     });
 });
 

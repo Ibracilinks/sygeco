@@ -57,6 +57,16 @@ class DepartementFactory extends Factory
         return $this->state(fn () => ['type' => Departement::TYPE_SERVICE]);
     }
 
+    public function agenceComptable(): static
+    {
+        return $this->state(fn () => ['type' => Departement::TYPE_AGENCE_COMPTABLE]);
+    }
+
+    public function bureauRegional(): static
+    {
+        return $this->state(fn () => ['type' => Departement::TYPE_BUREAU_REGIONAL]);
+    }
+
     /**
      * Rattache l'entité à une entité parente (du niveau supérieur).
      */

@@ -69,7 +69,7 @@
                                 <div class="mt-3 grid grid-cols-1 gap-2 text-xs text-slate-500 dark:text-slate-400 sm:grid-cols-3">
                                     <span>Statut: {{ $activite->statut_label }}</span>
                                     <span>Budget: {{ number_format($activite->cout, 0, ',', ' ') }}</span>
-                                    <span>Trimestres: {{ $activite->trimestres_selectionnes ?: '-' }}</span>
+                                    <span>Chronogramme : {{ $activite->trimestres_selectionnes ?: '-' }}</span>
                                 </div>
                             </div>
                         @endforeach

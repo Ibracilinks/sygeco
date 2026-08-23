@@ -74,7 +74,7 @@
             </select>
 
             <select name="trimestre" class="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 focus:border-slate-500 focus:outline-none dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100">
-                <option value="">Tous trimestres</option>
+                <option value="">Tout le chronogramme</option>
                 <option value="1" @selected(($filters['trimestre'] ?? '') === '1')>T1</option>
                 <option value="2" @selected(($filters['trimestre'] ?? '') === '2')>T2</option>
                 <option value="3" @selected(($filters['trimestre'] ?? '') === '3')>T3</option>
@@ -128,7 +128,7 @@
                                     <td class="px-5 py-4">
                                         <p class="text-sm font-semibold text-slate-900 dark:text-white">{{ Str::limit($activite->nom_activite, 90) }}</p>
                                         <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">{{ Str::limit($activite->indicateur_objectivement_verifiable, 90) }}</p>
-                                        <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">Trimestres: {{ $activite->trimestres_selectionnes ?: '-' }}</p>
+                                        <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">Chronogramme : {{ $activite->trimestres_selectionnes ?: '-' }}</p>
                                     </td>
                                     <td class="px-5 py-4 text-sm text-slate-700 dark:text-slate-200">{{ $activite->departement->nom ?? '-' }}</td>
                                     <td class="px-5 py-4 text-sm text-slate-700 dark:text-slate-200">{{ optional($activite->date_soumission)->format('d/m/Y H:i') ?? '—' }}</td>

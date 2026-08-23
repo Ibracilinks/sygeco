@@ -206,7 +206,9 @@ class EvaluationController extends Controller
 
     private function departementsVisibles()
     {
-        $query = Departement::active()->ordered();
+        // La Direction Générale ne formule pas d'activités : elle reçoit celles des
+        // entités qui lui sont rattachées.
+        $query = Departement::active()->formulatrices()->ordered();
 
         if ($perimetre = Auth::user()?->perimetreActivitesIds()) {
             $query->whereIn('id', $perimetre);
