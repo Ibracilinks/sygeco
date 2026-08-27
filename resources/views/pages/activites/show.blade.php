@@ -116,7 +116,7 @@
         <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
             <div class="rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-900">
                 <p class="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">Coût programmé</p>
-                <p class="mt-2 text-2xl font-semibold text-slate-900 dark:text-white">{{ number_format($activite->cout, 0, ',', ' ') }}</p>
+                <p class="mt-2 text-2xl font-semibold text-slate-900 dark:text-white">{{ $activite->pour_memoire ? 'PM' : number_format($activite->cout, 0, ',', ' ') }}</p>
                 <p class="text-xs text-slate-500 dark:text-slate-400">FCFA</p>
             </div>
 
@@ -139,7 +139,7 @@
 
             <div class="rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-900">
                 <p class="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">Coût moyen / période</p>
-                <p class="mt-2 text-2xl font-semibold text-slate-900 dark:text-white">{{ $coutParTrimestre !== null ? number_format($coutParTrimestre, 0, ',', ' ') : '—' }}</p>
+                <p class="mt-2 text-2xl font-semibold text-slate-900 dark:text-white">{{ $activite->pour_memoire ? 'PM' : ($coutParTrimestre !== null ? number_format($coutParTrimestre, 0, ',', ' ') : '—') }}</p>
                 <p class="text-xs text-slate-500 dark:text-slate-400">Répartition indicative</p>
             </div>
 
@@ -176,7 +176,13 @@
                     </div>
                     <div>
                         <dt class="text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">Coût programmé</dt>
-                        <dd class="mt-1 font-medium text-slate-900 dark:text-white">{{ number_format($activite->cout, 0, ',', ' ') }} FCFA</dd>
+                        <dd class="mt-1 font-medium text-slate-900 dark:text-white">
+                            @if ($activite->pour_memoire)
+                                PM <span class="text-xs font-normal text-slate-500 dark:text-slate-400">(pour mémoire : coût compris dans une autre activité)</span>
+                            @else
+                                {{ number_format($activite->cout, 0, ',', ' ') }} FCFA
+                            @endif
+                        </dd>
                     </div>
                     <div>
                         <dt class="text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">Chronogramme</dt>
@@ -191,7 +197,7 @@
                     <div>
                         <dt class="text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">Structures intervenantes</dt>
                         <dd class="mt-1 font-medium text-slate-900 dark:text-white">
-                            {{ $activite->departements->isNotEmpty() ? $activite->departements->pluck('nom')->join(' / ') : '—' }}
+                            <span title="{{ $activite->departements->pluck('nom')->join(' / ') }}">{{ $activite->departements->isNotEmpty() ? $activite->departements->pluck('code')->join(' / ') : '—' }}</span>
                         </dd>
                     </div>
                     <div class="sm:col-span-2">

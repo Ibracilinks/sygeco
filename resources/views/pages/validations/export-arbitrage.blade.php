@@ -87,7 +87,7 @@
                                 <td style="{{ $cell }}{{ $center }}font-weight:bold;">{{ $activite->{'trimestre_'.$trimestre} === 'oui' ? 'X' : '' }}</td>
                             @endforeach
                             <td style="{{ $cell }}{{ $center }}">{{ $responsables }}</td>
-                            <td style="{{ $cell }}{{ $montant }}">{{ (float) $activite->cout > 0 ? number_format((float) $activite->cout, 0, ',', ' ') : '-' }}</td>
+                            <td style="{{ $cell }}{{ $montant }}">{{ $activite->pour_memoire ? 'PM' : ((float) $activite->cout > 0 ? number_format((float) $activite->cout, 0, ',', ' ') : '-') }}</td>
                         </tr>
                     @endforeach
                 @endforeach

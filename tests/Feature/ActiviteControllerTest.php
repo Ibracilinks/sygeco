@@ -579,3 +579,55 @@ test('dans un extrant, les activités sont classées par structure de A à Z', f
     expect(strpos($contenu, 'ACTALPHA'))->toBeLessThan(strpos($contenu, 'ACTMEDINA'))
         ->and(strpos($contenu, 'ACTMEDINA'))->toBeLessThan(strpos($contenu, 'ACTZETA'));
 });
+
+test('une activité « pour mémoire » est enregistrée sans coût et ne pèse rien au budget', function () {
+    $admin = userWithRole('dbcgoq');
+    $exercice = Exercice::factory()->actif()->create();
+    $extrant = Extrant::factory()->create();
+    $departement = Departement::factory()->create();
+
+    $this->actingAs($admin)
+        ->withSession([ActiveExercice::SESSION_KEY => $exercice->id])
+        ->post(route('activites.store'), [
+            'extrant_id' => $extrant->id,
+            'departement_id' => $departement->id,
+            'nom_activite' => 'Activité déjà budgétée ailleurs',
+            'indicateur_objectivement_verifiable' => 'Indicateur',
+            'moyen_verification' => 'PV',
+            'pour_memoire' => 'on',
+            // Aucun coût transmis : c'est tout l'intérêt du PM.
+            'trimestre_1' => 'oui',
+        ])
+        ->assertSessionHasNoErrors()
+        ->assertRedirect(route('activites.index'));
+
+    $activite = Activite::where('nom_activite', 'Activité déjà budgétée ailleurs')->firstOrFail();
+
+    expect($activite->pour_memoire)->toBeTrue()
+        ->and((float) $activite->cout)->toBe(0.0);
+
+    // La liste affiche « PM » à la place d'un montant.
+    $this->actingAs($admin)
+        ->withSession([ActiveExercice::SESSION_KEY => $exercice->id])
+        ->get(route('activites.index'))
+        ->assertOk()
+        ->assertSee('PM');
+});
+
+test('le coût reste obligatoire quand « pour mémoire » n\'est pas coché', function () {
+    $admin = userWithRole('dbcgoq');
+    $extrant = Extrant::factory()->create();
+    $departement = Departement::factory()->create();
+
+    $this->actingAs($admin)
+        ->from(route('activites.create'))
+        ->post(route('activites.store'), [
+            'extrant_id' => $extrant->id,
+            'departement_id' => $departement->id,
+            'nom_activite' => 'Activité sans coût',
+            'indicateur_objectivement_verifiable' => 'Indicateur',
+            'moyen_verification' => 'PV',
+            'trimestre_1' => 'oui',
+        ])
+        ->assertSessionHasErrors('cout');
+});

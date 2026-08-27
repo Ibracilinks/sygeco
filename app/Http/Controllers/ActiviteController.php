@@ -42,7 +42,7 @@ class ActiviteController extends Controller
      */
     public function index(Request $request)
     {
-        $query = Activite::with(['extrant.objectif', 'extrant.resultat', 'departement', 'saisiePar']);
+        $query = Activite::with(['extrant.objectif', 'extrant.resultat', 'departement', 'departements', 'saisiePar']);
 
         $exerciceId = ActiveExercice::id();
         $query->forExercice($exerciceId);
