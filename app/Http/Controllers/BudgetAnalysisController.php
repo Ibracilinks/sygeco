@@ -128,6 +128,7 @@ class BudgetAnalysisController extends Controller
             ->join('extrants', 'activites.extrant_id', '=', 'extrants.id')
             ->join('objectifs', 'extrants.objectif_id', '=', 'objectifs.id')
             ->where('objectifs.annee', $annee)
+            ->whereNull('activites.deleted_at')
             ->selectRaw("
                 COALESCE(SUM(activites.cout), 0) as budget_total,
                 COALESCE(SUM(CASE WHEN activites.statut_execution = 'realise' THEN activites.cout ELSE 0 END), 0) as budget_realise

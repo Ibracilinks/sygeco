@@ -61,6 +61,7 @@ class DashboardDataService
                 ->join('extrants', 'activites.extrant_id', '=', 'extrants.id')
                 ->join('objectifs', 'extrants.objectif_id', '=', 'objectifs.id')
                 ->whereIn('activites.exercice_id', $this->exerciceIdsDeLAnnee())
+                ->whereNull('activites.deleted_at')
                 ->selectRaw('
                     COUNT(DISTINCT objectifs.id) as total_objectifs,
                     COUNT(DISTINCT extrants.id) as total_extrants,
@@ -94,7 +95,8 @@ class DashboardDataService
                 ->leftJoin('extrants', 'objectifs.id', '=', 'extrants.objectif_id')
                 ->leftJoin('activites', function ($join) use ($exerciceIds) {
                     $join->on('extrants.id', '=', 'activites.extrant_id')
-                        ->whereIn('activites.exercice_id', $exerciceIds);
+                        ->whereIn('activites.exercice_id', $exerciceIds)
+                        ->whereNull('activites.deleted_at');
                 })
                 // L'objectif est retenu s'il couvre l'année, même pluriannuel.
                 ->whereExists(fn ($q) => $q->select(DB::raw(1))->from('exercice_objectif')
@@ -134,7 +136,8 @@ class DashboardDataService
                 ->join('objectifs', 'extrants.objectif_id', '=', 'objectifs.id')
                 ->leftJoin('activites', function ($join) use ($exerciceIds) {
                     $join->on('extrants.id', '=', 'activites.extrant_id')
-                        ->whereIn('activites.exercice_id', $exerciceIds);
+                        ->whereIn('activites.exercice_id', $exerciceIds)
+                        ->whereNull('activites.deleted_at');
                 })
                 ->whereExists(fn ($q) => $q->select(DB::raw(1))->from('exercice_objectif')
                     ->whereColumn('exercice_objectif.objectif_id', 'objectifs.id')
@@ -172,6 +175,7 @@ class DashboardDataService
                 ->join('extrants', 'activites.extrant_id', '=', 'extrants.id')
                 ->join('objectifs', 'extrants.objectif_id', '=', 'objectifs.id')
                 ->whereIn('activites.exercice_id', $this->exerciceIdsDeLAnnee())
+                ->whereNull('activites.deleted_at')
                 ->select('activites.id', 'activites.nom_activite', 'activites.cout')
                 ->orderByDesc('activites.cout')
                 ->limit(10)
@@ -201,7 +205,8 @@ class DashboardDataService
             $result = DB::table('departements')
                 ->leftJoin('activites', function ($join) use ($exerciceIds) {
                     $join->on('departements.id', '=', 'activites.departement_id')
-                        ->whereIn('activites.exercice_id', $exerciceIds);
+                        ->whereIn('activites.exercice_id', $exerciceIds)
+                        ->whereNull('activites.deleted_at');
                 })
                 ->selectRaw('
                     departements.nom,
@@ -241,6 +246,7 @@ class DashboardDataService
                     ->join('extrants', 'activites.extrant_id', '=', 'extrants.id')
                     ->join('objectifs', 'extrants.objectif_id', '=', 'objectifs.id')
                     ->whereIn('activites.exercice_id', $this->exerciceIdsDeLAnnee())
+                    ->whereNull('activites.deleted_at')
                     ->whereMonth('activites.created_at', $mois)
                     ->whereYear('activites.created_at', $this->annee)
                     ->selectRaw('
@@ -276,6 +282,7 @@ class DashboardDataService
                     ->join('extrants', 'activites.extrant_id', '=', 'extrants.id')
                     ->join('objectifs', 'extrants.objectif_id', '=', 'objectifs.id')
                     ->whereIn('activites.exercice_id', $this->exerciceIdsDeLAnnee())
+                    ->whereNull('activites.deleted_at')
                     ->where("activites.{$colonne}", 'oui')
                     ->selectRaw('
                         COUNT(activites.id) as nb_activites,
@@ -304,6 +311,7 @@ class DashboardDataService
                 ->join('extrants', 'activites.extrant_id', '=', 'extrants.id')
                 ->join('objectifs', 'extrants.objectif_id', '=', 'objectifs.id')
                 ->whereIn('activites.exercice_id', $this->exerciceIdsDeLAnnee())
+                ->whereNull('activites.deleted_at')
                 ->selectRaw('
                     SUM(CASE WHEN activites.cout < 1000000 THEN 1 ELSE 0 END) as tranche_0_1m,
                     SUM(CASE WHEN activites.cout >= 1000000 AND activites.cout < 5000000 THEN 1 ELSE 0 END) as tranche_1_5m,
@@ -367,6 +375,7 @@ class DashboardDataService
                 ->join('extrants', 'activites.extrant_id', '=', 'extrants.id')
                 ->join('objectifs', 'extrants.objectif_id', '=', 'objectifs.id')
                 ->whereIn('activites.exercice_id', $this->exerciceIdsDeLAnnee())
+                ->whereNull('activites.deleted_at')
                 ->selectRaw('
                     activites.statut,
                     COUNT(activites.id) as count
@@ -402,6 +411,7 @@ class DashboardDataService
                 ->join('extrants', 'activites.extrant_id', '=', 'extrants.id')
                 ->join('objectifs', 'extrants.objectif_id', '=', 'objectifs.id')
                 ->whereIn('activites.exercice_id', $this->exerciceIdsDeLAnnee())
+                ->whereNull('activites.deleted_at')
                 ->selectRaw('
                     SUM(CASE WHEN trimestre_1 = "oui" THEN 1 ELSE 0 END) as t1,
                     SUM(CASE WHEN trimestre_2 = "oui" THEN 1 ELSE 0 END) as t2,
@@ -424,6 +434,7 @@ class DashboardDataService
                 ->join('extrants', 'activites.extrant_id', '=', 'extrants.id')
                 ->join('objectifs', 'extrants.objectif_id', '=', 'objectifs.id')
                 ->whereIn('activites.exercice_id', $this->exerciceIdsDeLAnnee())
+                ->whereNull('activites.deleted_at')
                 ->where('activites.created_at', '>=', Carbon::now()->subMonths(3))
                 ->count();
 
@@ -431,6 +442,7 @@ class DashboardDataService
                 ->join('extrants', 'activites.extrant_id', '=', 'extrants.id')
                 ->join('objectifs', 'extrants.objectif_id', '=', 'objectifs.id')
                 ->whereIn('activites.exercice_id', $this->exerciceIdsDeLAnnee())
+                ->whereNull('activites.deleted_at')
                 ->whereBetween('activites.created_at', [Carbon::now()->subMonths(6), Carbon::now()->subMonths(3)])
                 ->count();
 
@@ -452,6 +464,7 @@ class DashboardDataService
                 ->join('extrants', 'activites.extrant_id', '=', 'extrants.id')
                 ->join('objectifs', 'extrants.objectif_id', '=', 'objectifs.id')
                 ->whereIn('activites.exercice_id', $this->exerciceIdsDeLAnnee())
+                ->whereNull('activites.deleted_at')
                 ->whereYear('activites.created_at', $this->annee)
                 ->selectRaw('
                     COUNT(activites.id) as count,
