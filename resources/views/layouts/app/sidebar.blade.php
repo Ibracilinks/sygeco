@@ -164,7 +164,9 @@
             </flux:sidebar.group>
 
             <!-- Suivi & Évaluation -->
-            @unless ($currentUser->hasRole('suivi-evaluation'))
+            {{-- Mêmes rôles que la route evaluations.* : le menu et l'autorisation ne
+                 doivent jamais diverger. Une liste noire s'inverse trop facilement. --}}
+            @if ($currentUser->hasAnyRole(['superadmin', 'dbcgoq', 'chef', 'agent', 'suivi-evaluation']))
                 <flux:sidebar.group expandable icon="chart-bar" :heading="__('Suivi & Évaluation')"
                     class="app-sidebar-group grid" data-groupe="evaluation">
                     <flux:sidebar.item icon="chart-bar" href="{{ route('evaluations.index', 'mi-parcours') }}"
@@ -177,7 +179,7 @@
                         {{ __("Fin d'année") }}
                     </flux:sidebar.item>
                 </flux:sidebar.group>
-            @endunless
+            @endif
         </flux:sidebar.nav>
 
         <flux:spacer />
