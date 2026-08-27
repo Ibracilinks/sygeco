@@ -182,7 +182,7 @@
                                     </p>
                                     <p class="text-xs text-slate-500 dark:text-slate-400">
                                         Valeur indicateur :
-                                        <span data-cellule="valeur_indicateur">{{ $evaluation?->valeur_indicateur !== null ? rtrim(rtrim(number_format($evaluation->valeur_indicateur, 2, ',', ' '), '0'), ',') : '—' }}</span>
+                                        <span data-cellule="valeur_indicateur">{{ $evaluation?->valeur_indicateur ?: '—' }}</span>
                                     </p>
                                 </div>
                                 @if (auth()->user()->can('evaluate_activites') && $peutSaisir)
@@ -325,10 +325,21 @@
                         <p class="mt-1 hidden text-sm text-rose-600 dark:text-rose-400" data-erreur="observation"></p>
                     </div>
 
-                    <div class="grid grid-cols-1 gap-4">
+                    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                        {{-- Budget consommé : réservé à l'administration et toujours facultatif. --}}
+                        @if ($peutSaisirBudget)
+                            <div>
+                                <label class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-200">Budget utilisé (FCFA)</label>
+                                <input type="number" step="0.01" min="0" max="{{ \App\Models\Activite::MONTANT_MAX }}" name="montant_utilise" id="eval_montant_utilise"
+                                    class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 focus:border-slate-500 focus:outline-none dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100">
+                                <p id="eval_cout_hint" class="mt-1 text-xs text-slate-400"></p>
+                                <p class="mt-1 hidden text-sm text-rose-600 dark:text-rose-400" data-erreur="montant_utilise"></p>
+                            </div>
+                        @endif
                         <div>
                             <label class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-200">Valeur de l'indicateur *</label>
-                            <input type="number" step="0.01" name="valeur_indicateur" id="eval_valeur_indicateur" required
+                            <input type="text" maxlength="255" name="valeur_indicateur" id="eval_valeur_indicateur" required
+                                placeholder="Ex. 12, « 3 sur 5 » ou « Rapport produit »" 
                                 class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 focus:border-slate-500 focus:outline-none dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100">
                             <p class="mt-1 hidden text-sm text-rose-600 dark:text-rose-400" data-erreur="valeur_indicateur"></p>
                         </div>
@@ -358,6 +369,15 @@
                 document.getElementById('eval_statut_execution').value = data.statut_execution || 'non_realise';
                 document.getElementById('eval_observation').value = data.observation || '';
                 document.getElementById('eval_valeur_indicateur').value = data.valeur_indicateur ?? '';
+
+                // Champ budget absent du formulaire pour les profils non administrateurs.
+                const montant = document.getElementById('eval_montant_utilise');
+                if (montant) {
+                    montant.value = data.montant_utilise ?? '';
+                    const cout = Number(data.cout || 0);
+                    document.getElementById('eval_cout_hint').textContent =
+                        'Budget planifié : ' + cout.toLocaleString('fr-FR') + ' FCFA';
+                }
 
                 document.getElementById('evaluationModal').classList.remove('hidden');
                 verifierFormulaire();

@@ -111,21 +111,32 @@ class EvaluationController extends Controller
         // Les fenêtres mi-parcours / fin d'année ne bloquent plus la saisie : elles
         // restent ouvertes en permanence et ne servent qu'à informer l'utilisateur.
 
-        // Une évaluation partielle n'a pas de valeur : tous les champs présentés à
-        // l'utilisateur sont exigés. Le budget consommé n'apparaît que pour
-        // l'administration, il n'est donc obligatoire que pour elle.
+        // La valeur d'indicateur est du texte libre, mais un appelant peut légitimement
+        // envoyer un nombre : on normalise avant de valider plutôt que d'affaiblir la règle.
+        if ($request->has('valeur_indicateur') && is_scalar($request->input('valeur_indicateur'))) {
+            $request->merge(['valeur_indicateur' => (string) $request->input('valeur_indicateur')]);
+        }
+
+        // L'état, l'observation et la valeur d'indicateur sont exigés : une évaluation
+        // partielle n'a pas de sens. Le budget consommé, lui, reste facultatif.
         $validated = $request->validate([
             'statut_execution' => ['required', 'in:non_realise,en_cours,realise'],
             'observation' => ['required', 'string', 'max:1000'],
-            'valeur_indicateur' => ['required', 'numeric', 'max:'.Activite::MONTANT_MAX],
+            // La valeur d'un indicateur n'est pas toujours chiffrée (« Rapport produit »,
+            // « 3 sur 5 »…) : on accepte du texte libre.
+            'valeur_indicateur' => ['required', 'string', 'max:255'],
+            // Budget consommé : proposé, jamais exigé.
+            'montant_utilise' => ['nullable', 'numeric', 'min:0', 'max:'.Activite::MONTANT_MAX],
         ], [
             'observation.required' => "L'observation est obligatoire.",
             'valeur_indicateur.required' => "La valeur de l'indicateur est obligatoire.",
         ]);
 
-        // Le budget consommé ne se saisit plus depuis l'évaluation : une valeur postée
-        // est ignorée, sans écraser le montant déjà enregistré.
-        unset($validated['montant_utilise']);
+        // Champ réservé à l'administration : posté par un autre profil, il est ignoré
+        // plutôt qu'appliqué.
+        if (! $this->peutSaisirBudget()) {
+            unset($validated['montant_utilise']);
+        }
 
         $activite->evaluations()->updateOrCreate(
             ['periode' => $periode],
@@ -138,6 +149,7 @@ class EvaluationController extends Controller
             'statut_execution' => $validated['statut_execution'],
             'execution_commentaire' => $validated['observation'] ?? null,
             'valeur_indicateur' => $validated['valeur_indicateur'] ?? null,
+            'montant_utilise' => $validated['montant_utilise'] ?? null,
             'execution_maj_le' => now(),
             'execution_maj_par' => Auth::id(),
         ]);
@@ -194,9 +206,7 @@ class EvaluationController extends Controller
                 ? '('.($ecart < 0 ? 'dépassement' : 'écart').' '.$nombre(abs($ecart)).')'
                 : '',
             'ecart_depassement' => $ecart !== null && $ecart < 0,
-            'valeur_indicateur' => $evaluation?->valeur_indicateur !== null
-                ? rtrim(rtrim(number_format($evaluation->valeur_indicateur, 2, ',', ' '), '0'), ',')
-                : '—',
+            'valeur_indicateur' => e($evaluation?->valeur_indicateur ?: '—'),
         ];
     }
 

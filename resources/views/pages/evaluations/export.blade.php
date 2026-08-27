@@ -68,7 +68,7 @@
                             <td style="{{ $cell }}{{ $center }}">{{ $rang }}</td>
                             <td style="{{ $cell }}">{{ $activite->nom_activite }}</td>
                             <td style="{{ $cell }}">{{ $activite->indicateur_objectivement_verifiable }}</td>
-                            <td style="{{ $cell }}">{{ $evaluation?->valeur_indicateur !== null ? rtrim(rtrim(number_format($evaluation->valeur_indicateur, 2, ',', ' '), '0'), ',') : '' }}</td>
+                            <td style="{{ $cell }}">{{ $evaluation?->valeur_indicateur }}</td>
                             <td style="{{ $cell }}{{ $center }}">{{ $statut === 'realise' ? 'X' : '' }}</td>
                             <td style="{{ $cell }}{{ $center }}">{{ $statut === 'en_cours' ? 'X' : '' }}</td>
                             <td style="{{ $cell }}{{ $center }}">{{ $statut === 'non_realise' ? 'X' : '' }}</td>

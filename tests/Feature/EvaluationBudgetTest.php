@@ -17,17 +17,38 @@ uses(RefreshDatabase::class);
 |--------------------------------------------------------------------------
 */
 
-test("le budget utilisé ne se saisit plus depuis l'évaluation", function () {
+test("le champ budget utilisé n'est proposé qu'à l'administration", function () {
     $exercice = Exercice::factory()->actif()->create();
 
-    // Le champ a été retiré du formulaire : plus aucun profil ne le voit.
-    foreach (['dbcgoq', 'superadmin', 'chef'] as $role) {
+    foreach (['dbcgoq', 'superadmin'] as $role) {
         $this->actingAs(userWithRole($role))
             ->withSession([ActiveExercice::SESSION_KEY => $exercice->id])
             ->get(route('evaluations.index', 'mi-parcours'))
             ->assertOk()
-            ->assertDontSee('Budget utilisé (FCFA)');
+            ->assertSee('Budget utilisé (FCFA)');
     }
+
+    $this->actingAs(userWithRole('chef'))
+        ->withSession([ActiveExercice::SESSION_KEY => $exercice->id])
+        ->get(route('evaluations.index', 'mi-parcours'))
+        ->assertOk()
+        ->assertDontSee('Budget utilisé (FCFA)');
+});
+
+test("le budget n'est pas obligatoire : une fiche sans montant est acceptée", function () {
+    $admin = userWithRole('dbcgoq');
+    $exercice = Exercice::factory()->actif()->create();
+    $activite = Activite::factory()->pourExercice($exercice)->create(['statut' => 'valide']);
+
+    $this->actingAs($admin)
+        ->post(route('evaluations.enregistrer', [$activite, 'mi-parcours']), [
+            'statut_execution' => 'realise',
+            'observation' => 'Menée à son terme.',
+            'valeur_indicateur' => 'Rapport produit',
+        ])
+        ->assertSessionHasNoErrors();
+
+    expect($activite->evaluation('mi_parcours')->valeur_indicateur)->toBe('Rapport produit');
 });
 
 test('un budget posté directement reste ignoré', function () {

@@ -12,6 +12,7 @@ class ActiviteEvaluation extends Model
     protected $table = 'activite_evaluations';
 
     public const PERIODE_MI_PARCOURS = 'mi_parcours';
+
     public const PERIODE_FIN_ANNEE = 'fin_annee';
 
     /** Libellés des périodes d'évaluation. */
@@ -39,7 +40,6 @@ class ActiviteEvaluation extends Model
 
     protected $casts = [
         'montant_utilise' => 'decimal:2',
-        'valeur_indicateur' => 'decimal:2',
         'maj_le' => 'datetime',
     ];
 

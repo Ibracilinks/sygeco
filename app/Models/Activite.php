@@ -55,7 +55,6 @@ class Activite extends Model
     protected $casts = [
         'cout' => 'decimal:2',
         'montant_utilise' => 'decimal:2',
-        'valeur_indicateur' => 'decimal:2',
         'non_programmee' => 'boolean',
         'pour_memoire' => 'boolean',
         'date_saisie' => 'date',

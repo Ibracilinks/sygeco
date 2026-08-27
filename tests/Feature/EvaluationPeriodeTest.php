@@ -401,3 +401,37 @@ test("la fin d'année liste tout le chronogramme", function () {
         ->assertOk()
         ->assertSee('ACTT4SEUL');
 });
+
+test("la valeur de l'indicateur accepte du texte", function () {
+    $admin = userWithRole('dbcgoq');
+    $exercice = Exercice::factory()->actif()->create();
+    $activite = Activite::factory()->pourExercice($exercice)->create(['statut' => 'valide']);
+
+    $this->actingAs($admin)
+        ->postJson(route('evaluations.enregistrer', [$activite, 'mi-parcours']), [
+            'statut_execution' => 'realise',
+            'observation' => 'Indicateur qualitatif.',
+            'valeur_indicateur' => '3 sur 5 établissements conventionnés',
+        ])
+        ->assertOk()
+        ->assertJsonPath('ligne.valeur_indicateur', '3 sur 5 établissements conventionnés');
+
+    expect($activite->fresh()->valeur_indicateur)->toBe('3 sur 5 établissements conventionnés');
+});
+
+test("un nombre envoye pour l'indicateur est conserve tel quel", function () {
+    $admin = userWithRole('dbcgoq');
+    $exercice = Exercice::factory()->actif()->create();
+    $activite = Activite::factory()->pourExercice($exercice)->create(['statut' => 'valide']);
+
+    // Un appelant peut poster un entier : il est normalise en chaine, sans arrondi
+    // ni formatage decimal comme le faisait l'ancienne colonne.
+    $this->actingAs($admin)
+        ->postJson(route('evaluations.enregistrer', [$activite, 'mi-parcours']), [
+            'statut_execution' => 'realise',
+            'observation' => 'Indicateur chiffre.',
+            'valeur_indicateur' => 12,
+        ])
+        ->assertOk()
+        ->assertJsonPath('ligne.valeur_indicateur', '12');
+});
