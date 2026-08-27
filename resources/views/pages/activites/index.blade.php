@@ -130,7 +130,7 @@
                                         <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">{{ Str::limit($activite->indicateur_objectivement_verifiable, 90) }}</p>
                                         <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">Chronogramme : {{ $activite->trimestres_selectionnes ?: '-' }}</p>
                                     </td>
-                                    <td class="px-5 py-4 text-sm text-slate-700 dark:text-slate-200">{{ $activite->departement->nom ?? '-' }}</td>
+                                    <td class="px-5 py-4 text-sm text-slate-700 dark:text-slate-200" title="{{ $activite->departement->nom ?? '' }}">{{ $activite->departement->code ?? '-' }}</td>
                                     <td class="px-5 py-4 text-sm text-slate-700 dark:text-slate-200">{{ optional($activite->date_soumission)->format('d/m/Y H:i') ?? '—' }}</td>
                                     <td class="px-5 py-4 text-sm text-slate-700 dark:text-slate-200">{{ number_format($activite->cout, 0, ',', ' ') }} FCFA</td>
                                     <td class="px-5 py-4">
