@@ -56,6 +56,7 @@ test('un chef ne peut pas renseigner le budget consommé par soumission directe'
     $this->actingAs($chef)->post(route('evaluations.enregistrer', [$activite, 'mi-parcours']), [
         'statut_execution' => 'realise',
         'observation' => 'Activité menée à son terme',
+        'valeur_indicateur' => 1,
         'montant_utilise' => 999999,
     ]);
 

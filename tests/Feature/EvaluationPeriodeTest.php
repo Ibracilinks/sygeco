@@ -9,6 +9,7 @@ use App\Models\Resultat;
 use App\Models\User;
 use App\Notifications\EvaluationOuverteNotification;
 use App\Notifications\MiParcoursOuvertNotification;
+use App\Support\ActiveExercice;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Notification;
 
@@ -48,6 +49,7 @@ test('un chef peut renseigner l\'évaluation mi-parcours pendant sa fenêtre', f
     $this->actingAs($chef)->post(route('evaluations.enregistrer', [$activite, 'mi-parcours']), [
         'statut_execution' => 'realise',
         'observation' => 'Activité terminée',
+        'valeur_indicateur' => 1,
     ])->assertSessionHas('success');
 
     expect($activite->evaluation('mi_parcours'))
@@ -75,6 +77,8 @@ test('un chef peut renseigner l\'évaluation hors fenêtre : la saisie reste ouv
 
     $this->actingAs($chef)->post(route('evaluations.enregistrer', [$activite, 'mi-parcours']), [
         'statut_execution' => 'realise',
+        'observation' => 'Observation de contrôle',
+        'valeur_indicateur' => 1,
     ])->assertSessionHas('success');
 
     expect($activite->evaluation('mi_parcours')->statut_execution)->toBe('realise');
@@ -91,6 +95,9 @@ test('le dbcgoq peut renseigner l\'évaluation même hors fenêtre', function ()
 
     $this->actingAs($admin)->post(route('evaluations.enregistrer', [$activite, 'mi-parcours']), [
         'statut_execution' => 'en_cours',
+        'observation' => 'Observation de contrôle',
+        'montant_utilise' => 0,
+        'valeur_indicateur' => 1,
     ])->assertSessionHas('success');
 
     expect($activite->evaluation('mi_parcours')->statut_execution)->toBe('en_cours');
@@ -110,6 +117,8 @@ test('un chef peut renseigner l\'évaluation de fin d\'année pendant sa fenêtr
 
     $this->actingAs($chef)->post(route('evaluations.enregistrer', [$activite, 'fin-annee']), [
         'statut_execution' => 'realise',
+        'observation' => 'Observation de contrôle',
+        'valeur_indicateur' => 1,
     ])->assertSessionHas('success');
 
     expect($activite->evaluation('fin_annee')->statut_execution)->toBe('realise');
@@ -208,6 +217,9 @@ test('une activité non validée ne peut pas être évaluée', function () {
 
     $this->actingAs($admin)->post(route('evaluations.enregistrer', [$activite, 'mi-parcours']), [
         'statut_execution' => 'realise',
+        'observation' => 'Observation de contrôle',
+        'montant_utilise' => 0,
+        'valeur_indicateur' => 1,
     ])->assertSessionHas('error');
 
     expect($activite->evaluation('mi_parcours'))->toBeNull();
@@ -222,9 +234,9 @@ test('seules les activités validées apparaissent dans l\'évaluation', functio
     $resultat = Resultat::factory()->forObjectif($objectif)->create();
     $extrant = Extrant::factory()->forResultat($resultat)->create();
 
-    $validee = Activite::factory()->valide()->pourExtrant($extrant)->pourDepartement($dep)->create();
-    $brouillon = Activite::factory()->brouillon()->pourExtrant($extrant)->pourDepartement($dep)->create();
-    $enAttente = Activite::factory()->soumis()->pourExtrant($extrant)->pourDepartement($dep)->create();
+    $validee = Activite::factory()->valide()->pourExtrant($extrant)->pourDepartement($dep)->create(['trimestre_1' => 'oui', 'trimestre_2' => 'oui', 'trimestre_3' => 'non', 'trimestre_4' => 'non']);
+    $brouillon = Activite::factory()->brouillon()->pourExtrant($extrant)->pourDepartement($dep)->create(['trimestre_1' => 'oui', 'trimestre_2' => 'oui', 'trimestre_3' => 'non', 'trimestre_4' => 'non']);
+    $enAttente = Activite::factory()->soumis()->pourExtrant($extrant)->pourDepartement($dep)->create(['trimestre_1' => 'oui', 'trimestre_2' => 'oui', 'trimestre_3' => 'non', 'trimestre_4' => 'non']);
 
     $this->actingAs($admin)->get(route('evaluations.index', 'mi-parcours'))
         ->assertOk()
@@ -242,11 +254,14 @@ test('une activité non évaluée n\'est pas comptée comme non réalisée', fun
     $resultat = Resultat::factory()->forObjectif($objectif)->create();
     $extrant = Extrant::factory()->forResultat($resultat)->create();
 
-    $evaluee = Activite::factory()->valide()->pourExtrant($extrant)->pourDepartement($dep)->create();
-    Activite::factory()->valide()->pourExtrant($extrant)->pourDepartement($dep)->create(); // jamais évaluée
+    $evaluee = Activite::factory()->valide()->pourExtrant($extrant)->pourDepartement($dep)->create(['trimestre_1' => 'oui', 'trimestre_2' => 'oui', 'trimestre_3' => 'non', 'trimestre_4' => 'non']);
+    Activite::factory()->valide()->pourExtrant($extrant)->pourDepartement($dep)->create(['trimestre_1' => 'oui', 'trimestre_2' => 'oui', 'trimestre_3' => 'non', 'trimestre_4' => 'non']); // jamais évaluée
 
     $this->actingAs($admin)->post(route('evaluations.enregistrer', [$evaluee, 'mi-parcours']), [
         'statut_execution' => 'realise',
+        'observation' => 'Observation de contrôle',
+        'montant_utilise' => 0,
+        'valeur_indicateur' => 1,
     ])->assertSessionHas('success');
 
     $summary = $this->actingAs($admin)->get(route('evaluations.index', 'mi-parcours'))
@@ -260,4 +275,129 @@ test('une activité non évaluée n\'est pas comptée comme non réalisée', fun
         ->non_realise->toBe(0)
         ->non_evaluee->toBe(1)
         ->taux_realisation->toBe(100.0);
+});
+
+test("tous les champs de la fiche d'évaluation sont obligatoires", function () {
+    $admin = userWithRole('dbcgoq');
+    $exercice = Exercice::factory()->actif()->create();
+    $activite = Activite::factory()->pourExercice($exercice)->create(['statut' => 'valide']);
+
+    // Seul l'état d'exécution est transmis : les trois autres champs doivent bloquer.
+    $this->actingAs($admin)
+        ->from(route('evaluations.index', 'mi-parcours'))
+        ->post(route('evaluations.enregistrer', [$activite, 'mi-parcours']), [
+            'statut_execution' => 'realise',
+        ])
+        ->assertSessionHasErrors(['observation', 'montant_utilise', 'valeur_indicateur']);
+
+    expect($activite->evaluations()->count())->toBe(0);
+});
+
+test("la fiche d'évaluation complète est acceptée", function () {
+    $admin = userWithRole('dbcgoq');
+    $exercice = Exercice::factory()->actif()->create();
+    $activite = Activite::factory()->pourExercice($exercice)->create(['statut' => 'valide']);
+
+    $this->actingAs($admin)
+        ->post(route('evaluations.enregistrer', [$activite, 'mi-parcours']), [
+            'statut_execution' => 'realise',
+            'observation' => 'Activité menée à son terme.',
+            'montant_utilise' => 250000,
+            'valeur_indicateur' => 12,
+        ])
+        ->assertSessionHasNoErrors();
+
+    expect($activite->evaluations()->count())->toBe(1);
+});
+
+test('la saisie AJAX renvoie les erreurs en JSON, sans rechargement', function () {
+    $admin = userWithRole('dbcgoq');
+    $exercice = Exercice::factory()->actif()->create();
+    $activite = Activite::factory()->pourExercice($exercice)->create(['statut' => 'valide']);
+
+    $this->actingAs($admin)
+        ->postJson(route('evaluations.enregistrer', [$activite, 'mi-parcours']), [
+            'statut_execution' => 'realise',
+        ])
+        ->assertStatus(422)
+        ->assertJsonValidationErrors(['observation', 'montant_utilise', 'valeur_indicateur']);
+});
+
+test('la saisie AJAX renvoie la ligne rafraîchie', function () {
+    $admin = userWithRole('dbcgoq');
+    $exercice = Exercice::factory()->actif()->create();
+    $activite = Activite::factory()->pourExercice($exercice)->create(['statut' => 'valide', 'cout' => 1000000]);
+
+    $reponse = $this->actingAs($admin)
+        ->postJson(route('evaluations.enregistrer', [$activite, 'mi-parcours']), [
+            'statut_execution' => 'realise',
+            'observation' => 'Terminée dans les délais.',
+            'montant_utilise' => 900000,
+            'valeur_indicateur' => 7.5,
+        ])
+        ->assertOk()
+        ->assertJsonStructure(['message', 'ligne' => ['badge', 'maj', 'observation', 'montant', 'ecart', 'valeur_indicateur']]);
+
+    // Le badge est rendu côté serveur pour ne pas dupliquer ses classes en JavaScript.
+    expect($reponse->json('ligne.badge'))->toContain('Réalisé')
+        ->and($reponse->json('ligne.observation'))->toBe('Terminée dans les délais.')
+        ->and($reponse->json('ligne.montant'))->toBe('900 000 FCFA')
+        ->and($reponse->json('ligne.ecart'))->toContain('écart')
+        ->and($reponse->json('ligne.ecart_depassement'))->toBeFalse();
+});
+
+test('un dépassement de budget est signalé dans la ligne rafraîchie', function () {
+    $admin = userWithRole('dbcgoq');
+    $exercice = Exercice::factory()->actif()->create();
+    $activite = Activite::factory()->pourExercice($exercice)->create(['statut' => 'valide', 'cout' => 500000]);
+
+    $this->actingAs($admin)
+        ->postJson(route('evaluations.enregistrer', [$activite, 'mi-parcours']), [
+            'statut_execution' => 'en_cours',
+            'observation' => 'Coût supérieur au prévisionnel.',
+            'montant_utilise' => 800000,
+            'valeur_indicateur' => 2,
+        ])
+        ->assertOk()
+        ->assertJsonPath('ligne.ecart_depassement', true)
+        ->assertJsonPath('ligne.ecart', '(dépassement 300 000)');
+});
+
+test('le mi-parcours ne liste que les activités programmées sur T1 ou T2', function () {
+    $admin = userWithRole('dbcgoq');
+    $exercice = Exercice::factory()->actif()->create();
+    $dep = Departement::factory()->create();
+
+    $creer = fn (array $trimestres, string $nom) => Activite::factory()
+        ->pourExercice($exercice)->pourDepartement($dep)
+        ->create($trimestres + ['statut' => 'valide', 'nom_activite' => $nom]);
+
+    $creer(['trimestre_1' => 'oui', 'trimestre_2' => 'non', 'trimestre_3' => 'non', 'trimestre_4' => 'non'], 'ACTT1');
+    $creer(['trimestre_1' => 'non', 'trimestre_2' => 'oui', 'trimestre_3' => 'non', 'trimestre_4' => 'non'], 'ACTT2');
+    $creer(['trimestre_1' => 'non', 'trimestre_2' => 'non', 'trimestre_3' => 'oui', 'trimestre_4' => 'oui'], 'ACTT3T4');
+
+    $this->actingAs($admin)
+        ->withSession([ActiveExercice::SESSION_KEY => $exercice->id])
+        ->get(route('evaluations.index', 'mi-parcours'))
+        ->assertOk()
+        ->assertSee('ACTT1')
+        ->assertSee('ACTT2')
+        ->assertDontSee('ACTT3T4');
+});
+
+test("la fin d'année liste tout le chronogramme", function () {
+    $admin = userWithRole('dbcgoq');
+    $exercice = Exercice::factory()->actif()->create();
+    $dep = Departement::factory()->create();
+
+    Activite::factory()->pourExercice($exercice)->pourDepartement($dep)->create([
+        'statut' => 'valide', 'nom_activite' => 'ACTT4SEUL',
+        'trimestre_1' => 'non', 'trimestre_2' => 'non', 'trimestre_3' => 'non', 'trimestre_4' => 'oui',
+    ]);
+
+    $this->actingAs($admin)
+        ->withSession([ActiveExercice::SESSION_KEY => $exercice->id])
+        ->get(route('evaluations.index', 'fin-annee'))
+        ->assertOk()
+        ->assertSee('ACTT4SEUL');
 });

@@ -11,6 +11,7 @@ use App\Support\CadreLogique;
 use App\Support\VisibiliteActivites;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\Rule;
 
 class EvaluationController extends Controller
 {
@@ -97,7 +98,7 @@ class EvaluationController extends Controller
         $user = Auth::user();
 
         if (! $user->can('evaluate_activites') && ! $user->can('validate_activites')) {
-            return back()->with('error', "Vous n'êtes pas autorisé à renseigner l'évaluation.");
+            return $this->refus($request, "Vous n'êtes pas autorisé à renseigner l'évaluation.");
         }
 
         if (! $user->can('view', $activite)) {
@@ -105,17 +106,24 @@ class EvaluationController extends Controller
         }
 
         if ($activite->statut !== 'valide') {
-            return back()->with('error', 'Seules les activités validées peuvent être évaluées.');
+            return $this->refus($request, 'Seules les activités validées peuvent être évaluées.');
         }
 
         // Les fenêtres mi-parcours / fin d'année ne bloquent plus la saisie : elles
         // restent ouvertes en permanence et ne servent qu'à informer l'utilisateur.
 
+        // Une évaluation partielle n'a pas de valeur : tous les champs présentés à
+        // l'utilisateur sont exigés. Le budget consommé n'apparaît que pour
+        // l'administration, il n'est donc obligatoire que pour elle.
         $validated = $request->validate([
             'statut_execution' => ['required', 'in:non_realise,en_cours,realise'],
-            'observation' => ['nullable', 'string', 'max:1000'],
-            'montant_utilise' => ['nullable', 'numeric', 'min:0', 'max:'.Activite::MONTANT_MAX],
-            'valeur_indicateur' => ['nullable', 'numeric', 'max:'.Activite::MONTANT_MAX],
+            'observation' => ['required', 'string', 'max:1000'],
+            'montant_utilise' => [Rule::requiredIf($this->peutSaisirBudget()), 'numeric', 'min:0', 'max:'.Activite::MONTANT_MAX],
+            'valeur_indicateur' => ['required', 'numeric', 'max:'.Activite::MONTANT_MAX],
+        ], [
+            'observation.required' => "L'observation est obligatoire.",
+            'montant_utilise.required' => 'Le budget utilisé est obligatoire.',
+            'valeur_indicateur.required' => "La valeur de l'indicateur est obligatoire.",
         ]);
 
         // Le budget consommé est réservé à l'administration : pour les autres profils
@@ -141,7 +149,62 @@ class EvaluationController extends Controller
             'execution_maj_par' => Auth::id(),
         ]);
 
-        return back()->with('success', 'Évaluation '.ActiviteEvaluation::PERIODES[$periode].' enregistrée.');
+        $message = 'Évaluation '.ActiviteEvaluation::PERIODES[$periode].' enregistrée.';
+
+        // Saisie depuis la fiche : on renvoie de quoi rafraîchir la ligne sur place,
+        // plutôt que de recharger toute la page d'évaluation.
+        if ($request->expectsJson()) {
+            return response()->json([
+                'message' => $message,
+                'ligne' => $this->ligneRafraichie($activite->fresh(), $periode),
+            ]);
+        }
+
+        return back()->with('success', $message);
+    }
+
+    /**
+     * Refus exprimé dans le format attendu par l'appelant.
+     */
+    private function refus(Request $request, string $message)
+    {
+        if ($request->expectsJson()) {
+            return response()->json(['message' => $message], 422);
+        }
+
+        return back()->with('error', $message);
+    }
+
+    /**
+     * Valeurs d'affichage de la ligne après enregistrement. Le badge est rendu côté
+     * serveur : dupliquer ses classes en JavaScript les ferait diverger au premier
+     * changement de charte.
+     *
+     * @return array<string, string>
+     */
+    private function ligneRafraichie(Activite $activite, string $periode): array
+    {
+        $evaluation = $activite->evaluations()->where('periode', $periode)->with('majPar')->first();
+        $montant = $evaluation?->montant_utilise;
+        $ecart = $montant !== null ? (float) $activite->cout - (float) $montant : null;
+
+        $nombre = fn ($valeur) => number_format((float) $valeur, 0, ',', ' ');
+
+        return [
+            'badge' => view('components.execution-badge', ['statut' => $evaluation?->statut_execution])->render(),
+            'maj' => $evaluation?->maj_le
+                ? $evaluation->maj_le->format('d/m/Y H:i').($evaluation->majPar ? '<br>par '.e($evaluation->majPar->name) : '')
+                : '—',
+            'observation' => e($evaluation?->observation ?: '—'),
+            'montant' => $montant !== null ? $nombre($montant).' FCFA' : '—',
+            'ecart' => $ecart !== null
+                ? '('.($ecart < 0 ? 'dépassement' : 'écart').' '.$nombre(abs($ecart)).')'
+                : '',
+            'ecart_depassement' => $ecart !== null && $ecart < 0,
+            'valeur_indicateur' => $evaluation?->valeur_indicateur !== null
+                ? rtrim(rtrim(number_format($evaluation->valeur_indicateur, 2, ',', ' '), '0'), ',')
+                : '—',
+        ];
     }
 
     /**
@@ -181,6 +244,12 @@ class EvaluationController extends Controller
         // Seules les activités validées sont évaluées : la programmation en brouillon,
         // en attente d'arbitrage ou rejetée n'entre pas dans l'évaluation.
         $query = Activite::query()->forExercice(ActiveExercice::id())->valide();
+
+        // Mi-parcours = premier semestre : seules les activités programmées sur T1 ou T2
+        // sont évaluables à cette échéance. La fin d'année couvre tout le chronogramme.
+        if ($periode === ActiviteEvaluation::PERIODE_MI_PARCOURS) {
+            $query->where(fn ($q) => $q->where('trimestre_1', 'oui')->orWhere('trimestre_2', 'oui'));
+        }
 
         // Même visibilité que la programmation.
         VisibiliteActivites::appliquer($query, Auth::user());

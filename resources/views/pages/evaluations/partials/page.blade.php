@@ -34,6 +34,9 @@
             </div>
         </div>
 
+        {{-- Retour des enregistrements faits sans rechargement de page. --}}
+        <div id="evalFlash" class="hidden" role="status" aria-live="polite"></div>
+
         @if (session('success'))
             <div class="rounded-lg border border-emerald-200 bg-emerald-50 p-4 dark:border-emerald-800 dark:bg-emerald-950/40">
                 <p class="text-sm font-medium text-emerald-800 dark:text-emerald-200">{{ session('success') }}</p>
@@ -138,7 +141,7 @@
                             $montant = $evaluation?->montant_utilise;
                             $ecart = $montant !== null ? (float) $activite->cout - (float) $montant : null;
                         @endphp
-                        <tr class="align-top">
+                        <tr class="align-top" data-ligne-activite="{{ $activite->id }}">
                             <td class="px-5 py-4">
                                 <a href="{{ route('activites.show', $activite) }}" class="text-sm font-semibold text-slate-900 transition hover:text-sky-700 hover:underline dark:text-white dark:hover:text-sky-300">
                                     {{ Str::limit($activite->nom_activite, 90) }}
@@ -151,7 +154,7 @@
                                 </p>
                                 <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">Budget planifié : {{ number_format($activite->cout, 0, ',', ' ') }} FCFA</p>
                             </td>
-                            <td class="px-5 py-4">
+                            <td class="px-5 py-4" data-cellule="badge">
                                 @if ($evaluation)
                                     <x-execution-badge :statut="$evaluation->statut_execution" />
                                 @else
@@ -160,7 +163,7 @@
                                     </span>
                                 @endif
                             </td>
-                            <td class="px-5 py-4 text-xs text-slate-500 dark:text-slate-400">
+                            <td class="px-5 py-4 text-xs text-slate-500 dark:text-slate-400" data-cellule="maj">
                                 @if ($evaluation?->maj_le)
                                     {{ $evaluation->maj_le->format('d/m/Y H:i') }}
                                     @if ($evaluation->majPar)<br>par {{ $evaluation->majPar->name }}@endif
@@ -170,18 +173,16 @@
                             </td>
                             <td class="px-5 py-4">
                                 <div class="space-y-1 text-sm text-slate-600 dark:text-slate-300">
-                                    <p>{{ $evaluation?->observation ?: '—' }}</p>
+                                    <p data-cellule="observation">{{ $evaluation?->observation ?: '—' }}</p>
                                     <p class="text-xs text-slate-500 dark:text-slate-400">
-                                        Budget utilisé : {{ $montant !== null ? number_format($montant, 0, ',', ' ').' FCFA' : '—' }}
-                                        @if ($ecart !== null)
-                                            <span class="{{ $ecart < 0 ? 'text-rose-600 dark:text-rose-400' : 'text-emerald-600 dark:text-emerald-400' }}">
-                                                ({{ $ecart < 0 ? 'dépassement' : 'écart' }} {{ number_format(abs($ecart), 0, ',', ' ') }})
-                                            </span>
-                                        @endif
+                                        Budget utilisé : <span data-cellule="montant">{{ $montant !== null ? number_format($montant, 0, ',', ' ').' FCFA' : '—' }}</span>
+                                        <span data-cellule="ecart" class="{{ $ecart !== null && $ecart < 0 ? 'text-rose-600 dark:text-rose-400' : 'text-emerald-600 dark:text-emerald-400' }}">
+                                            @if ($ecart !== null)({{ $ecart < 0 ? 'dépassement' : 'écart' }} {{ number_format(abs($ecart), 0, ',', ' ') }})@endif
+                                        </span>
                                     </p>
                                     <p class="text-xs text-slate-500 dark:text-slate-400">
                                         Valeur indicateur :
-                                        {{ $evaluation?->valeur_indicateur !== null ? rtrim(rtrim(number_format($evaluation->valeur_indicateur, 2, ',', ' '), '0'), ',') : '—' }}
+                                        <span data-cellule="valeur_indicateur">{{ $evaluation?->valeur_indicateur !== null ? rtrim(rtrim(number_format($evaluation->valeur_indicateur, 2, ',', ' '), '0'), ',') : '—' }}</span>
                                     </p>
                                 </div>
                                 @if (auth()->user()->can('evaluate_activites') && $peutSaisir)
@@ -197,7 +198,7 @@
                                         ];
                                     @endphp
                                     <button type="button"
-                                        onclick="openEvaluationModal({{ Js::from($evalData) }})"
+                                        onclick="openEvaluationModal({{ Js::from($evalData + ['activite_id' => $activite->id]) }})"
                                         class="mt-2 inline-flex items-center gap-1 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:hover:bg-slate-700">
                                         ✎ Renseigner {{ $periodeLibelle }}
                                     </button>
@@ -314,45 +315,55 @@
                                 <option value="{{ $val }}">{{ $label }}</option>
                             @endforeach
                         </select>
+                        <p class="mt-1 hidden text-sm text-rose-600 dark:text-rose-400" data-erreur="statut_execution"></p>
                     </div>
 
                     <div>
-                        <label class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-200">Observation</label>
-                        <textarea name="observation" id="eval_observation" rows="2" maxlength="1000"
+                        <label class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-200">Observation *</label>
+                        <textarea name="observation" id="eval_observation" rows="2" maxlength="1000" required
                             class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 focus:border-slate-500 focus:outline-none dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"></textarea>
+                        <p class="mt-1 hidden text-sm text-rose-600 dark:text-rose-400" data-erreur="observation"></p>
                     </div>
 
                     <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
                         {{-- Le budget consommé n'est saisissable que par l'administration (superadmin / DBCGOQ). --}}
                         @if ($peutSaisirBudget)
                             <div>
-                                <label class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-200">Budget utilisé (FCFA)</label>
-                                <input type="number" step="0.01" min="0" max="{{ \App\Models\Activite::MONTANT_MAX }}" name="montant_utilise" id="eval_montant_utilise"
+                                <label class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-200">Budget utilisé (FCFA) *</label>
+                                <input type="number" step="0.01" min="0" max="{{ \App\Models\Activite::MONTANT_MAX }}" name="montant_utilise" id="eval_montant_utilise" required
                                     class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 focus:border-slate-500 focus:outline-none dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100">
                                 <p id="eval_cout_hint" class="mt-1 text-xs text-slate-400"></p>
+                                <p class="mt-1 hidden text-sm text-rose-600 dark:text-rose-400" data-erreur="montant_utilise"></p>
                             </div>
                         @endif
                         <div>
-                            <label class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-200">Valeur de l'indicateur</label>
-                            <input type="number" step="0.01" name="valeur_indicateur" id="eval_valeur_indicateur"
+                            <label class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-200">Valeur de l'indicateur *</label>
+                            <input type="number" step="0.01" name="valeur_indicateur" id="eval_valeur_indicateur" required
                                 class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 focus:border-slate-500 focus:outline-none dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100">
+                            <p class="mt-1 hidden text-sm text-rose-600 dark:text-rose-400" data-erreur="valeur_indicateur"></p>
                         </div>
                     </div>
+
+                    <p class="hidden rounded-lg bg-rose-50 px-3 py-2 text-sm text-rose-700 dark:bg-rose-900/30 dark:text-rose-300" data-erreur="global"></p>
 
                     <div class="flex items-center justify-end gap-2 pt-2">
                         <button type="button" onclick="document.getElementById('evaluationModal').classList.add('hidden')"
                             class="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-white">Annuler</button>
-                        <button type="submit"
-                            class="rounded-lg bg-slate-800 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700 dark:bg-slate-200 dark:text-slate-900">Enregistrer</button>
+                        <button type="submit" id="eval_submit"
+                            class="rounded-lg bg-slate-800 px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-slate-200 dark:text-slate-900">Enregistrer</button>
                     </div>
                 </form>
             </div>
         </div>
 
         <script>
+            let ligneEnCours = null;
+
             function openEvaluationModal(data) {
                 const form = document.getElementById('evaluationForm');
                 form.action = data.action;
+                ligneEnCours = data.activite_id ?? null;
+                effacerErreurs(form);
                 document.getElementById('evaluationModalNom').textContent = data.nom || '';
                 document.getElementById('eval_statut_execution').value = data.statut_execution || 'non_realise';
                 document.getElementById('eval_observation').value = data.observation || '';
@@ -367,7 +378,171 @@
                         'Budget planifié : ' + cout.toLocaleString('fr-FR') + ' FCFA';
                 }
                 document.getElementById('evaluationModal').classList.remove('hidden');
+                verifierFormulaire();
             }
+
+            const MESSAGES = {
+                required: 'Ce champ est obligatoire.',
+                min: 'La valeur ne peut pas être négative.',
+                max: 'La valeur dépasse le maximum autorisé.',
+            };
+
+            /** Champs réellement présents : le budget est absent pour les non-administrateurs. */
+            function champs(form) {
+                return Array.from(form.querySelectorAll('[name]:not([type=hidden])'));
+            }
+
+            /**
+             * Contrôle un champ et renvoie son message d'erreur, ou une chaîne vide.
+             * On s'appuie sur la validité native (required, min, max, step) plutôt que
+             * de réécrire les règles, pour rester aligné sur la validation serveur.
+             */
+            function erreurDe(champ) {
+                const v = champ.validity;
+                if (v.valid) return '';
+                if (v.valueMissing) return MESSAGES.required;
+                if (v.rangeUnderflow) return MESSAGES.min;
+                if (v.rangeOverflow) return MESSAGES.max;
+                return champ.validationMessage;
+            }
+
+            function afficherErreur(form, nom, message) {
+                const cible = form.querySelector(`[data-erreur="${nom}"]`);
+                if (!cible) return;
+                cible.textContent = message || '';
+                cible.classList.toggle('hidden', !message);
+
+                const champ = form.querySelector(`[name="${nom}"]`);
+                if (champ) {
+                    champ.classList.toggle('border-rose-500', Boolean(message));
+                    champ.classList.toggle('border-slate-300', !message);
+                }
+            }
+
+            function effacerErreurs(form) {
+                form.querySelectorAll('[data-erreur]').forEach((el) => {
+                    el.textContent = '';
+                    el.classList.add('hidden');
+                });
+                champs(form).forEach((c) => {
+                    c.classList.remove('border-rose-500');
+                    c.classList.add('border-slate-300');
+                });
+            }
+
+            /** Active ou non le bouton selon l'état courant, sans rien afficher. */
+            function verifierFormulaire() {
+                const form = document.getElementById('evaluationForm');
+                const bouton = document.getElementById('eval_submit');
+                bouton.disabled = !champs(form).every((c) => c.validity.valid);
+            }
+
+            function rafraichirLigne(donnees) {
+                if (!ligneEnCours) return;
+                const ligne = document.querySelector(`[data-ligne-activite="${ligneEnCours}"]`);
+                if (!ligne) return;
+
+                const poser = (cle, html) => {
+                    const cel = ligne.querySelector(`[data-cellule="${cle}"]`);
+                    if (cel) cel.innerHTML = html;
+                };
+
+                poser('badge', donnees.badge);
+                poser('maj', donnees.maj);
+                poser('observation', donnees.observation);
+                poser('montant', donnees.montant);
+                poser('valeur_indicateur', donnees.valeur_indicateur);
+
+                const ecart = ligne.querySelector('[data-cellule="ecart"]');
+                if (ecart) {
+                    ecart.innerHTML = donnees.ecart || '';
+                    ecart.classList.toggle('text-rose-600', donnees.ecart_depassement);
+                    ecart.classList.toggle('dark:text-rose-400', donnees.ecart_depassement);
+                    ecart.classList.toggle('text-emerald-600', !donnees.ecart_depassement);
+                    ecart.classList.toggle('dark:text-emerald-400', !donnees.ecart_depassement);
+                }
+
+                ligne.classList.add('bg-emerald-50', 'dark:bg-emerald-900/20');
+                setTimeout(() => ligne.classList.remove('bg-emerald-50', 'dark:bg-emerald-900/20'), 1500);
+            }
+
+            function annoncer(message, succes = true) {
+                const zone = document.getElementById('evalFlash');
+                zone.textContent = message;
+                zone.className = succes
+                    ? 'mb-4 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800 dark:border-emerald-900 dark:bg-emerald-900/30 dark:text-emerald-200'
+                    : 'mb-4 rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800 dark:border-rose-900 dark:bg-rose-900/30 dark:text-rose-200';
+                zone.classList.remove('hidden');
+                zone.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }
+
+            document.addEventListener('DOMContentLoaded', () => {
+                const form = document.getElementById('evaluationForm');
+                if (!form) return;
+
+                // Validation au fil de la saisie : le message n'apparaît qu'une fois le
+                // champ quitté ou corrigé, pour ne pas invalider dès la première frappe.
+                form.addEventListener('input', (e) => {
+                    if (!e.target.name) return;
+                    const dejaSignale = !form.querySelector(`[data-erreur="${e.target.name}"]`)?.classList.contains('hidden');
+                    if (dejaSignale) afficherErreur(form, e.target.name, erreurDe(e.target));
+                    verifierFormulaire();
+                });
+
+                form.addEventListener('focusout', (e) => {
+                    if (!e.target.name) return;
+                    afficherErreur(form, e.target.name, erreurDe(e.target));
+                });
+
+                form.addEventListener('submit', async (e) => {
+                    e.preventDefault();
+
+                    let valide = true;
+                    champs(form).forEach((c) => {
+                        const message = erreurDe(c);
+                        afficherErreur(form, c.name, message);
+                        if (message) valide = false;
+                    });
+                    if (!valide) return;
+
+                    const bouton = document.getElementById('eval_submit');
+                    const libelle = bouton.textContent;
+                    bouton.disabled = true;
+                    bouton.textContent = 'Enregistrement…';
+
+                    try {
+                        const reponse = await fetch(form.action, {
+                            method: 'POST',
+                            headers: {
+                                'X-Requested-With': 'XMLHttpRequest',
+                                'Accept': 'application/json',
+                            },
+                            body: new FormData(form),
+                        });
+                        const donnees = await reponse.json().catch(() => ({}));
+
+                        if (reponse.ok) {
+                            rafraichirLigne(donnees.ligne || {});
+                            document.getElementById('evaluationModal').classList.add('hidden');
+                            annoncer(donnees.message || 'Évaluation enregistrée.');
+                            return;
+                        }
+
+                        // 422 : erreurs de validation renvoyées par le serveur.
+                        if (donnees.errors) {
+                            Object.entries(donnees.errors).forEach(([nom, messages]) => {
+                                afficherErreur(form, nom, messages[0]);
+                            });
+                        }
+                        afficherErreur(form, 'global', donnees.errors ? '' : (donnees.message || 'Enregistrement impossible.'));
+                    } catch (erreur) {
+                        afficherErreur(form, 'global', 'Connexion interrompue : réessayez.');
+                    } finally {
+                        bouton.textContent = libelle;
+                        verifierFormulaire();
+                    }
+                });
+            });
         </script>
     @endcan
 </x-layouts::app>
