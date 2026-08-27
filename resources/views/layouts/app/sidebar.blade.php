@@ -39,9 +39,11 @@
                     wire:navigate>
                     {{ __('Dashboard') }}
                 </flux:sidebar.item>
-                <flux:sidebar.item icon="presentation-chart-line" href="{{ route('sap.analytics') }}" target="_blank">
-                    SAP Cloud Analytics
-                </flux:sidebar.item>
+                @unless ($currentUser->hasRole('suivi-evaluation'))
+                    <flux:sidebar.item icon="presentation-chart-line" href="{{ route('sap.analytics') }}" target="_blank">
+                        SAP Cloud Analytics
+                    </flux:sidebar.item>
+                @endunless
             </flux:sidebar.group>
 
             <!-- Organisation -->
@@ -107,7 +109,7 @@
                     </flux:sidebar.item>
                 @endif
 
-                @if ($currentUser->hasAnyRole(['superadmin', 'dbcgoq', 'chef', 'agent-planification', 'suivi-evaluation']))
+                @if ($currentUser->hasAnyRole(['superadmin', 'dbcgoq', 'chef', 'agent-planification']))
                     <flux:sidebar.item icon="chart-pie" href="{{ route('objectifs.index') }}"
                         :current="request()->routeIs('objectifs.*')">
                         {{ __('Objectifs') }}
