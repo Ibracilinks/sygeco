@@ -164,7 +164,7 @@
             </flux:sidebar.group>
 
             <!-- Suivi & Évaluation -->
-            @unless ($currentUser->hasRole('agent-planification'))
+            @unless ($currentUser->hasRole('suivi-evaluation'))
                 <flux:sidebar.group expandable icon="chart-bar" :heading="__('Suivi & Évaluation')"
                     class="app-sidebar-group grid" data-groupe="evaluation">
                     <flux:sidebar.item icon="chart-bar" href="{{ route('evaluations.index', 'mi-parcours') }}"
