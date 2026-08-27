@@ -123,6 +123,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     });
 
     Route::middleware(['role:superadmin|dbcgoq|chef'])->group(function () {
+        Route::post('missions/{mission}/finaliser', [MissionController::class, 'finaliser'])->name('missions.finaliser');
         Route::resource('missions', MissionController::class);
     });
 

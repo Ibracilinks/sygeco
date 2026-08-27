@@ -35,6 +35,23 @@
     <div><label for="statut" class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-200">Statut</label><select id="statut" name="statut" class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-950">@foreach (\App\Models\Mission::STATUTS as $code => $label)<option value="{{ $code }}" @selected(old('statut', $mission->statut) === $code)>{{ $label }}</option>@endforeach</select></div>
 </div>
 
+{{-- Sections II et III du budget officiel : carburant, location, billet, péages. --}}
+<div class="rounded-xl border border-slate-200 p-4 dark:border-slate-700">
+    <h2 class="mb-3 text-sm font-semibold text-slate-900 dark:text-white">Transport et péages</h2>
+    <div class="grid grid-cols-1 gap-4 md:grid-cols-4">
+    <div><label for="nombre_vehicules" class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-200">Nombre de véhicules</label><input type="number" min="0" id="nombre_vehicules" name="nombre_vehicules" value="{{ old('nombre_vehicules', $mission->nombre_vehicules) }}" class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-950">@error('nombre_vehicules')<p class="mt-1 text-xs text-red-600">{{ $message }}</p>@enderror</div>
+    <div><label for="distance_totale_km" class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-200">Distance totale (km)</label><input type="number" step="0.01" min="0" id="distance_totale_km" name="distance_totale_km" value="{{ old('distance_totale_km', (float) $mission->distance_totale_km) }}" class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-950">@error('distance_totale_km')<p class="mt-1 text-xs text-red-600">{{ $message }}</p>@enderror</div>
+    <div><label for="consommation_aux_cent" class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-200">Consommation (L / 100 km)</label><input type="number" step="0.01" min="0" id="consommation_aux_cent" name="consommation_aux_cent" value="{{ old('consommation_aux_cent', (float) $mission->consommation_aux_cent) }}" class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-950">@error('consommation_aux_cent')<p class="mt-1 text-xs text-red-600">{{ $message }}</p>@enderror</div>
+    <div><label for="prix_litre_carburant" class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-200">Prix du litre (FCFA)</label><input type="number" step="0.01" min="0" id="prix_litre_carburant" name="prix_litre_carburant" value="{{ old('prix_litre_carburant', (float) $mission->prix_litre_carburant) }}" class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-950">@error('prix_litre_carburant')<p class="mt-1 text-xs text-red-600">{{ $message }}</p>@enderror</div>
+    <div><label for="litres_par_jour_ville" class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-200">Carburant en ville (L / jour)</label><input type="number" step="0.01" min="0" id="litres_par_jour_ville" name="litres_par_jour_ville" value="{{ old('litres_par_jour_ville', (float) $mission->litres_par_jour_ville) }}" class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-950">@error('litres_par_jour_ville')<p class="mt-1 text-xs text-red-600">{{ $message }}</p>@enderror</div>
+    <div><label for="location_vehicule_jours" class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-200">Location véhicule (jours)</label><input type="number" min="0" id="location_vehicule_jours" name="location_vehicule_jours" value="{{ old('location_vehicule_jours', $mission->location_vehicule_jours) }}" class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-950">@error('location_vehicule_jours')<p class="mt-1 text-xs text-red-600">{{ $message }}</p>@enderror</div>
+    <div><label for="location_vehicule_tarif" class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-200">Location véhicule (FCFA / jour)</label><input type="number" step="0.01" min="0" id="location_vehicule_tarif" name="location_vehicule_tarif" value="{{ old('location_vehicule_tarif', (float) $mission->location_vehicule_tarif) }}" class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-950">@error('location_vehicule_tarif')<p class="mt-1 text-xs text-red-600">{{ $message }}</p>@enderror</div>
+    <div><label for="montant_peages" class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-200">Péages (FCFA)</label><input type="number" step="0.01" min="0" id="montant_peages" name="montant_peages" value="{{ old('montant_peages', (float) $mission->montant_peages) }}" class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-950">@error('montant_peages')<p class="mt-1 text-xs text-red-600">{{ $message }}</p>@enderror</div>
+    <div><label for="billets_economique_nombre" class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-200">Billets d'avion (nombre)</label><input type="number" min="0" id="billets_economique_nombre" name="billets_economique_nombre" value="{{ old('billets_economique_nombre', $mission->billets_economique_nombre) }}" class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-950">@error('billets_economique_nombre')<p class="mt-1 text-xs text-red-600">{{ $message }}</p>@enderror</div>
+    <div><label for="billets_economique_unitaire" class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-200">Billet d'avion (prix unitaire)</label><input type="number" step="0.01" min="0" id="billets_economique_unitaire" name="billets_economique_unitaire" value="{{ old('billets_economique_unitaire', (float) $mission->billets_economique_unitaire) }}" class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-950">@error('billets_economique_unitaire')<p class="mt-1 text-xs text-red-600">{{ $message }}</p>@enderror</div>
+    </div>
+</div>
+
 <div class="rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-950">
     <p class="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">Règle métier</p>
     <p class="mt-2 text-sm text-slate-700 dark:text-slate-200">Chaque étape a sa propre période. Les nuitées valent par défaut `jours - 1`, sauf si la première nuit est cochée.</p>
@@ -42,6 +59,11 @@
 
 <div class="rounded-xl border border-slate-200 p-4 dark:border-slate-700">
     <div class="mb-3 flex items-center justify-between gap-3"><div><h2 class="text-sm font-semibold text-slate-900 dark:text-white">Étapes de mission</h2></div><button type="button" class="rounded-lg bg-slate-200 px-3 py-2 text-xs font-medium text-slate-800 dark:bg-slate-700 dark:text-slate-100" data-add-row="etapes">Ajouter</button></div>
+    <p class="mb-3 text-xs text-slate-500 dark:text-slate-400" data-etapes-total>
+        Total des jours d'étapes : <span class="font-semibold" data-etapes-jours>0</span>
+        sur <span class="font-semibold" data-mission-jours>{{ $mission->nombre_jours }}</span> jour(s) de mission.
+    </p>
+
     <div id="etapes-rows" class="space-y-3">
         @foreach ($etapeValues as $index => $etape)
             <div class="grid grid-cols-1 gap-2 rounded-lg border border-slate-200 p-3 dark:border-slate-700 md:grid-cols-12" data-row>
@@ -170,6 +192,72 @@
                     }
                 });
             };
+            document.addEventListener('DOMContentLoaded', boot);
+            document.addEventListener('livewire:navigated', boot);
+        })();
+    </script>
+@endpush
+
+@push('scripts')
+    <script>
+        // Les étapes découpent la mission : leur total ne doit pas dépasser sa durée.
+        (() => {
+            const boot = () => {
+                const conteneur = document.getElementById('etapes-rows');
+                const affichage = document.querySelector('[data-etapes-jours]');
+                const attendu = document.querySelector('[data-mission-jours]');
+                const bloc = document.querySelector('[data-etapes-total]');
+                if (!conteneur || !affichage || !bloc) return;
+
+                const joursEntre = (debut, fin) => {
+                    const d = new Date(`${debut}T00:00:00`);
+                    const f = new Date(`${fin}T00:00:00`);
+                    if (Number.isNaN(d.getTime()) || Number.isNaN(f.getTime()) || f < d) return 0;
+                    return Math.floor((f - d) / 86400000) + 1;
+                };
+
+                const recalculer = () => {
+                    let total = 0;
+                    conteneur.querySelectorAll('[data-row]').forEach((ligne) => {
+                        const debut = ligne.querySelector('input[type="date"][name*="[date_depart]"]')?.value;
+                        const fin = ligne.querySelector('input[type="date"][name*="[date_retour]"]')?.value;
+                        if (debut && fin) total += joursEntre(debut, fin);
+                    });
+
+                    affichage.textContent = String(total);
+                    const mission = Number(document.getElementById('nombre_jours')?.value || attendu?.textContent || 0);
+                    if (attendu) attendu.textContent = String(mission);
+
+                    const depasse = mission > 0 && total > mission;
+                    bloc.classList.toggle('text-red-600', depasse);
+                    bloc.classList.toggle('dark:text-red-400', depasse);
+                    bloc.classList.toggle('text-slate-500', !depasse);
+                    bloc.classList.toggle('dark:text-slate-400', !depasse);
+                };
+
+                if (conteneur.dataset.totalBound !== '1') {
+                    conteneur.dataset.totalBound = '1';
+                    conteneur.addEventListener('change', recalculer);
+                    conteneur.addEventListener('click', () => setTimeout(recalculer, 0));
+                }
+
+                ['date_depart', 'date_retour', 'nombre_jours'].forEach((id) => {
+                    const champ = document.getElementById(id);
+                    if (champ && champ.dataset.totalBound !== '1') {
+                        champ.dataset.totalBound = '1';
+                        champ.addEventListener('change', recalculer);
+                    }
+                });
+
+                document.querySelectorAll('[data-add-row="etapes"]').forEach((bouton) => {
+                    if (bouton.dataset.totalBound === '1') return;
+                    bouton.dataset.totalBound = '1';
+                    bouton.addEventListener('click', () => setTimeout(recalculer, 0));
+                });
+
+                recalculer();
+            };
+
             document.addEventListener('DOMContentLoaded', boot);
             document.addEventListener('livewire:navigated', boot);
         })();

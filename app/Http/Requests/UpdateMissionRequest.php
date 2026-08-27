@@ -38,6 +38,14 @@ class UpdateMissionRequest extends FormRequest
             'date_retour' => 'required|date|after_or_equal:date_depart',
             'nombre_jours' => 'nullable|integer|min:1|max:365',
             'tickets_carburant_par_jour' => 'nullable|integer|min:0|max:100',
+            'nombre_vehicules' => 'nullable|integer|min:0|max:100',
+            'distance_totale_km' => 'nullable|numeric|min:0|max:99999.99',
+            'consommation_aux_cent' => 'nullable|numeric|min:0|max:999.99',
+            'litres_par_jour_ville' => 'nullable|numeric|min:0|max:999.99',
+            'prix_litre_carburant' => 'nullable|numeric|min:0|max:99999.99',
+            'location_vehicule_jours' => 'nullable|integer|min:0|max:365',
+            'location_vehicule_tarif' => 'nullable|numeric|min:0|max:9999999999999.99',
+            'montant_peages' => 'nullable|numeric|min:0|max:9999999999999.99',
             'montant_par_jour' => 'nullable|numeric|min:0|max:9999999999999.99',
             'montant_ticket_carburant' => 'nullable|numeric|min:0|max:9999999999999.99',
             'frais_participation_nombre' => 'nullable|integer|min:0|max:1000',
@@ -186,6 +194,44 @@ class UpdateMissionRequest extends FormRequest
                     if (! array_key_exists((string) ($participant['categorie'] ?? ''), Mission::categoriesExterieures())) {
                         $validator->errors()->add("participants.$index.categorie", 'La catégorie du participant est requise pour une mission extérieure.');
                     }
+                }
+            }
+
+            if ($type === Mission::TYPE_REGION) {
+                // Les étapes découpent la mission : elles ne peuvent ni sortir de sa
+                // période, ni totaliser plus de jours qu'elle n'en compte.
+                $debutMission = (string) $this->input('date_depart');
+                $finMission = (string) $this->input('date_retour');
+                $joursMission = (int) $this->input('nombre_jours');
+                $totalJoursEtapes = 0;
+
+                foreach ((array) $this->input('etapes', []) as $index => $etape) {
+                    $debut = $etape['date_depart'] ?? null;
+                    $fin = $etape['date_retour'] ?? null;
+
+                    if (! $debut || ! $fin) {
+                        continue;
+                    }
+
+                    $totalJoursEtapes += (int) ($etape['nombre_jours'] ?? 0);
+
+                    // Une étape se déroule entièrement dans la période de la mission.
+                    if ($debutMission !== '' && $finMission !== '') {
+                        if ($debut < $debutMission || $debut > $finMission) {
+                            $validator->errors()->add("etapes.$index.date_depart", "L'étape doit commencer pendant la mission (du $debutMission au $finMission).");
+                        }
+
+                        if ($fin < $debutMission || $fin > $finMission) {
+                            $validator->errors()->add("etapes.$index.date_retour", "L'étape doit se terminer pendant la mission (du $debutMission au $finMission).");
+                        }
+                    }
+                }
+
+                if ($joursMission > 0 && $totalJoursEtapes > $joursMission) {
+                    $validator->errors()->add(
+                        'etapes',
+                        "Le total des jours d'étapes ($totalJoursEtapes) dépasse la durée de la mission ($joursMission jours) : les étapes se chevauchent ou sortent de la période."
+                    );
                 }
             }
 

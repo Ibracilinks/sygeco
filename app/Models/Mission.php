@@ -170,6 +170,14 @@ class Mission extends Model
         'nombre_personnes',
         'nombre_jours',
         'tickets_carburant_par_jour',
+        'nombre_vehicules',
+        'distance_totale_km',
+        'consommation_aux_cent',
+        'litres_par_jour_ville',
+        'prix_litre_carburant',
+        'location_vehicule_jours',
+        'location_vehicule_tarif',
+        'montant_peages',
         'nombre_tickets_carburant',
         'montant_par_jour',
         'montant_ticket_carburant',
@@ -202,6 +210,15 @@ class Mission extends Model
         'date_depart' => 'date',
         'date_retour' => 'date',
         'zone_taux' => 'decimal:2',
+        'distance_totale_km' => 'decimal:2',
+        'consommation_aux_cent' => 'decimal:2',
+        'litres_par_jour_ville' => 'decimal:2',
+        'prix_litre_carburant' => 'decimal:2',
+        'location_vehicule_tarif' => 'decimal:2',
+        'montant_carburant_trajet' => 'decimal:2',
+        'montant_carburant_ville' => 'decimal:2',
+        'montant_location_vehicule' => 'decimal:2',
+        'montant_peages' => 'decimal:2',
         'montant_par_jour' => 'decimal:2',
         'montant_ticket_carburant' => 'decimal:2',
         'montant_indemnites' => 'decimal:2',
@@ -233,6 +250,82 @@ class Mission extends Model
     public function miseAJourPar()
     {
         return $this->belongsTo(User::class, 'maj_par');
+    }
+
+    /**
+     * Répartition du budget régional par nature d'étape, telle que l'exige le
+     * document officiel : un bloc « indemnités cercles », un bloc « indemnités
+     * régions », et le cas échéant les autres localités. Les montants sont
+     * recalculés étape par étape à partir de la catégorie du participant.
+     *
+     * @return array<int, array{libelle: string, lignes: array<int, array<string, mixed>>, sous_total: float}>
+     */
+    public function repartitionRegionale(): array
+    {
+        $groupes = [
+            'cercle' => ['libelle' => 'Indemnités cercles', 'types' => ['cercle']],
+            'region' => ['libelle' => 'Indemnités régions', 'types' => ['region']],
+            'autre' => ['libelle' => 'Autres localités', 'types' => ['commune', 'autre_localite']],
+        ];
+
+        $etapes = $this->etapes;
+        $resultat = [];
+
+        foreach ($groupes as $groupe) {
+            $etapesDuGroupe = $etapes->filter(fn (MissionEtape $etape) => in_array($etape->type_etape, $groupe['types'], true));
+
+            if ($etapesDuGroupe->isEmpty()) {
+                continue;
+            }
+
+            $lignes = [];
+
+            foreach ($this->participants as $participant) {
+                $categorie = self::categoriesNationales()[$participant->categorie ?? ''] ?? null;
+                $totalFrais = 0.0;
+                $totalIndemnites = 0.0;
+                $jours = 0;
+                $nuitees = 0;
+
+                foreach ($etapesDuGroupe as $etape) {
+                    $bareme = (string) ($etape->bareme ?? 'national');
+                    $joursEtape = max(0, (int) $etape->nombre_jours);
+                    $nuiteesEtape = max(0, (int) $etape->nombre_nuitees);
+
+                    $fraisMission = $bareme === 'meme_region'
+                        ? (float) self::BAREMES_REGIONAUX['meme_region']['frais_mission']
+                        : (float) ($categorie['frais_mission'] ?? 0);
+                    $indemnites = $bareme === 'meme_region'
+                        ? (float) self::BAREMES_REGIONAUX['meme_region']['indemnites']
+                        : (float) ($categorie['indemnites'] ?? 0);
+
+                    $totalFrais += $fraisMission * $joursEtape;
+                    $totalIndemnites += $indemnites * $nuiteesEtape;
+                    $jours += $joursEtape;
+                    $nuitees += $nuiteesEtape;
+                }
+
+                $lignes[] = [
+                    'nom' => $participant->nom_complet,
+                    'categorie' => $categorie['label'] ?? null,
+                    'montant_par_jour' => $jours > 0 ? round($totalFrais / $jours, 2) : 0.0,
+                    'jours' => $jours,
+                    'frais_mission' => round($totalFrais, 2),
+                    'montant_par_nuitee' => $nuitees > 0 ? round($totalIndemnites / $nuitees, 2) : 0.0,
+                    'nuitees' => $nuitees,
+                    'indemnites' => round($totalIndemnites, 2),
+                    'total' => round($totalFrais + $totalIndemnites, 2),
+                ];
+            }
+
+            $resultat[] = [
+                'libelle' => $groupe['libelle'],
+                'lignes' => $lignes,
+                'sous_total' => round(collect($lignes)->sum('total'), 2),
+            ];
+        }
+
+        return $resultat;
     }
 
     /**
@@ -433,14 +526,10 @@ class Mission extends Model
         $this->nombre_tickets_carburant = 0;
         $this->montant_par_jour = 0;
         $this->montant_ticket_carburant = 0;
-        $this->montant_carburant = 0;
         $this->montant_majoration = 0;
-        $this->montant_autres_frais = 0;
-        $this->montant_billets = 0;
         $this->frais_participation_total = 0;
         $this->frais_visa_total = 0;
         $this->billets_affaire_total = 0;
-        $this->billets_economique_total = 0;
 
         $participants = array_map(function (array $participant) use ($etapes): array {
             $categorie = self::categoriesNationales()[$participant['categorie'] ?? ''] ?? null;
@@ -484,7 +573,29 @@ class Mission extends Model
         }, $participants);
 
         $this->montant_indemnites = round(collect($participants)->sum('total_general'), 2);
-        $this->montant_total = (float) $this->montant_indemnites;
+
+        // II- Carburant : trajet (distance × consommation) et circulation en ville.
+        $prixLitre = (float) $this->prix_litre_carburant;
+        $litresTrajet = round((float) $this->distance_totale_km * (float) $this->consommation_aux_cent / 100, 2);
+        $litresVille = round((float) $this->litres_par_jour_ville * max(1, (int) $this->nombre_jours), 2);
+
+        $this->montant_carburant_trajet = round($litresTrajet * $prixLitre, 2);
+        $this->montant_carburant_ville = round($litresVille * $prixLitre, 2);
+        $this->montant_carburant = round((float) $this->montant_carburant_trajet + (float) $this->montant_carburant_ville, 2);
+        $this->montant_location_vehicule = round((int) $this->location_vehicule_jours * (float) $this->location_vehicule_tarif, 2);
+        $this->billets_economique_total = round((int) $this->billets_economique_nombre * (float) $this->billets_economique_unitaire, 2);
+        $this->montant_billets = (float) $this->billets_economique_total;
+
+        $this->montant_autres_frais = round((float) $this->montant_location_vehicule + (float) $this->montant_peages, 2);
+
+        $this->montant_total = round(
+            (float) $this->montant_indemnites
+            + (float) $this->montant_carburant
+            + (float) $this->montant_location_vehicule
+            + (float) $this->montant_billets
+            + (float) $this->montant_peages,
+            2
+        );
 
         return $participants;
     }

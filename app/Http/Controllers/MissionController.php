@@ -145,6 +145,25 @@ class MissionController extends Controller
             ->with('success', 'Mission enregistrée avec succès.');
     }
 
+    /**
+     * Passe une mission du brouillon au statut finalisé : le document est réputé
+     * arrêté, plus rien ne doit bouger sans repasser par une modification explicite.
+     */
+    public function finaliser(Mission $mission)
+    {
+        if ($mission->statut !== 'brouillon') {
+            return redirect()->route('missions.show', $mission)
+                ->with('error', 'Cette mission est déjà finalisée.');
+        }
+
+        $mission->statut = 'finalise';
+        $mission->maj_par = Auth::id();
+        $mission->save();
+
+        return redirect()->route('missions.show', $mission)
+            ->with('success', 'Mission finalisée.');
+    }
+
     public function show(Mission $mission)
     {
         $mission->load([

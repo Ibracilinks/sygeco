@@ -406,3 +406,136 @@ test('le document même ville reprend l\'en-tête officiel et le tableau du mod�
         ->assertSee('MOULAYE I BA')
         ->assertSee('logo_canam.png', false);
 });
+
+test('une mission en brouillon peut être finalisée depuis sa fiche', function () {
+    $admin = userWithRole('dbcgoq');
+
+    $this->actingAs($admin)->post(route('missions.store'), [
+        'type' => Mission::TYPE_MEME_VILLE,
+        'reference' => '010/MSDS-CANAM-DAGRH',
+        'objet' => 'Mission à finaliser',
+        'date_document' => '2026-08-20',
+        'date_depart' => '2026-08-24',
+        'date_retour' => '2026-08-25',
+        'tickets_carburant_par_jour' => 1,
+        'lieu_signature' => 'Bamako',
+        'statut' => 'brouillon',
+        'participants' => [['nom_complet' => 'MOUSSA TRAORE']],
+        'signataires' => missionSignatairesPayload(),
+    ])->assertSessionHasNoErrors();
+
+    $mission = Mission::where('reference', '010/MSDS-CANAM-DAGRH')->firstOrFail();
+
+    $this->actingAs($admin)->get(route('missions.show', $mission))->assertOk()->assertSee('Finaliser');
+
+    $this->actingAs($admin)->post(route('missions.finaliser', $mission))
+        ->assertRedirect(route('missions.show', $mission));
+
+    expect($mission->fresh()->statut)->toBe('finalise');
+
+    // Le bouton disparaît une fois la mission arrêtée, et l'action devient sans effet.
+    $this->actingAs($admin)->get(route('missions.show', $mission))->assertOk()->assertDontSee('>Finaliser<', false);
+    $this->actingAs($admin)->post(route('missions.finaliser', $mission))->assertSessionHas('error');
+});
+
+test('le document intérieur du pays reprend le modèle officiel avec carburant et péages', function () {
+    $admin = userWithRole('dbcgoq');
+
+    $this->actingAs($admin)->post(route('missions.store'), [
+        'type' => Mission::TYPE_REGION,
+        'reference' => '014/CANAM-SI',
+        'objet' => 'Supervision des antennes',
+        'destination' => 'Sikasso',
+        'date_document' => '2026-08-18',
+        'date_depart' => '2026-08-18',
+        'date_retour' => '2026-08-22',
+        'lieu_signature' => 'Bamako',
+        'statut' => 'brouillon',
+        'distance_totale_km' => 300,
+        'consommation_aux_cent' => 20,
+        'litres_par_jour_ville' => 5,
+        'prix_litre_carburant' => 866,
+        'location_vehicule_jours' => 5,
+        'location_vehicule_tarif' => 50000,
+        'montant_peages' => 5000,
+        'participants' => [['nom_complet' => 'MOUSSA TRAORE', 'categorie' => 'cat_4']],
+        'etapes' => [
+            ['type_etape' => 'cercle', 'bareme' => 'national', 'localite' => 'Koutiala', 'date_depart' => '2026-08-18', 'date_retour' => '2026-08-19'],
+            ['type_etape' => 'region', 'bareme' => 'national', 'localite' => 'Sikasso', 'date_depart' => '2026-08-20', 'date_retour' => '2026-08-22'],
+        ],
+        'signataires' => missionSignatairesPayload(),
+    ])->assertSessionHasNoErrors();
+
+    $mission = Mission::where('reference', '014/CANAM-SI')->firstOrFail();
+
+    // Carburant : 300 km × 20/100 × 866 = 51 960 ; ville : 5 L × 5 jours × 866 = 21 650.
+    expect((float) $mission->montant_carburant_trajet)->toBe(51960.0);
+    expect((float) $mission->montant_carburant_ville)->toBe(21650.0);
+    expect((float) $mission->montant_location_vehicule)->toBe(250000.0);
+    expect((float) $mission->montant_total)->toBe(
+        (float) $mission->montant_indemnites + 51960.0 + 21650.0 + 250000.0 + 5000.0
+    );
+
+    // Le document sépare les indemnités cercles et régions.
+    $repartition = $mission->repartitionRegionale();
+    expect($repartition)->toHaveCount(2);
+    expect($repartition[0]['libelle'])->toBe('Indemnités cercles');
+    expect($repartition[1]['libelle'])->toBe('Indemnités régions');
+
+    $this->actingAs($admin)->get(route('missions.show', $mission))
+        ->assertOk()
+        ->assertSee('Indemnités cercles')
+        ->assertSee('Montant carburant trajet')
+        ->assertSee('III- Péages')
+        ->assertSee('Total général');
+});
+
+test('les étapes ne peuvent pas totaliser plus de jours que la mission', function () {
+    $admin = userWithRole('dbcgoq');
+
+    // Mission de 5 jours, étapes de 3 + 4 jours : incohérent.
+    $this->actingAs($admin)
+        ->from(route('missions.create', ['type' => Mission::TYPE_REGION]))
+        ->post(route('missions.store'), [
+            'type' => Mission::TYPE_REGION,
+            'reference' => '015/CANAM-SI',
+            'objet' => 'Étapes incohérentes',
+            'destination' => 'Ségou',
+            'date_document' => '2026-08-18',
+            'date_depart' => '2026-08-18',
+            'date_retour' => '2026-08-22',
+            'lieu_signature' => 'Bamako',
+            'statut' => 'brouillon',
+            'participants' => [['nom_complet' => 'MOUSSA TRAORE', 'categorie' => 'cat_4']],
+            'etapes' => [
+                ['type_etape' => 'cercle', 'bareme' => 'national', 'localite' => 'Bla', 'date_depart' => '2026-08-18', 'date_retour' => '2026-08-20'],
+                ['type_etape' => 'region', 'bareme' => 'national', 'localite' => 'Ségou', 'date_depart' => '2026-08-19', 'date_retour' => '2026-08-22'],
+            ],
+            'signataires' => missionSignatairesPayload(),
+        ])->assertSessionHasErrors('etapes');
+
+    expect(Mission::where('reference', '015/CANAM-SI')->exists())->toBeFalse();
+});
+
+test('une étape hors de la période de la mission est refusée', function () {
+    $admin = userWithRole('dbcgoq');
+
+    $this->actingAs($admin)
+        ->from(route('missions.create', ['type' => Mission::TYPE_REGION]))
+        ->post(route('missions.store'), [
+            'type' => Mission::TYPE_REGION,
+            'reference' => '016/CANAM-SI',
+            'objet' => 'Étape hors période',
+            'destination' => 'Ségou',
+            'date_document' => '2026-08-18',
+            'date_depart' => '2026-08-18',
+            'date_retour' => '2026-08-22',
+            'lieu_signature' => 'Bamako',
+            'statut' => 'brouillon',
+            'participants' => [['nom_complet' => 'MOUSSA TRAORE', 'categorie' => 'cat_4']],
+            'etapes' => [
+                ['type_etape' => 'region', 'bareme' => 'national', 'localite' => 'Ségou', 'date_depart' => '2026-08-25', 'date_retour' => '2026-08-26'],
+            ],
+            'signataires' => missionSignatairesPayload(),
+        ])->assertSessionHasErrors('etapes.0.date_depart');
+});
