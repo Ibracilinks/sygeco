@@ -4,9 +4,10 @@ use App\Models\Activite;
 use App\Models\Departement;
 use App\Models\User;
 use App\Notifications\ActiviteCoutModifieNotification;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Notification;
 
-uses(\Illuminate\Foundation\Testing\RefreshDatabase::class);
+uses(RefreshDatabase::class);
 
 test('modifier le coût notifie le directeur de la Direction Centrale et le chef de service', function () {
     Notification::fake();

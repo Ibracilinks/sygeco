@@ -2,13 +2,17 @@
 
 use App\Models\Activite;
 use App\Models\Departement;
+use App\Models\Exercice;
 use App\Models\User;
+use App\Notifications\ActiviteArbitrageNotification;
 use App\Notifications\ActiviteRefusee;
 use App\Notifications\ActiviteSoumiseNotification;
 use App\Notifications\ActiviteValidee;
+use App\Notifications\MiParcoursOuvertNotification;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Notification;
 
-uses(\Illuminate\Foundation\Testing\RefreshDatabase::class);
+uses(RefreshDatabase::class);
 
 /*
 |--------------------------------------------------------------------------
@@ -89,14 +93,14 @@ test('la notification de soumission passe par mail et database', function () {
     $activite = Activite::factory()->create();
     $notification = new ActiviteSoumiseNotification($activite);
 
-    expect($notification->via(new User()))->toBe(['mail', 'database']);
+    expect($notification->via(new User))->toBe(['mail', 'database']);
 });
 
 test('ActiviteValidee et ActiviteRefusee passent par mail et database', function () {
     $activite = Activite::factory()->create();
 
-    expect((new ActiviteValidee($activite))->via(new User()))->toBe(['mail', 'database']);
-    expect((new ActiviteRefusee($activite, 'motif assez long'))->via(new User()))->toBe(['mail', 'database']);
+    expect((new ActiviteValidee($activite))->via(new User))->toBe(['mail', 'database']);
+    expect((new ActiviteRefusee($activite, 'motif assez long'))->via(new User))->toBe(['mail', 'database']);
 });
 
 test('le payload database contient un message et une url vers l\'entité', function () {
@@ -121,7 +125,7 @@ test('le payload database contient un message et une url vers l\'entité', funct
 
 test('le lien de soumission reçu par le chef pointe vers une page accessible (pas 403)', function () {
     seedRolesAndPermissions();
-    $dep = \App\Models\Departement::factory()->create();
+    $dep = Departement::factory()->create();
     $chef = User::factory()->dansDepartement($dep)->create();
     $chef->assignRole('chef');
     $activite = Activite::factory()->soumis()->pourDepartement($dep)->create();
@@ -134,31 +138,31 @@ test('le lien de soumission reçu par le chef pointe vers une page accessible (p
 
 test('le lien d\'arbitrage pointe vers l\'activité concernée', function () {
     seedRolesAndPermissions();
-    $dep = \App\Models\Departement::factory()->create();
+    $dep = Departement::factory()->create();
     $auteur = User::factory()->dansDepartement($dep)->create();
     $auteur->assignRole('chef');
     $activite = Activite::factory()->pourDepartement($dep)->create();
 
     // Cas « modifiée » : lien vers la fiche de l'activité (accessible à l'auteur).
-    $modif = (new \App\Notifications\ActiviteArbitrageNotification('modifiee', $activite->nom_activite, 'motif', null, $activite))->toArray($auteur);
+    $modif = (new ActiviteArbitrageNotification('modifiee', $activite->nom_activite, 'motif', null, $activite))->toArray($auteur);
     expect($modif['url'])->toContain('/activites/'.$activite->id);
 
     // Cas « supprimée » : l'entité n'existe plus -> repli sur la liste.
-    $suppr = (new \App\Notifications\ActiviteArbitrageNotification('supprimee', 'Nom snapshot', 'motif', null, null))->toArray($auteur);
+    $suppr = (new ActiviteArbitrageNotification('supprimee', 'Nom snapshot', 'motif', null, null))->toArray($auteur);
     expect($suppr['url'])->toContain('/activites');
     expect($suppr['url'])->not->toContain('/activites/');
 });
 
 test('le lien des notifications d\'exercice est adapté au rôle', function () {
     seedRolesAndPermissions();
-    $exercice = \App\Models\Exercice::factory()->create(['annee' => 2026]);
+    $exercice = Exercice::factory()->create(['annee' => 2026]);
 
     $admin = User::factory()->create();
     $admin->assignRole('dbcgoq');
     $chef = User::factory()->create();
     $chef->assignRole('chef');
 
-    $notif = new \App\Notifications\MiParcoursOuvertNotification($exercice);
+    $notif = new MiParcoursOuvertNotification($exercice);
 
     expect($notif->toArray($admin)['url'])->toContain('/exercices/'.$exercice->id);
     expect($notif->toArray($chef)['url'])->toContain('/evaluations/');

@@ -11,7 +11,6 @@ use App\Support\CadreLogique;
 use App\Support\VisibiliteActivites;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Validation\Rule;
 
 class EvaluationController extends Controller
 {
@@ -118,20 +117,15 @@ class EvaluationController extends Controller
         $validated = $request->validate([
             'statut_execution' => ['required', 'in:non_realise,en_cours,realise'],
             'observation' => ['required', 'string', 'max:1000'],
-            'montant_utilise' => [Rule::requiredIf($this->peutSaisirBudget()), 'numeric', 'min:0', 'max:'.Activite::MONTANT_MAX],
             'valeur_indicateur' => ['required', 'numeric', 'max:'.Activite::MONTANT_MAX],
         ], [
             'observation.required' => "L'observation est obligatoire.",
-            'montant_utilise.required' => 'Le budget utilisé est obligatoire.',
             'valeur_indicateur.required' => "La valeur de l'indicateur est obligatoire.",
         ]);
 
-        // Le budget consommé est réservé à l'administration : pour les autres profils
-        // le champ est absent du formulaire et une valeur postée est ignorée, sans
-        // écraser le montant déjà enregistré.
-        if (! $this->peutSaisirBudget()) {
-            unset($validated['montant_utilise']);
-        }
+        // Le budget consommé ne se saisit plus depuis l'évaluation : une valeur postée
+        // est ignorée, sans écraser le montant déjà enregistré.
+        unset($validated['montant_utilise']);
 
         $activite->evaluations()->updateOrCreate(
             ['periode' => $periode],
@@ -143,7 +137,6 @@ class EvaluationController extends Controller
         $activite->update([
             'statut_execution' => $validated['statut_execution'],
             'execution_commentaire' => $validated['observation'] ?? null,
-            'montant_utilise' => $validated['montant_utilise'] ?? null,
             'valeur_indicateur' => $validated['valeur_indicateur'] ?? null,
             'execution_maj_le' => now(),
             'execution_maj_par' => Auth::id(),

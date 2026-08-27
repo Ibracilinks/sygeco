@@ -17,25 +17,20 @@ uses(RefreshDatabase::class);
 |--------------------------------------------------------------------------
 */
 
-test("le champ budget utilisé n'est proposé qu'à l'administration", function () {
+test("le budget utilisé ne se saisit plus depuis l'évaluation", function () {
     $exercice = Exercice::factory()->actif()->create();
 
-    $admin = userWithRole('dbcgoq');
-    $this->actingAs($admin)
-        ->withSession([ActiveExercice::SESSION_KEY => $exercice->id])
-        ->get(route('evaluations.index', 'mi-parcours'))
-        ->assertOk()
-        ->assertSee('Budget utilisé (FCFA)');
-
-    $chef = userWithRole('chef');
-    $this->actingAs($chef)
-        ->withSession([ActiveExercice::SESSION_KEY => $exercice->id])
-        ->get(route('evaluations.index', 'mi-parcours'))
-        ->assertOk()
-        ->assertDontSee('Budget utilisé (FCFA)');
+    // Le champ a été retiré du formulaire : plus aucun profil ne le voit.
+    foreach (['dbcgoq', 'superadmin', 'chef'] as $role) {
+        $this->actingAs(userWithRole($role))
+            ->withSession([ActiveExercice::SESSION_KEY => $exercice->id])
+            ->get(route('evaluations.index', 'mi-parcours'))
+            ->assertOk()
+            ->assertDontSee('Budget utilisé (FCFA)');
+    }
 });
 
-test('un chef ne peut pas renseigner le budget consommé par soumission directe', function () {
+test('un budget posté directement reste ignoré', function () {
     $exercice = Exercice::factory()->actif()->create([
         'date_debut_mi_parcours' => now()->subDay(),
         'date_fin_mi_parcours' => now()->addDay(),

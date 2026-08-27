@@ -4,10 +4,11 @@ use App\Models\Exercice;
 use App\Models\User;
 use App\Notifications\BienvenueUtilisateurNotification;
 use App\Notifications\IdentifiantsExerciceNotification;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Notification;
 use Spatie\Permission\Models\Role;
 
-uses(\Illuminate\Foundation\Testing\RefreshDatabase::class);
+uses(RefreshDatabase::class);
 
 /*
 |--------------------------------------------------------------------------

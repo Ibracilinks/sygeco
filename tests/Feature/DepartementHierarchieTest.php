@@ -1,8 +1,9 @@
 <?php
 
 use App\Models\Departement;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 
-uses(\Illuminate\Foundation\Testing\RefreshDatabase::class);
+uses(RefreshDatabase::class);
 
 test('on crée un service rattaché à un département', function () {
     $admin = userWithRole('dbcgoq');

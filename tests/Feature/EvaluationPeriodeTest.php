@@ -96,7 +96,6 @@ test('le dbcgoq peut renseigner l\'évaluation même hors fenêtre', function ()
     $this->actingAs($admin)->post(route('evaluations.enregistrer', [$activite, 'mi-parcours']), [
         'statut_execution' => 'en_cours',
         'observation' => 'Observation de contrôle',
-        'montant_utilise' => 0,
         'valeur_indicateur' => 1,
     ])->assertSessionHas('success');
 
@@ -218,7 +217,6 @@ test('une activité non validée ne peut pas être évaluée', function () {
     $this->actingAs($admin)->post(route('evaluations.enregistrer', [$activite, 'mi-parcours']), [
         'statut_execution' => 'realise',
         'observation' => 'Observation de contrôle',
-        'montant_utilise' => 0,
         'valeur_indicateur' => 1,
     ])->assertSessionHas('error');
 
@@ -260,7 +258,6 @@ test('une activité non évaluée n\'est pas comptée comme non réalisée', fun
     $this->actingAs($admin)->post(route('evaluations.enregistrer', [$evaluee, 'mi-parcours']), [
         'statut_execution' => 'realise',
         'observation' => 'Observation de contrôle',
-        'montant_utilise' => 0,
         'valeur_indicateur' => 1,
     ])->assertSessionHas('success');
 
@@ -288,7 +285,7 @@ test("tous les champs de la fiche d'évaluation sont obligatoires", function () 
         ->post(route('evaluations.enregistrer', [$activite, 'mi-parcours']), [
             'statut_execution' => 'realise',
         ])
-        ->assertSessionHasErrors(['observation', 'montant_utilise', 'valeur_indicateur']);
+        ->assertSessionHasErrors(['observation', 'valeur_indicateur']);
 
     expect($activite->evaluations()->count())->toBe(0);
 });
@@ -302,7 +299,6 @@ test("la fiche d'évaluation complète est acceptée", function () {
         ->post(route('evaluations.enregistrer', [$activite, 'mi-parcours']), [
             'statut_execution' => 'realise',
             'observation' => 'Activité menée à son terme.',
-            'montant_utilise' => 250000,
             'valeur_indicateur' => 12,
         ])
         ->assertSessionHasNoErrors();
@@ -320,7 +316,7 @@ test('la saisie AJAX renvoie les erreurs en JSON, sans rechargement', function (
             'statut_execution' => 'realise',
         ])
         ->assertStatus(422)
-        ->assertJsonValidationErrors(['observation', 'montant_utilise', 'valeur_indicateur']);
+        ->assertJsonValidationErrors(['observation', 'valeur_indicateur']);
 });
 
 test('la saisie AJAX renvoie la ligne rafraîchie', function () {
@@ -332,33 +328,37 @@ test('la saisie AJAX renvoie la ligne rafraîchie', function () {
         ->postJson(route('evaluations.enregistrer', [$activite, 'mi-parcours']), [
             'statut_execution' => 'realise',
             'observation' => 'Terminée dans les délais.',
-            'montant_utilise' => 900000,
             'valeur_indicateur' => 7.5,
         ])
         ->assertOk()
-        ->assertJsonStructure(['message', 'ligne' => ['badge', 'maj', 'observation', 'montant', 'ecart', 'valeur_indicateur']]);
+        ->assertJsonStructure(['message', 'ligne' => ['badge', 'maj', 'observation', 'montant', 'valeur_indicateur']]);
 
     // Le badge est rendu côté serveur pour ne pas dupliquer ses classes en JavaScript.
     expect($reponse->json('ligne.badge'))->toContain('Réalisé')
         ->and($reponse->json('ligne.observation'))->toBe('Terminée dans les délais.')
-        ->and($reponse->json('ligne.montant'))->toBe('900 000 FCFA')
-        ->and($reponse->json('ligne.ecart'))->toContain('écart')
-        ->and($reponse->json('ligne.ecart_depassement'))->toBeFalse();
+        ->and($reponse->json('ligne.montant'))->toBe('—');
 });
 
-test('un dépassement de budget est signalé dans la ligne rafraîchie', function () {
+test('un budget déjà enregistré survit à une nouvelle saisie', function () {
     $admin = userWithRole('dbcgoq');
     $exercice = Exercice::factory()->actif()->create();
     $activite = Activite::factory()->pourExercice($exercice)->create(['statut' => 'valide', 'cout' => 500000]);
+
+    // Montant hérité d'avant le retrait du champ : la saisie ne doit pas l'effacer.
+    $activite->evaluations()->create([
+        'periode' => 'mi_parcours',
+        'statut_execution' => 'en_cours',
+        'montant_utilise' => 800000,
+    ]);
 
     $this->actingAs($admin)
         ->postJson(route('evaluations.enregistrer', [$activite, 'mi-parcours']), [
             'statut_execution' => 'en_cours',
             'observation' => 'Coût supérieur au prévisionnel.',
-            'montant_utilise' => 800000,
             'valeur_indicateur' => 2,
         ])
         ->assertOk()
+        ->assertJsonPath('ligne.montant', '800 000 FCFA')
         ->assertJsonPath('ligne.ecart_depassement', true)
         ->assertJsonPath('ligne.ecart', '(dépassement 300 000)');
 });

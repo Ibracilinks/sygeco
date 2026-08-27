@@ -2,8 +2,9 @@
 
 use App\Models\Exercice;
 use App\Support\ActiveExercice;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 
-uses(\Illuminate\Foundation\Testing\RefreshDatabase::class);
+uses(RefreshDatabase::class);
 
 test('un invité est redirigé vers la connexion', function () {
     $this->get(route('exercices.index'))->assertRedirect(route('login'));
