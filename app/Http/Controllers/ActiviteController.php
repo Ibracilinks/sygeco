@@ -152,7 +152,10 @@ class ActiviteController extends Controller
             'nom_activite' => $this->regleNomUnique(),
             'indicateur_objectivement_verifiable' => 'required|string',
             'moyen_verification' => 'required|string',
-            'cout' => 'required|numeric|min:0|max:'.Activite::MONTANT_MAX,
+            // « Pour mémoire » : le coût est déjà porté par une autre activité,
+            // on ne le redemande pas et l'activité ne pèse rien au budget.
+            'pour_memoire' => 'nullable|in:on,oui',
+            'cout' => 'exclude_if:pour_memoire,on|required|numeric|min:0|max:'.Activite::MONTANT_MAX,
             'trimestre_1' => 'nullable|in:on,oui',
             'trimestre_2' => 'nullable|in:on,oui',
             'trimestre_3' => 'nullable|in:on,oui',
@@ -171,7 +174,8 @@ class ActiviteController extends Controller
         $activite->nom_activite = $validated['nom_activite'];
         $activite->indicateur_objectivement_verifiable = $validated['indicateur_objectivement_verifiable'];
         $activite->moyen_verification = $validated['moyen_verification'];
-        $activite->cout = $validated['cout'];
+        $activite->pour_memoire = $request->boolean('pour_memoire');
+        $activite->cout = $activite->pour_memoire ? 0 : $validated['cout'];
         $activite->trimestre_1 = isset($validated['trimestre_1']) ? 'oui' : 'non';
         $activite->trimestre_2 = isset($validated['trimestre_2']) ? 'oui' : 'non';
         $activite->trimestre_3 = isset($validated['trimestre_3']) ? 'oui' : 'non';
@@ -206,7 +210,10 @@ class ActiviteController extends Controller
         $validated = $this->validerAvecMessages($request, [
             'departement_id' => 'required|exists:departements,id',
             'nom_activite' => $this->regleNomUnique(),
-            'cout' => 'required|numeric|min:0|max:'.Activite::MONTANT_MAX,
+            // « Pour mémoire » : le coût est déjà porté par une autre activité,
+            // on ne le redemande pas et l'activité ne pèse rien au budget.
+            'pour_memoire' => 'nullable|in:on,oui',
+            'cout' => 'exclude_if:pour_memoire,on|required|numeric|min:0|max:'.Activite::MONTANT_MAX,
             'indicateur_objectivement_verifiable' => 'nullable|string',
             'moyen_verification' => 'nullable|string',
             'statut_execution' => ['nullable', Rule::in(array_keys(Activite::STATUTS_EXECUTION))],
@@ -227,7 +234,8 @@ class ActiviteController extends Controller
         $activite->nom_activite = $validated['nom_activite'];
         $activite->indicateur_objectivement_verifiable = $validated['indicateur_objectivement_verifiable'] ?? 'Non spécifié (activité non programmée)';
         $activite->moyen_verification = $validated['moyen_verification'] ?? 'Non spécifié (activité non programmée)';
-        $activite->cout = $validated['cout'];
+        $activite->pour_memoire = $request->boolean('pour_memoire');
+        $activite->cout = $activite->pour_memoire ? 0 : $validated['cout'];
         $activite->trimestre_1 = isset($validated['trimestre_1']) ? 'oui' : 'non';
         $activite->trimestre_2 = isset($validated['trimestre_2']) ? 'oui' : 'non';
         $activite->trimestre_3 = isset($validated['trimestre_3']) ? 'oui' : 'non';
@@ -300,7 +308,10 @@ class ActiviteController extends Controller
             'nom_activite' => $this->regleNomUnique($activite),
             'indicateur_objectivement_verifiable' => 'required|string',
             'moyen_verification' => 'required|string',
-            'cout' => 'required|numeric|min:0|max:'.Activite::MONTANT_MAX,
+            // « Pour mémoire » : le coût est déjà porté par une autre activité,
+            // on ne le redemande pas et l'activité ne pèse rien au budget.
+            'pour_memoire' => 'nullable|in:on,oui',
+            'cout' => 'exclude_if:pour_memoire,on|required|numeric|min:0|max:'.Activite::MONTANT_MAX,
             'trimestre_1' => 'nullable|in:on,oui',
             'trimestre_2' => 'nullable|in:on,oui',
             'trimestre_3' => 'nullable|in:on,oui',
@@ -318,7 +329,8 @@ class ActiviteController extends Controller
             'nom_activite' => $validated['nom_activite'],
             'indicateur_objectivement_verifiable' => $validated['indicateur_objectivement_verifiable'],
             'moyen_verification' => $validated['moyen_verification'],
-            'cout' => $validated['cout'],
+            'pour_memoire' => $request->boolean('pour_memoire'),
+            'cout' => $request->boolean('pour_memoire') ? 0 : $validated['cout'],
             'trimestre_1' => isset($validated['trimestre_1']) ? 'oui' : 'non',
             'trimestre_2' => isset($validated['trimestre_2']) ? 'oui' : 'non',
             'trimestre_3' => isset($validated['trimestre_3']) ? 'oui' : 'non',

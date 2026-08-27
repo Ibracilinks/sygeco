@@ -131,11 +131,26 @@
         @enderror
     </div>
 
-    <div>
-        <label for="cout" class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-200">Coût (FCFA) *</label>
+    @php($pourMemoire = (bool) old('pour_memoire', isset($activite) ? $activite->pour_memoire : false))
+    <div x-data="{ pm: {{ $pourMemoire ? 'true' : 'false' }} }">
+        <label for="cout" class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-200">
+            Coût (FCFA) <span x-show="! pm">*</span>
+        </label>
         <input id="cout" type="number" name="cout" value="{{ old('cout', $activite->cout ?? '') }}" step="0.01"
-            min="0" max="{{ \App\Models\Activite::MONTANT_MAX }}" required
-            class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 focus:border-slate-500 focus:outline-none dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100">
+            min="0" max="{{ \App\Models\Activite::MONTANT_MAX }}"
+            x-bind:required="! pm" x-bind:disabled="pm"
+            class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 focus:border-slate-500 focus:outline-none disabled:bg-slate-100 disabled:text-slate-400 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 dark:disabled:bg-slate-800">
+
+        {{-- Pour mémoire : le coût est déjà compté dans une autre activité. --}}
+        <label class="mt-2 inline-flex items-start gap-2 text-sm text-slate-700 dark:text-slate-200">
+            <input type="checkbox" name="pour_memoire" value="on" x-model="pm" @checked($pourMemoire)
+                class="mt-0.5 rounded border-slate-300 text-slate-800 dark:border-slate-700">
+            <span>
+                Pour mémoire (PM)
+                <span class="block text-xs text-slate-500 dark:text-slate-400">Le coût est déjà compris dans une autre activité : rien n'est ajouté au budget.</span>
+            </span>
+        </label>
+
         @error('cout')
             <p class="mt-1 text-sm text-rose-600 dark:text-rose-400">{{ $message }}</p>
         @enderror
