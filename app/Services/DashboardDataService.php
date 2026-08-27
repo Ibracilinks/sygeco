@@ -5,7 +5,9 @@ namespace App\Services;
 use App\Models\ActiviteEvaluation;
 use App\Models\Departement;
 use App\Models\Exercice;
+use App\Models\User;
 use App\Support\ActiveExercice;
+use App\Support\VisibiliteActivites;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
@@ -16,10 +18,15 @@ class DashboardDataService
     protected $annee;
 
     /**
-     * Structures visibles par l'utilisateur connecté, ou `null` s'il n'est pas
-     * restreint (superadmin, dbcgoq). Le tableau de bord doit montrer les mêmes
-     * chiffres que la page Programmation : un chef ne voit que son sous-arbre,
-     * un agent que sa seule entité.
+     * Utilisateur dont on calcule le tableau de bord. Ses chiffres doivent être
+     * exactement ceux de la page Programmation, d'où le passage par les mêmes
+     * règles de visibilité.
+     */
+    protected ?User $utilisateur;
+
+    /**
+     * Structures à faire figurer dans les tableaux par entité, ou `null` si
+     * l'utilisateur n'est pas restreint.
      *
      * @var array<int, int>|null
      */
@@ -34,23 +41,17 @@ class DashboardDataService
             ?? Carbon::now()->year;
 
         $this->annee = (int) request()->query('annee', $defaut);
-        $this->perimetre = Auth::user()?->perimetreActivitesIds();
+        $this->utilisateur = Auth::user();
+        $this->perimetre = $this->utilisateur?->perimetreActivitesIds();
     }
 
     /**
-     * Clé de cache. Les chiffres dépendent de l'année ET du périmètre : sans cette
+     * Clé de cache. Les chiffres dépendent de l'année ET de qui regarde : sans cette
      * seconde dimension, le tableau de bord d'un chef servirait celui d'un autre.
      */
     protected function cleCache(string $nom): string
     {
-        if ($this->perimetre === null) {
-            return "dashboard_{$nom}_{$this->annee}_global";
-        }
-
-        $ids = $this->perimetre;
-        sort($ids);
-
-        return "dashboard_{$nom}_{$this->annee}_".substr(md5(implode(',', $ids)), 0, 12);
+        return "dashboard_{$nom}_{$this->annee}_".VisibiliteActivites::signature($this->utilisateur);
     }
 
     /**
@@ -61,9 +62,7 @@ class DashboardDataService
     protected function perimetreActivites(): \Closure
     {
         return function ($query) {
-            if ($this->perimetre !== null) {
-                $query->whereIn('activites.departement_id', $this->perimetre);
-            }
+            VisibiliteActivites::appliquer($query, $this->utilisateur);
         };
     }
 
@@ -165,6 +164,52 @@ class DashboardDataService
                 ->toArray();
 
             return $result;
+        });
+    }
+
+    /**
+     * Résultats stratégiques de l'année : le niveau du cadre logique qui manquait
+     * entre les objectifs et les extrants. Nombre d'activités et budget par résultat.
+     *
+     * @return array<int, array{code: string, libelle: string, nb_activites: int, budget: float}>
+     */
+    public function getResultatsStrategiques(): array
+    {
+        return Cache::remember($this->cleCache('resultats_strategiques'), 3600, function () {
+            $exerciceIds = $this->exerciceIdsDeLAnnee();
+
+            return DB::table('resultats')
+                ->join('objectifs', 'resultats.objectif_id', '=', 'objectifs.id')
+                ->leftJoin('extrants', 'resultats.id', '=', 'extrants.resultat_id')
+                ->leftJoin('activites', function ($join) use ($exerciceIds) {
+                    $join->on('extrants.id', '=', 'activites.extrant_id')
+                        ->whereIn('activites.exercice_id', $exerciceIds)
+                        ->whereNull('activites.deleted_at')
+                        ->tap($this->perimetreActivites());
+                })
+                // Le résultat est retenu si son objectif couvre l'année, même pluriannuel.
+                ->whereExists(fn ($q) => $q->select(DB::raw(1))->from('exercice_objectif')
+                    ->whereColumn('exercice_objectif.objectif_id', 'objectifs.id')
+                    ->whereIn('exercice_objectif.exercice_id', $exerciceIds))
+                ->selectRaw('
+                    resultats.code,
+                    resultats.libelle,
+                    objectifs.code as objectif_code,
+                    COUNT(activites.id) as nb_activites,
+                    COALESCE(SUM(activites.cout), 0) as budget
+                ')
+                ->groupBy('resultats.id', 'resultats.code', 'resultats.libelle', 'resultats.ordre', 'objectifs.code')
+                ->orderBy('resultats.ordre')
+                ->orderBy('resultats.code')
+                ->get()
+                ->map(fn ($item) => [
+                    'code' => (string) $item->code,
+                    'libelle' => (string) $item->libelle,
+                    'objectif_code' => (string) $item->objectif_code,
+                    'nb_activites' => (int) $item->nb_activites,
+                    'budget' => (float) $item->budget,
+                ])
+                ->all();
         });
     }
 
@@ -616,6 +661,7 @@ class DashboardDataService
         $soumissionParDepartement = collect($this->getSoumissionParDepartement());
         $departementsEnRetard = collect($this->getDepartementsEnRetard());
         $budgetParDepartement = collect($this->getBudgetParDepartement());
+        $resultatsStrategiques = $this->getResultatsStrategiques();
 
         $executionValidees = $this->getExecutionActivitesValidees();
         $maxActiviteCout = (float) max(1, (float) $topActivites->max('cout'));
@@ -676,6 +722,7 @@ class DashboardDataService
                 ],
             ],
             'tables' => [
+                'resultats_strategiques' => $resultatsStrategiques,
                 'top_activites' => $topActivites
                     ->map(function ($activite) use ($maxActiviteCout) {
                         $cout = (float) ($activite['cout'] ?? 0);

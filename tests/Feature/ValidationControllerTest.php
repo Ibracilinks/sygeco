@@ -2,13 +2,29 @@
 
 use App\Models\Activite;
 use App\Models\Departement;
+use App\Models\Exercice;
 use App\Models\Extrant;
 use App\Models\User;
 use App\Notifications\ActiviteRefusee;
 use App\Notifications\ActiviteValidee;
+use App\Support\ActiveExercice;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Notification;
 
-uses(\Illuminate\Foundation\Testing\RefreshDatabase::class);
+uses(RefreshDatabase::class);
+
+/**
+ * L'espace d'arbitrage ne porte que sur l'exercice en cours. Sans exercice épinglé,
+ * `ActiveExercice::id()` retomberait sur les exercices d'années aléatoires créés au
+ * passage par les factories, et le scénario ne serait pas reproductible.
+ */
+function exerciceArbitre(): Exercice
+{
+    $exercice = Exercice::factory()->actif()->create();
+    ActiveExercice::set($exercice->id);
+
+    return $exercice;
+}
 
 test('un invité est redirigé vers la connexion', function () {
     $this->get(route('validations.index'))->assertRedirect(route('login'));
@@ -135,11 +151,12 @@ test('refuser exige un motif valide', function () {
 
 test("l'index concentre les activités des services dans leur Direction Centrale", function () {
     $admin = userWithRole('dbcgoq');
+    $exercice = exerciceArbitre();
     $dc = Departement::factory()->departement()->create(['nom' => 'DAGRH']);
     $service = Departement::factory()->service()->enfantDe($dc)->create(['nom' => 'SJC']);
 
-    Activite::factory()->pourDepartement($service)->create(['statut' => 'en_attente', 'cout' => 2000000]);
-    Activite::factory()->pourDepartement($dc)->create(['statut' => 'en_attente', 'cout' => 3000000]);
+    Activite::factory()->pourExercice($exercice)->pourDepartement($service)->create(['statut' => 'en_attente', 'cout' => 2000000]);
+    Activite::factory()->pourExercice($exercice)->pourDepartement($dc)->create(['statut' => 'en_attente', 'cout' => 3000000]);
 
     $response = $this->actingAs($admin)->get(route('validations.index'))->assertOk();
 
@@ -153,14 +170,15 @@ test("l'index concentre les activités des services dans leur Direction Centrale
     $response->assertSee('5 000 000');
 });
 
-test("un service rattaché à une Direction remonte lui aussi dans son entité", function () {
+test('un service rattaché à une Direction remonte lui aussi dans son entité', function () {
     $admin = userWithRole('dbcgoq');
 
     // Cas réel : un service peut dépendre d'une Direction et non d'une Direction Centrale.
+    $exercice = exerciceArbitre();
     $direction = Departement::factory()->direction()->create(['nom' => 'DAGRH']);
     $service = Departement::factory()->service()->enfantDe($direction)->create(['nom' => 'SJC']);
 
-    Activite::factory()->pourDepartement($service)->create(['statut' => 'en_attente']);
+    Activite::factory()->pourExercice($exercice)->pourDepartement($service)->create(['statut' => 'en_attente']);
 
     $this->actingAs($admin)->get(route('validations.index'))
         ->assertOk()
@@ -170,14 +188,15 @@ test("un service rattaché à une Direction remonte lui aussi dans son entité",
         ->assertDontSee(route('validations.entite', $service));
 });
 
-test("un service à deux niveaux de profondeur remonte à son entité non-service", function () {
+test('un service à deux niveaux de profondeur remonte à son entité non-service', function () {
     $admin = userWithRole('dbcgoq');
 
+    $exercice = exerciceArbitre();
     $direction = Departement::factory()->direction()->create(['nom' => 'Direction Generale']);
     $dc = Departement::factory()->departement()->enfantDe($direction)->create(['nom' => 'DBCGOQ']);
     $service = Departement::factory()->service()->enfantDe($dc)->create(['nom' => 'Service Qualite']);
 
-    Activite::factory()->pourDepartement($service)->create(['statut' => 'en_attente']);
+    Activite::factory()->pourExercice($exercice)->pourDepartement($service)->create(['statut' => 'en_attente']);
 
     // Le rattachement vise le plus proche ancêtre non-service, pas la racine.
     $this->actingAs($admin)->get(route('validations.index'))
@@ -190,10 +209,11 @@ test("un service à deux niveaux de profondeur remonte à son entité non-servic
 
 test("la page d'une Direction Centrale liste les activités de ses services", function () {
     $admin = userWithRole('dbcgoq');
+    $exercice = exerciceArbitre();
     $dc = Departement::factory()->departement()->create();
     $service = Departement::factory()->service()->enfantDe($dc)->create(['nom' => 'Service Marchés']);
 
-    $activite = Activite::factory()->pourDepartement($service)->create([
+    $activite = Activite::factory()->pourExercice($exercice)->pourDepartement($service)->create([
         'statut' => 'en_attente',
         'nom_activite' => 'Activité portée par le service',
     ]);
@@ -227,9 +247,10 @@ test("les activités d'un même extrant sont classées par service alphabétique
 
 test("la page d'arbitrage affiche les activités déjà validées avec leur date de validation", function () {
     $admin = userWithRole('dbcgoq');
+    $exercice = exerciceArbitre();
     $dc = Departement::factory()->departement()->create();
 
-    Activite::factory()->pourDepartement($dc)->create([
+    Activite::factory()->pourExercice($exercice)->pourDepartement($dc)->create([
         'statut' => 'valide',
         'nom_activite' => 'Activité déjà validée',
         'date_validation' => now()->setDate(2026, 4, 3)->setTime(9, 30),
@@ -239,4 +260,27 @@ test("la page d'arbitrage affiche les activités déjà validées avec leur date
         ->assertOk()
         ->assertSee('Activité déjà validée')
         ->assertSee('03/04/2026 09:30');
+});
+
+test("l'arbitrage ne montre que les activités de l'exercice en cours", function () {
+    $admin = userWithRole('dbcgoq');
+    $exercice = exerciceArbitre();
+    $exercicePasse = Exercice::factory()->create(['annee' => $exercice->annee - 1, 'statut' => 'cloture']);
+    $dc = Departement::factory()->departement()->create(['nom' => 'DAGRH']);
+
+    Activite::factory()->pourExercice($exercice)->pourDepartement($dc)
+        ->create(['statut' => 'en_attente', 'nom_activite' => 'Activité exercice courant']);
+    Activite::factory()->pourExercice($exercicePasse)->pourDepartement($dc)
+        ->create(['statut' => 'en_attente', 'nom_activite' => 'Activité exercice clôturé']);
+
+    // La file d'arbitrage est celle de l'année en cours, pas un cumul historique.
+    $this->actingAs($admin)->get(route('validations.index'))
+        ->assertOk()
+        ->assertSee('1 act.')
+        ->assertDontSee('2 act.');
+
+    $this->actingAs($admin)->get(route('validations.entite', $dc))
+        ->assertOk()
+        ->assertSee('Activité exercice courant')
+        ->assertDontSee('Activité exercice clôturé');
 });

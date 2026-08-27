@@ -8,6 +8,7 @@ use App\Models\Departement;
 use App\Models\Extrant;
 use App\Support\ActiveExercice;
 use App\Support\CadreLogique;
+use App\Support\VisibiliteActivites;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -181,10 +182,8 @@ class EvaluationController extends Controller
         // en attente d'arbitrage ou rejetée n'entre pas dans l'évaluation.
         $query = Activite::query()->forExercice(ActiveExercice::id())->valide();
 
-        // Même périmètre que la programmation : sous-arbre pour les chefs, entité propre pour les agents.
-        if ($perimetre = Auth::user()?->perimetreActivitesIds()) {
-            $query->whereIn('departement_id', $perimetre);
-        }
+        // Même visibilité que la programmation.
+        VisibiliteActivites::appliquer($query, Auth::user());
 
         if ($request->filled('extrant_id')) {
             $query->where('extrant_id', $request->extrant_id);

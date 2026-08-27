@@ -16,16 +16,19 @@ uses(RefreshDatabase::class);
  * Crée une activité nommée, rattachée à un exercice et un département donnés,
  * de sorte qu'elle apparaisse dans l'index (filtré par l'exercice actif).
  */
-function activiteNommee(Exercice $exercice, Departement $departement, string $nom): Activite
+function activiteNommee(Exercice $exercice, Departement $departement, string $nom, ?User $saisiPar = null, array $attributs = []): Activite
 {
     $objectif = Objectif::factory()->pourExercice($exercice)->create(['annee' => $exercice->annee]);
     $resultat = Resultat::factory()->forObjectif($objectif)->create();
     $extrant = Extrant::factory()->forResultat($resultat)->create();
 
-    return Activite::factory()
-        ->pourExtrant($extrant)
-        ->pourDepartement($departement)
-        ->create(['nom_activite' => $nom]);
+    $factory = Activite::factory()->pourExtrant($extrant)->pourDepartement($departement);
+
+    if ($saisiPar) {
+        $factory = $factory->saisiePar($saisiPar);
+    }
+
+    return $factory->create($attributs + ['nom_activite' => $nom]);
 }
 
 /*
@@ -286,24 +289,89 @@ test('un chef voit les activités de son sous-arbre (entité + entités en desso
         ->assertDontSee('ACTHORS');
 });
 
-test('un agent ne voit que les activités de sa propre entité', function () {
+test('un agent ne voit que les activités qu\'il a lui-même saisies', function () {
     seedRolesAndPermissions();
     $exercice = Exercice::factory()->actif()->create();
     $direction = Departement::factory()->direction()->create();
-    $service = Departement::factory()->service()->enfantDe($direction)->create();
 
     $agent = User::factory()->dansDepartement($direction)->create();
     $agent->assignRole('agent');
+    $collegue = User::factory()->dansDepartement($direction)->create();
 
-    activiteNommee($exercice, $direction, 'ACTDIR');
-    activiteNommee($exercice, $service, 'ACTSRV');
+    // Même entité, même exercice : seule la paternité de la saisie les sépare.
+    activiteNommee($exercice, $direction, 'ACTMOI', $agent);
+    activiteNommee($exercice, $direction, 'ACTCOLLEGUE', $collegue);
 
     $this->actingAs($agent)
         ->withSession([ActiveExercice::SESSION_KEY => $exercice->id])
         ->get(route('activites.index'))
         ->assertOk()
+        ->assertSee('ACTMOI')
+        ->assertDontSee('ACTCOLLEGUE');
+});
+
+test("un chef voit les activités de sa direction et d'aucune autre", function () {
+    seedRolesAndPermissions();
+    $exercice = Exercice::factory()->actif()->create();
+    $direction = Departement::factory()->direction()->create();
+    $service = Departement::factory()->service()->enfantDe($direction)->create();
+    $autreDirection = Departement::factory()->direction()->create();
+
+    $chef = User::factory()->dansDepartement($direction)->create();
+    $chef->assignRole('chef');
+
+    activiteNommee($exercice, $direction, 'ACTDIR');
+    activiteNommee($exercice, $service, 'ACTSRV');
+    activiteNommee($exercice, $autreDirection, 'ACTAILLEURS');
+
+    // Son entité et les services qu'elle chapeaute, jamais la direction voisine.
+    $this->actingAs($chef)
+        ->withSession([ActiveExercice::SESSION_KEY => $exercice->id])
+        ->get(route('activites.index'))
+        ->assertOk()
         ->assertSee('ACTDIR')
-        ->assertDontSee('ACTSRV');
+        ->assertSee('ACTSRV')
+        ->assertDontSee('ACTAILLEURS');
+});
+
+test('le dbcgoq ne voit pas les activités encore en brouillon', function () {
+    seedRolesAndPermissions();
+    $exercice = Exercice::factory()->actif()->create();
+    $direction = Departement::factory()->direction()->create();
+
+    $dbcgoq = User::factory()->create();
+    $dbcgoq->assignRole('dbcgoq');
+    $agent = User::factory()->dansDepartement($direction)->create();
+    $agent->assignRole('agent');
+
+    activiteNommee($exercice, $direction, 'ACTBROUILLON', $agent, ['statut' => 'brouillon']);
+    activiteNommee($exercice, $direction, 'ACTSOUMISE', $agent, ['statut' => 'en_attente']);
+
+    // Une programmation n'entre dans le champ du dbcgoq qu'une fois soumise.
+    $this->actingAs($dbcgoq)
+        ->withSession([ActiveExercice::SESSION_KEY => $exercice->id])
+        ->get(route('activites.index'))
+        ->assertOk()
+        ->assertSee('ACTSOUMISE')
+        ->assertDontSee('ACTBROUILLON');
+});
+
+test('le dbcgoq voit ses propres brouillons', function () {
+    seedRolesAndPermissions();
+    $exercice = Exercice::factory()->actif()->create();
+    $direction = Departement::factory()->direction()->create();
+
+    $dbcgoq = User::factory()->dansDepartement($direction)->create();
+    $dbcgoq->assignRole('dbcgoq');
+
+    activiteNommee($exercice, $direction, 'MONBROUILLON', $dbcgoq, ['statut' => 'brouillon']);
+
+    // La règle masque les brouillons d'autrui, pas les siens.
+    $this->actingAs($dbcgoq)
+        ->withSession([ActiveExercice::SESSION_KEY => $exercice->id])
+        ->get(route('activites.index'))
+        ->assertOk()
+        ->assertSee('MONBROUILLON');
 });
 
 test('un chef peut voir (policy) une activité d\'une entité en dessous', function () {
@@ -434,4 +502,80 @@ test('un chef peut rattacher une activité à un service de sa Direction Central
         'nom_activite' => 'Activité portée par un service',
         'departement_id' => $service->id,
     ]);
+});
+
+test('deux activités ne peuvent pas porter le même nom dans un exercice', function () {
+    $admin = userWithRole('dbcgoq');
+    $exercice = Exercice::factory()->actif()->create();
+    $departement = Departement::factory()->create();
+    $extrant = Extrant::factory()->create();
+
+    activiteNommee($exercice, $departement, 'Former les agents', $admin);
+
+    $this->actingAs($admin)
+        ->withSession([ActiveExercice::SESSION_KEY => $exercice->id])
+        ->from(route('activites.create'))
+        ->post(route('activites.store'), [
+            'extrant_id' => $extrant->id,
+            'departement_id' => $departement->id,
+            'nom_activite' => 'Former les agents',
+            'indicateur_objectivement_verifiable' => 'Nombre de sessions',
+            'moyen_verification' => 'Liste de présence',
+            'cout' => 1000000,
+            'trimestre_1' => 'oui',
+        ])
+        ->assertSessionHasErrors('nom_activite');
+});
+
+test('le même nom reste possible dans un autre exercice', function () {
+    $admin = userWithRole('dbcgoq');
+    $exercice = Exercice::factory()->actif()->create();
+    $exercicePasse = Exercice::factory()->create(['annee' => $exercice->annee - 1, 'statut' => 'cloture']);
+    $departement = Departement::factory()->create();
+    $extrant = Extrant::factory()->create();
+
+    // Le même intitulé reconduit d'une année sur l'autre : c'est le cas normal.
+    activiteNommee($exercicePasse, $departement, 'Former les agents', $admin);
+
+    $this->actingAs($admin)
+        ->withSession([ActiveExercice::SESSION_KEY => $exercice->id])
+        ->post(route('activites.store'), [
+            'extrant_id' => $extrant->id,
+            'departement_id' => $departement->id,
+            'nom_activite' => 'Former les agents',
+            'indicateur_objectivement_verifiable' => 'Nombre de sessions',
+            'moyen_verification' => 'Liste de présence',
+            'cout' => 1000000,
+            'trimestre_1' => 'oui',
+        ])
+        ->assertSessionHasNoErrors();
+});
+
+test('dans un extrant, les activités sont classées par structure de A à Z', function () {
+    $admin = userWithRole('dbcgoq');
+    $exercice = Exercice::factory()->actif()->create();
+
+    $zeta = Departement::factory()->create(['nom' => 'Zeta Direction', 'code' => 'ZETA']);
+    $alpha = Departement::factory()->create(['nom' => 'Alpha Direction', 'code' => 'ALPHA']);
+    $mid = Departement::factory()->create(['nom' => 'Medina Direction', 'code' => 'MEDINA']);
+
+    $objectif = Objectif::factory()->pourExercice($exercice)->create(['annee' => $exercice->annee]);
+    $resultat = Resultat::factory()->forObjectif($objectif)->create();
+    $extrant = Extrant::factory()->forResultat($resultat)->create();
+
+    foreach ([[$zeta, 'ACTZETA'], [$alpha, 'ACTALPHA'], [$mid, 'ACTMEDINA']] as [$dep, $nom]) {
+        // Statut explicite : la factory en tire un au hasard, et un brouillon d'autrui
+        // serait invisible au dbcgoq — ce qui n'est pas ce que ce test mesure.
+        Activite::factory()->pourExtrant($extrant)->pourDepartement($dep)
+            ->create(['nom_activite' => $nom, 'exercice_id' => $exercice->id, 'statut' => 'valide']);
+    }
+
+    $contenu = $this->actingAs($admin)
+        ->withSession([ActiveExercice::SESSION_KEY => $exercice->id])
+        ->get(route('activites.index'))
+        ->assertOk()
+        ->getContent();
+
+    expect(strpos($contenu, 'ACTALPHA'))->toBeLessThan(strpos($contenu, 'ACTMEDINA'))
+        ->and(strpos($contenu, 'ACTMEDINA'))->toBeLessThan(strpos($contenu, 'ACTZETA'));
 });

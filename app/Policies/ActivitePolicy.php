@@ -4,6 +4,7 @@ namespace App\Policies;
 
 use App\Models\Activite;
 use App\Models\User;
+use App\Support\VisibiliteActivites;
 
 class ActivitePolicy
 {
@@ -14,16 +15,7 @@ class ActivitePolicy
 
     public function view(User $user, Activite $activite): bool
     {
-        if ($user->hasRole('dbcgoq') || $user->hasRole('superadmin')) {
-            return true;
-        }
-
-        // Un chef voit les activités de son entité et de tout son sous-arbre ;
-        // un agent uniquement celles de sa propre entité.
-        $perimetre = $user->perimetreActivitesIds();
-
-        return $perimetre !== null
-            && in_array((int) $activite->departement_id, $perimetre, true);
+        return VisibiliteActivites::peutVoir($user, $activite);
     }
 
     public function create(User $user): bool

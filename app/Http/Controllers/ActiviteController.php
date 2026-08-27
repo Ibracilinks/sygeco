@@ -12,6 +12,7 @@ use App\Notifications\ActiviteRefusee;
 use App\Notifications\ActiviteSoumiseNotification;
 use App\Notifications\ActiviteValidee;
 use App\Support\ActiveExercice;
+use App\Support\VisibiliteActivites;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
@@ -24,6 +25,10 @@ use Illuminate\Validation\Rule;
 class ActiviteController extends Controller
 {
     use AuthorizesRequests;
+
+    private const MESSAGES_VALIDATION = [
+        'nom_activite.unique' => 'Une activité portant ce nom est déjà programmée pour cet exercice.',
+    ];
 
     public function __construct()
     {
@@ -66,10 +71,7 @@ class ActiviteController extends Controller
             });
         }
 
-        // Périmètre : un chef voit son entité + tout son sous-arbre ; un agent, sa seule entité.
-        if ($perimetre = Auth::user()?->perimetreActivitesIds()) {
-            $query->whereIn('departement_id', $perimetre);
-        }
+        VisibiliteActivites::appliquer($query, Auth::user());
 
         $summaryQuery = clone $query;
         $summary = [
@@ -85,10 +87,14 @@ class ActiviteController extends Controller
         $activites = $query
             ->leftJoin('extrants', 'extrants.id', '=', 'activites.extrant_id')
             ->leftJoin('resultats', 'resultats.id', '=', 'extrants.resultat_id')
+            ->leftJoin('departements', 'departements.id', '=', 'activites.departement_id')
             ->orderBy('resultats.ordre')
             ->orderBy('resultats.code')
             ->orderBy('extrants.ordre')
             ->orderBy('extrants.code')
+            // Au sein d'un extrant, les activités se lisent par structure porteuse, de A à Z.
+            // Le tri porte sur le code, seule valeur affichée dans la colonne Structure.
+            ->orderBy('departements.code')
             ->orderBy('activites.date_saisie', 'desc')
             ->select('activites.*')
             ->paginate(15)
@@ -143,7 +149,7 @@ class ActiviteController extends Controller
             'departement_id' => 'required|exists:departements,id',
             'structures_intervenantes' => 'nullable|array',
             'structures_intervenantes.*' => 'integer|exists:departements,id',
-            'nom_activite' => 'required|string',
+            'nom_activite' => $this->regleNomUnique(),
             'indicateur_objectivement_verifiable' => 'required|string',
             'moyen_verification' => 'required|string',
             'cout' => 'required|numeric|min:0|max:'.Activite::MONTANT_MAX,
@@ -197,9 +203,9 @@ class ActiviteController extends Controller
             return back()->with('error', "Aucun exercice actif : impossible d'enregistrer une activité non programmée.");
         }
 
-        $validated = $request->validate([
+        $validated = $this->validerAvecMessages($request, [
             'departement_id' => 'required|exists:departements,id',
-            'nom_activite' => 'required|string',
+            'nom_activite' => $this->regleNomUnique(),
             'cout' => 'required|numeric|min:0|max:'.Activite::MONTANT_MAX,
             'indicateur_objectivement_verifiable' => 'nullable|string',
             'moyen_verification' => 'nullable|string',
@@ -291,7 +297,7 @@ class ActiviteController extends Controller
             'departement_id' => 'required|exists:departements,id',
             'structures_intervenantes' => 'nullable|array',
             'structures_intervenantes.*' => 'integer|exists:departements,id',
-            'nom_activite' => 'required|string',
+            'nom_activite' => $this->regleNomUnique($activite),
             'indicateur_objectivement_verifiable' => 'required|string',
             'moyen_verification' => 'required|string',
             'cout' => 'required|numeric|min:0|max:'.Activite::MONTANT_MAX,
@@ -442,9 +448,32 @@ class ActiviteController extends Controller
      * @param  array<string, mixed>  $regles
      * @return array<string, mixed>
      */
+    /**
+     * Un même intitulé ne peut être programmé deux fois dans le même exercice.
+     * La corbeille est écartée : un nom libéré par une suppression redevient
+     * disponible.
+     */
+    private function regleNomUnique(?Activite $activite = null): array
+    {
+        $exerciceId = $activite?->exercice_id ?? ActiveExercice::id();
+
+        return [
+            'required',
+            'string',
+            Rule::unique('activites', 'nom_activite')
+                ->where(fn ($q) => $q->where('exercice_id', $exerciceId)->whereNull('deleted_at'))
+                ->ignore($activite?->getKey()),
+        ];
+    }
+
+    private function validerAvecMessages(Request $request, array $regles): array
+    {
+        return Validator::make($request->all(), $regles, self::MESSAGES_VALIDATION)->validate();
+    }
+
     private function validerProgrammation(Request $request, array $regles): array
     {
-        $validator = Validator::make($request->all(), $regles);
+        $validator = Validator::make($request->all(), $regles, self::MESSAGES_VALIDATION);
 
         $validator->after(function ($validator) use ($request) {
             $trimestres = ['trimestre_1', 'trimestre_2', 'trimestre_3', 'trimestre_4'];

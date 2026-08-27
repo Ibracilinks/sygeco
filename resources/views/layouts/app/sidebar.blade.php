@@ -39,11 +39,13 @@
                     wire:navigate>
                     {{ __('Dashboard') }}
                 </flux:sidebar.item>
-                @unless ($currentUser->hasRole('suivi-evaluation'))
+                {{-- Tableau de pilotage : réservé à l'encadrement, ni les agents ni la
+                     cellule suivi & évaluation n'y ont affaire. --}}
+                @if ($currentUser->hasAnyRole(['superadmin', 'dbcgoq', 'chef']))
                     <flux:sidebar.item icon="presentation-chart-line" href="{{ route('sap.analytics') }}" target="_blank">
                         SAP Cloud Analytics
                     </flux:sidebar.item>
-                @endunless
+                @endif
             </flux:sidebar.group>
 
             <!-- Organisation -->
@@ -140,7 +142,8 @@
                     <flux:sidebar.item icon="check-badge" href="{{ route('validations.index') }}"
                         :current="request()->routeIs('validations.*')">
                         {{ __('Arbitrage / Validation') }}
-                        @php $nbEnAttente = App\Models\Activite::where('statut', 'en_attente')->count(); @endphp
+                        {{-- Le badge compte ce que la page d'arbitrage affiche réellement : l'exercice en cours. --}}
+                        @php $nbEnAttente = App\Models\Activite::forExercice(App\Support\ActiveExercice::id())->where('statut', 'en_attente')->count(); @endphp
                         @if ($nbEnAttente > 0)
                             <flux:badge class="ml-auto">{{ $nbEnAttente }}</flux:badge>
                         @endif

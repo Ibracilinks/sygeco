@@ -120,6 +120,42 @@
             </article>
         </section>
 
+        {{-- Résultats stratégiques : le niveau du cadre logique entre objectifs et extrants. --}}
+        <section>
+            <article class="rounded-xl border border-slate-200 bg-white p-6 dark:border-slate-700 dark:bg-slate-900">
+                <div class="mb-4 border-b border-slate-200 pb-4 dark:border-slate-700">
+                    <h2 class="text-lg font-semibold text-slate-900 dark:text-white">Resultats strategiques</h2>
+                    <p class="text-sm text-slate-500 dark:text-slate-400">Activites programmees et budget par resultat, dans l'ordre du cadre logique</p>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full min-w-[40rem] text-left text-sm">
+                        <thead class="border-b border-slate-200 text-xs uppercase tracking-wide text-slate-500 dark:border-slate-700 dark:text-slate-400">
+                            <tr>
+                                <th class="py-2 pr-4 font-medium">Code</th>
+                                <th class="py-2 pr-4 font-medium">Resultat</th>
+                                <th class="py-2 pr-4 text-right font-medium">Activites</th>
+                                <th class="py-2 text-right font-medium">Budget (FCFA)</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+                            @forelse ($tables['resultats_strategiques'] as $resultat)
+                                <tr>
+                                    <td class="py-2 pr-4 font-semibold text-slate-900 dark:text-white">{{ $resultat['code'] }}</td>
+                                    <td class="py-2 pr-4 text-slate-700 dark:text-slate-200">{{ $resultat['libelle'] }}</td>
+                                    <td class="py-2 pr-4 text-right tabular-nums text-slate-700 dark:text-slate-200">{{ number_format($resultat['nb_activites'], 0, ',', ' ') }}</td>
+                                    <td class="py-2 text-right tabular-nums text-slate-700 dark:text-slate-200">{{ number_format($resultat['budget'], 0, ',', ' ') }}</td>
+                                </tr>
+                            @empty
+                                <tr>
+                                    <td colspan="4" class="py-4 text-center text-slate-500 dark:text-slate-400">Aucun resultat strategique pour cet exercice.</td>
+                                </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
+            </article>
+        </section>
+
         <section class="grid grid-cols-1 gap-6 xl:grid-cols-2">
             <article class="rounded-xl border border-slate-200 bg-white p-6 dark:border-slate-700 dark:bg-slate-900">
                 <div class="mb-4 border-b border-slate-200 pb-4 dark:border-slate-700">

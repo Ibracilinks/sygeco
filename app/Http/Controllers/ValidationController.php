@@ -71,9 +71,9 @@ class ValidationController extends Controller
         $perimetre = $departement->sousArbreIds();
 
         $activites = $this->appliquerPerimetre(
-                Activite::query()->whereIn('statut', ['en_attente', 'valide']),
-                $request
-            )
+            Activite::query()->forExercice(ActiveExercice::id())->whereIn('statut', ['en_attente', 'valide']),
+            $request
+        )
             ->whereIn('departement_id', $perimetre)
             ->with(['extrant.resultat', 'extrant.objectif', 'departement.responsable', 'departement.parent', 'saisiePar', 'validePar', 'validationHistoriques.utilisateur'])
             ->orderBy('date_soumission', 'desc')
@@ -381,13 +381,16 @@ class ValidationController extends Controller
 
         return response($html, 200, [
             'Content-Type' => 'application/vnd.ms-excel; charset=UTF-8',
-            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+            'Content-Disposition' => 'attachment; filename="'.$filename.'"',
         ]);
     }
 
     private function buildQuery(Request $request)
     {
-        return $this->appliquerPerimetre(Activite::query()->soumis(), $request);
+        return $this->appliquerPerimetre(
+            Activite::query()->forExercice(ActiveExercice::id())->soumis(),
+            $request
+        );
     }
 
     /**
