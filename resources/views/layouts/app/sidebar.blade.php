@@ -13,7 +13,7 @@
     @endphp
 
     {{-- w-72 remplace le w-64 par défaut de Flux ; l'état replié (w-14) reste prioritaire. --}}
-    <flux:sidebar sticky collapsible="mobile"
+    <flux:sidebar sticky collapsible
         class="app-sidebar w-72 border-e border-zinc-200 bg-zinc-50/95 dark:border-zinc-800 dark:bg-zinc-900/95">
         <flux:sidebar.header class="app-sidebar-header">
             <x-app-logo :sidebar="true" href="{{ route('dashboard') }}" wire:navigate />
@@ -143,7 +143,7 @@
                         :current="request()->routeIs('validations.*')">
                         {{ __('Arbitrage / Validation') }}
                         {{-- Le badge compte ce que la page d'arbitrage affiche réellement : l'exercice en cours. --}}
-                        @php $nbEnAttente = App\Models\Activite::forExercice(App\Support\ActiveExercice::id())->where('statut', 'en_attente')->count(); @endphp
+                        @php $nbEnAttente = App\Models\Activite::where('statut', 'en_attente')->count(); @endphp
                         @if ($nbEnAttente > 0)
                             <flux:badge class="ml-auto">{{ $nbEnAttente }}</flux:badge>
                         @endif

@@ -71,7 +71,7 @@ class ValidationController extends Controller
         $perimetre = $departement->sousArbreIds();
 
         $activites = $this->appliquerPerimetre(
-            Activite::query()->forExercice(ActiveExercice::id())->whereIn('statut', ['en_attente', 'valide']),
+            Activite::query()->whereIn('statut', ['en_attente', 'valide']),
             $request
         )
             ->whereIn('departement_id', $perimetre)
@@ -387,10 +387,9 @@ class ValidationController extends Controller
 
     private function buildQuery(Request $request)
     {
-        return $this->appliquerPerimetre(
-            Activite::query()->forExercice(ActiveExercice::id())->soumis(),
-            $request
-        );
+        // Volontairement sans filtre d'exercice : les activités en attente ne sont pas
+        // toutes rattachées à l'exercice actif, et le filtre vidait la file d'arbitrage.
+        return $this->appliquerPerimetre(Activite::query()->soumis(), $request);
     }
 
     /**
