@@ -92,6 +92,24 @@ class User extends Authenticatable
     }
 
     /**
+     * Chargé des missions : ne travaille que sur le module Missions.
+     */
+    public function isServiceBudget()
+    {
+        return $this->hasRole('service-budget');
+    }
+
+    /**
+     * Profils qui suivent le PTA (programmation, arbitrage, évaluation). Les autres
+     * — le chargé des missions aujourd'hui — n'ont ni tableau de bord ni menu
+     * « Planification Stratégique ». Mêmes rôles que la route activites.*.
+     */
+    public function suitLePta(): bool
+    {
+        return $this->hasAnyRole(['superadmin', 'dbcgoq', 'chef', 'agent', 'agent-planification', 'suivi-evaluation']);
+    }
+
+    /**
      * Entités dont l'utilisateur est le chef hiérarchique direct,
      * c'est-à-dire les enfants de son entité de rattachement.
      * Le flux d'approbation est montant : un chef valide les

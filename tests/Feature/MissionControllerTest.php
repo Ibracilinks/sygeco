@@ -656,6 +656,12 @@ test('une mission retient plusieurs services demandeurs, son code budgétaire et
     expect($mission->date_document?->toDateString())->toBe(today()->toDateString());
     expect($mission->lieu_signature)->toBe('Bamako');
 
+    // Le formulaire de modification represente les services retenus.
+    $this->actingAs($admin)->get(route('missions.edit', $mission))
+        ->assertOk()
+        ->assertSee('value="'.$premier->id.'" selected', false)
+        ->assertSee('value="'.$second->id.'" selected', false);
+
     // La mise à jour remplace la liste des services demandeurs.
     $this->actingAs($admin)->put(route('missions.update', $mission), [
         'type' => Mission::TYPE_REGION,

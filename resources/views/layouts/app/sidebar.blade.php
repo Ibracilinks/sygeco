@@ -35,7 +35,7 @@
             {{-- Le chargé des missions (service-budget) n'a que le module Missions :
                  le reste du menu suit les rôles autorisés sur les routes. --}}
             @php
-                $voitPlanification = $currentUser->hasAnyRole(['superadmin', 'dbcgoq', 'chef', 'agent', 'agent-planification', 'suivi-evaluation']);
+                $voitPlanification = (bool) $currentUser?->suitLePta();
                 $nbNonLues = $currentUser?->unreadNotifications()->count() ?? 0;
             @endphp
 

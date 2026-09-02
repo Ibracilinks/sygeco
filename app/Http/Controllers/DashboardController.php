@@ -18,6 +18,11 @@ class DashboardController extends Controller
 
     public function index(Request $request)
     {
+        // Sans vue sur le PTA, le chargé des missions atterrit sur ses missions.
+        if ($request->user()?->isServiceBudget() && ! $request->user()->suitLePta()) {
+            return redirect()->route('missions.index');
+        }
+
         // Le sélecteur d'année du tableau de bord doit changer le contexte d'exercice
         // pour toute l'application (objectifs, extrants, activités…), et non uniquement
         // l'affichage du dashboard : on persiste donc l'exercice choisi en session.
