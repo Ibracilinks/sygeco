@@ -54,6 +54,8 @@ class RoleAndPermissionSeeder extends Seeder
         // suivi-evaluation : renseigne le suivi d'exécution et les évaluations
         // (mi-parcours / fin d'année) de son entité, en lecture seule sur le PTA.
         $roleSuiviEvaluation = Role::firstOrCreate(['name' => 'suivi-evaluation']);
+        // service-budget : chargé des missions. Il ne voit que le module Missions.
+        $roleServiceBudget = Role::firstOrCreate(['name' => 'service-budget']);
 
         // Attribution des permissions
         $roleSuperadmin->syncPermissions(Permission::all());
@@ -71,11 +73,7 @@ class RoleAndPermissionSeeder extends Seeder
             'evaluate_activites',
             'view_departements',
             'view_users',
-            'view_exercices',
-            'view_missions',
-            'create_missions',
-            'edit_missions',
-            'generate_missions_pdf',
+            'view_exercices'
         ]);
 
         $roleAgent->syncPermissions(['view_activites']);
@@ -90,6 +88,16 @@ class RoleAndPermissionSeeder extends Seeder
             'edit_activites',
             'submit_activites',
             'view_exercices',
+        ]);
+
+        // Chargé des missions : le module Missions de bout en bout, et rien d'autre.
+        // Les barèmes restent du ressort de la DBCGOQ.
+        $roleServiceBudget->syncPermissions([
+            'view_missions',
+            'create_missions',
+            'edit_missions',
+            'delete_missions',
+            'generate_missions_pdf',
         ]);
 
         // Cellule suivi & évaluation : lecture du PTA, écriture sur les évaluations

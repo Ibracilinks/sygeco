@@ -140,6 +140,44 @@ class Mission extends Model
         'autre_localite' => 'Autre localité',
     ];
 
+    /**
+     * Codes budgétaires proposés à la saisie. Liste provisoire : les cinq lignes
+     * seront remplacées par la nomenclature définitive de la DBCGOQ.
+     *
+     * @var array<int, string>
+     */
+    public const CODES_BUDGETAIRES = [
+        'Code budgétaire 1',
+        'Code budgétaire 2',
+        'Code budgétaire 3',
+        'Code budgétaire 4',
+        'Code budgétaire 5',
+    ];
+
+    /**
+     * Postes budgétaires facultatifs à l'écran : laissés vides, ils arrivent à null
+     * alors que les colonnes correspondantes sont NOT NULL. Un champ vide vaut zéro
+     * dans les calculs, on le fige donc à zéro avant l'enregistrement.
+     *
+     * @var array<int, string>
+     */
+    public const CHAMPS_MONTANTS_FACULTATIFS = [
+        'nombre_vehicules',
+        'distance_totale_km',
+        'consommation_aux_cent',
+        'litres_par_jour_ville',
+        'prix_litre_carburant',
+        'location_vehicule_jours',
+        'location_vehicule_tarif',
+        'montant_peages',
+        'montant_par_jour',
+        'montant_ticket_carburant',
+        'frais_participation_unitaire',
+        'frais_visa_unitaire',
+        'billets_affaire_unitaire',
+        'billets_economique_unitaire',
+    ];
+
     public const ZONES_EXTERIEURES = [
         'exceptionnelle_amerique' => ['label' => 'Exceptionnelle — Pays du continent américain', 'taux' => 50],
         'exceptionnelle_asie' => ['label' => 'Exceptionnelle — Pays du continent asiatique', 'taux' => 50],
@@ -160,6 +198,8 @@ class Mission extends Model
         'type',
         'departement_id',
         'objet',
+        'code_budgetaire',
+        'point_depart',
         'destination',
         'zone_code',
         'zone_label',
@@ -240,6 +280,15 @@ class Mission extends Model
     public function departement()
     {
         return $this->belongsTo(Departement::class);
+    }
+
+    /**
+     * Services demandeurs (plusieurs par mission). `departement_id` conserve le
+     * premier d'entre eux, qui sert de structure principale sur les documents.
+     */
+    public function departements()
+    {
+        return $this->belongsToMany(Departement::class, 'departement_mission')->withTimestamps();
     }
 
     public function createur()
@@ -646,6 +695,29 @@ class Mission extends Model
         return $type === self::TYPE_MEME_VILLE
             ? self::calculerNombreJoursOuvrables($dateDepart, $dateRetour)
             : self::calculerNombreJours($dateDepart, $dateRetour);
+    }
+
+    /**
+     * Ne renvoie que les postes réellement transmis par le formulaire, remis à zéro
+     * lorsqu'ils sont vides : un champ absent garde la valeur par défaut de la colonne.
+     *
+     * @param  array<string, mixed>  $donnees
+     * @return array<string, int|float>
+     */
+    public static function normaliserMontantsFacultatifs(array $donnees): array
+    {
+        $normalises = [];
+
+        foreach (self::CHAMPS_MONTANTS_FACULTATIFS as $champ) {
+            if (! array_key_exists($champ, $donnees)) {
+                continue;
+            }
+
+            $valeur = $donnees[$champ];
+            $normalises[$champ] = is_numeric($valeur) ? $valeur + 0 : 0;
+        }
+
+        return $normalises;
     }
 
     public static function calculerNombreNuitees($dateDepart, $dateRetour, bool $premiereNuiteePayee = false): int

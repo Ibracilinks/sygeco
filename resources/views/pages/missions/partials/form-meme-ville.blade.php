@@ -7,23 +7,14 @@
 
 <input type="hidden" name="type" value="{{ \App\Models\Mission::TYPE_MEME_VILLE }}">
 
-<div class="grid grid-cols-1 gap-4 lg:grid-cols-4">
+<div class="grid grid-cols-1 gap-4 lg:grid-cols-3">
     <div>
         <label for="reference" class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-200">Référence de l'ordre</label>
         <input type="text" id="reference" name="reference" value="{{ old('reference', $mission->reference) }}"
             class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-950">
         @error('reference')<p class="mt-1 text-xs text-red-600">{{ $message }}</p>@enderror
     </div>
-    <div>
-        <label for="departement_id" class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-200">Structure demandeuse</label>
-        <select id="departement_id" name="departement_id"
-            class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-950">
-            <option value="">Sans structure</option>
-            @foreach ($departements as $departement)
-                <option value="{{ $departement->id }}" @selected((string) old('departement_id', $mission->departement_id) === (string) $departement->id)>{{ $departement->nom }}</option>
-            @endforeach
-        </select>
-    </div>
+    @include('pages.missions.partials.services-demandeurs')
     <div>
         <label for="statut" class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-200">Statut</label>
         <select id="statut" name="statut"
@@ -33,11 +24,6 @@
             @endforeach
         </select>
     </div>
-    <div>
-        <label for="lieu_signature" class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-200">Lieu de signature</label>
-        <input type="text" id="lieu_signature" name="lieu_signature" value="{{ old('lieu_signature', $mission->lieu_signature) }}"
-            class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-950">
-    </div>
 </div>
 
 <div>
@@ -46,12 +32,9 @@
         class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-950">{{ old('objet', $mission->objet) }}</textarea>
 </div>
 
-<div class="grid grid-cols-1 gap-4 lg:grid-cols-5">
-    <div>
-        <label for="date_document" class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-200">Date du document</label>
-        <input type="date" id="date_document" name="date_document" value="{{ old('date_document', optional($mission->date_document)->format('Y-m-d')) }}"
-            class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-950">
-    </div>
+@include('pages.missions.partials.code-budgetaire')
+
+<div class="grid grid-cols-1 gap-4 lg:grid-cols-4">
     <div>
         <label for="date_depart" class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-200">Date de départ</label>
         <input type="date" id="date_depart" name="date_depart" value="{{ old('date_depart', optional($mission->date_depart)->format('Y-m-d')) }}"

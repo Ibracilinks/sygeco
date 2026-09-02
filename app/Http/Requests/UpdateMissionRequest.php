@@ -30,10 +30,15 @@ class UpdateMissionRequest extends FormRequest
             ],
             'type' => ['required', Rule::in(array_keys(Mission::TYPES))],
             'departement_id' => 'nullable|exists:departements,id',
+            'structures_demandeuses' => 'nullable|array',
+            'structures_demandeuses.*' => 'integer|exists:departements,id',
             'objet' => 'required|string|max:5000',
+            'code_budgetaire' => 'nullable|string|max:60',
+            'point_depart' => 'nullable|string|max:150',
             'destination' => 'nullable|string|max:150',
             'zone_code' => 'nullable|string|max:40',
-            'date_document' => 'required|date',
+            // La date du document n'est plus saisie : elle est posée à la création.
+            'date_document' => 'nullable|date',
             'date_depart' => 'required|date',
             'date_retour' => 'required|date|after_or_equal:date_depart',
             'nombre_jours' => 'nullable|integer|min:1|max:365',
@@ -121,14 +126,29 @@ class UpdateMissionRequest extends FormRequest
             ->values()
             ->all();
 
+        // Services demandeurs : plusieurs structures, la première faisant office
+        // de structure principale sur les documents officiels.
+        $structures = collect($this->input('structures_demandeuses', []))
+            ->filter(fn ($id) => is_numeric($id))
+            ->map(fn ($id) => (int) $id)
+            ->unique()
+            ->values()
+            ->all();
+
         $dateDepart = $this->input('date_depart', now()->toDateString());
         $dateRetour = $this->input('date_retour', $dateDepart);
+
+        // Les postes budgétaires laissés vides valent zéro : leurs colonnes sont NOT NULL.
+        $this->merge(Mission::normaliserMontantsFacultatifs($this->all()));
 
         $this->merge([
             'type' => $this->input('type', Mission::TYPE_MEME_VILLE),
             // À la mise à jour, l'absence de statut transmis conserve celui de la mission.
             'statut' => $this->input('statut') ?: ($this->route('mission')?->statut ?? 'brouillon'),
             'lieu_signature' => trim((string) $this->input('lieu_signature', '')) ?: 'Bamako',
+            'structures_demandeuses' => $structures,
+            'departement_id' => $structures[0] ?? $this->input('departement_id'),
+            'date_document' => $this->input('date_document') ?: ($this->route('mission')?->date_document?->toDateString() ?? now()->toDateString()),
             'nombre_jours' => Mission::resoudreNombreJours(
                 $this->input('type', Mission::TYPE_MEME_VILLE),
                 $this->input('nombre_jours'),
@@ -156,7 +176,10 @@ class UpdateMissionRequest extends FormRequest
         return [
             'reference' => 'référence de l\'ordre',
             'departement_id' => 'structure demandeuse',
+            'structures_demandeuses' => 'services demandeurs',
             'objet' => 'objet de la mission',
+            'code_budgetaire' => 'code budgétaire',
+            'point_depart' => 'point de départ',
             'destination' => 'destination',
             'zone_code' => 'zone de majoration',
             'date_document' => 'date du document',

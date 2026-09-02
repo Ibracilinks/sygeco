@@ -5,6 +5,17 @@
                 <div class="text-sm text-slate-500 dark:text-slate-400">{{ \App\Models\Mission::TYPES[$mission->type] ?? 'Mission' }}</div>
                 <h1 class="text-2xl font-semibold text-slate-900 dark:text-white">{{ $mission->reference }}</h1>
                 <p class="mt-2 max-w-4xl text-sm text-slate-600 dark:text-slate-300">{{ $mission->objet }}</p>
+                <div class="mt-2 flex flex-wrap items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
+                    <span>{{ $mission->departements->isNotEmpty() ? $mission->departements->pluck('nom')->join(', ') : ($mission->departement?->nom ?? 'Sans structure') }}</span>
+                    @if ($mission->code_budgetaire)
+                        <span aria-hidden="true">•</span>
+                        <span>Code budgétaire : {{ $mission->code_budgetaire }}</span>
+                    @endif
+                    @if ($mission->point_depart)
+                        <span aria-hidden="true">•</span>
+                        <span>Départ de {{ $mission->point_depart }}</span>
+                    @endif
+                </div>
             </div>
             <div class="flex flex-wrap gap-2">
                 @can('edit_missions')
@@ -271,7 +282,7 @@
                             <tr class="font-bold">
                                 <td colspan="2" class="border border-black px-1 py-1"></td>
                                 <td colspan="4" class="border border-black px-1 py-1 text-center uppercase">Nbre de personnes</td>
-                                <td colspan="3" class="border border-black px-1 py-1 text-center uppercase">Prix d'un billet</td>
+                                <td colspan="3" class="border border-black px-1 py-1 text-center uppercase">Montant unitaire</td>
                                 <td colspan="3" class="border border-black px-1 py-1 text-center uppercase">Montant total</td>
                             </tr>
                             <tr>

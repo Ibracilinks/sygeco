@@ -24,7 +24,7 @@ class MissionController extends Controller
         ];
 
         $query = Mission::query()
-            ->with(['departement:id,nom', 'createur:id,name'])
+            ->with(['departement:id,nom', 'departements:id,nom', 'createur:id,name'])
             ->withCount(['participants', 'signataires']);
 
         $this->applyFilters($query, $filters);
@@ -54,7 +54,7 @@ class MissionController extends Controller
         $departements = Departement::query()->active()->ordered()->get(['id', 'nom']);
         $precedente = Mission::query()
             ->where('type', $type)
-            ->with(['participants', 'signataires', 'etapes'])
+            ->with(['participants', 'signataires', 'etapes', 'departements'])
             ->latest('date_document')
             ->latest('id')
             ->first();
@@ -70,6 +70,8 @@ class MissionController extends Controller
             'montant_par_jour' => (float) ($precedente?->montant_par_jour ?? 0),
             'montant_ticket_carburant' => (float) ($precedente?->montant_ticket_carburant ?? 0),
             'destination' => $precedente?->destination,
+            'point_depart' => $precedente?->point_depart ?? 'Bamako',
+            'code_budgetaire' => $precedente?->code_budgetaire,
             'zone_code' => $precedente?->zone_code,
             'frais_participation_nombre' => (int) ($precedente?->frais_participation_nombre ?? 0),
             'frais_participation_unitaire' => (float) ($precedente?->frais_participation_unitaire ?? 0),
@@ -117,9 +119,11 @@ class MissionController extends Controller
             ])->all()
             : $this->signatairesParDefaut($type);
 
+        $structuresDemandeuses = $precedente?->departements->pluck('id')->all() ?? [];
+
         $formPartial = $this->formPartialFor($type);
 
-        return view('pages.missions.create', compact('mission', 'departements', 'participants', 'signataires', 'etapes', 'precedente', 'formPartial'));
+        return view('pages.missions.create', compact('mission', 'departements', 'participants', 'signataires', 'etapes', 'precedente', 'formPartial', 'structuresDemandeuses'));
     }
 
     public function store(StoreMissionRequest $request)
@@ -128,12 +132,13 @@ class MissionController extends Controller
             $participants = $request->validated('participants');
             $etapes = $request->validated('etapes', []);
 
-            $mission = new Mission($request->safe()->except(['participants', 'signataires', 'etapes']));
+            $mission = new Mission($request->safe()->except(['participants', 'signataires', 'etapes', 'structures_demandeuses']));
             $mission->cree_par = Auth::id();
             $mission->maj_par = Auth::id();
             $participants = $mission->appliquerCalculs($participants, $etapes);
             $mission->save();
 
+            $mission->departements()->sync($request->validated('structures_demandeuses', []));
             $this->syncParticipants($mission, $participants);
             $this->syncEtapes($mission, $etapes);
             $this->syncSignataires($mission, $request->validated('signataires'));
@@ -168,6 +173,7 @@ class MissionController extends Controller
     {
         $mission->load([
             'departement:id,nom',
+            'departements:id,nom',
             'createur:id,name',
             'participants',
             'signataires',
@@ -179,7 +185,7 @@ class MissionController extends Controller
 
     public function edit(Mission $mission)
     {
-        $mission->load(['participants', 'signataires', 'etapes']);
+        $mission->load(['participants', 'signataires', 'etapes', 'departements']);
 
         $departements = Departement::query()->active()->ordered()->get(['id', 'nom']);
         $participants = $mission->participants->map(fn ($participant) => [
@@ -220,9 +226,11 @@ class MissionController extends Controller
             $signataires = $this->signatairesParDefaut($mission->type);
         }
 
+        $structuresDemandeuses = $mission->departements->pluck('id')->all();
+
         $formPartial = $this->formPartialFor($mission->type);
 
-        return view('pages.missions.edit', compact('mission', 'departements', 'participants', 'signataires', 'etapes', 'formPartial'));
+        return view('pages.missions.edit', compact('mission', 'departements', 'participants', 'signataires', 'etapes', 'formPartial', 'structuresDemandeuses'));
     }
 
     public function update(UpdateMissionRequest $request, Mission $mission)
@@ -231,11 +239,12 @@ class MissionController extends Controller
             $participants = $request->validated('participants');
             $etapes = $request->validated('etapes', []);
 
-            $mission->fill($request->safe()->except(['participants', 'signataires', 'etapes']));
+            $mission->fill($request->safe()->except(['participants', 'signataires', 'etapes', 'structures_demandeuses']));
             $mission->maj_par = Auth::id();
             $participants = $mission->appliquerCalculs($participants, $etapes);
             $mission->save();
 
+            $mission->departements()->sync($request->validated('structures_demandeuses', []));
             $this->syncParticipants($mission, $participants);
             $this->syncEtapes($mission, $etapes);
             $this->syncSignataires($mission, $request->validated('signataires'));

@@ -32,13 +32,32 @@
 
         <flux:sidebar.nav class="app-sidebar-nav">
 
+            {{-- Le chargé des missions (service-budget) n'a que le module Missions :
+                 le reste du menu suit les rôles autorisés sur les routes. --}}
+            @php
+                $voitPlanification = $currentUser->hasAnyRole(['superadmin', 'dbcgoq', 'chef', 'agent', 'agent-planification', 'suivi-evaluation']);
+                $nbNonLues = $currentUser?->unreadNotifications()->count() ?? 0;
+            @endphp
+
             <!-- Dashboard -->
             <flux:sidebar.group expandable icon="squares-2x2" :heading="__('Navigation')"
                 class="app-sidebar-group grid" data-groupe="navigation">
-                <flux:sidebar.item icon="home" :href="route('dashboard')" :current="request()->routeIs('dashboard')"
-                    wire:navigate>
-                    {{ __('Dashboard') }}
-                </flux:sidebar.item>
+                @if ($voitPlanification)
+                    <flux:sidebar.item icon="home" :href="route('dashboard')" :current="request()->routeIs('dashboard')"
+                        wire:navigate>
+                        {{ __('Dashboard') }}
+                    </flux:sidebar.item>
+                @endif
+
+                {{-- Sans le groupe « Planification Stratégique », les notifications
+                     restent accessibles depuis la navigation. --}}
+                @unless ($voitPlanification)
+                    <flux:sidebar.item icon="bell" href="{{ route('notifications.index') }}"
+                        :badge="$nbNonLues > 0 ? $nbNonLues : null"
+                        :current="request()->routeIs('notifications.*')">
+                        {{ __('Notifications') }}
+                    </flux:sidebar.item>
+                @endunless
                 {{-- Tableau de pilotage : réservé à l'encadrement, ni les agents ni la
                      cellule suivi & évaluation n'y ont affaire. --}}
                 @if ($currentUser->hasAnyRole(['superadmin', 'dbcgoq', 'chef']))
@@ -102,6 +121,7 @@
             @endcan
 
             <!-- Planification Stratégique -->
+            @if ($voitPlanification)
             <flux:sidebar.group expandable icon="chart-bar-square" :heading="__('Planification Stratégique')"
                 class="app-sidebar-group grid" data-groupe="planification">
                 @if ($currentUser->hasAnyRole(['superadmin', 'dbcgoq']))
@@ -155,13 +175,13 @@
                     </flux:sidebar.item>
                 @endif
 
-                @php($nbNonLues = auth()->user()?->unreadNotifications()->count() ?? 0)
                 <flux:sidebar.item icon="bell" href="{{ route('notifications.index') }}"
                     :badge="$nbNonLues > 0 ? $nbNonLues : null"
                     :current="request()->routeIs('notifications.*')">
                     {{ __('Notifications') }}
                 </flux:sidebar.item>
             </flux:sidebar.group>
+            @endif
 
             <!-- Suivi & Évaluation -->
             {{-- Mêmes rôles que la route evaluations.* : le menu et l'autorisation ne

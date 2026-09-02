@@ -539,3 +539,173 @@ test('une étape hors de la période de la mission est refusée', function () {
             'signataires' => missionSignatairesPayload(),
         ])->assertSessionHasErrors('etapes.0.date_depart');
 });
+
+test('les postes de transport laissés vides sont enregistrés à zéro', function () {
+    $admin = userWithRole('dbcgoq');
+    $departement = Departement::factory()->create();
+
+    // Le formulaire région poste toujours ces champs : vides, ils arrivent à null
+    // alors que les colonnes sont NOT NULL.
+    $payload = [
+        'type' => Mission::TYPE_REGION,
+        'reference' => '301/MSDS-CANAM-DAGRH',
+        'departement_id' => $departement->id,
+        'objet' => 'Mission de supervision sans frais de transport',
+        'destination' => 'Tombouctou',
+        'date_document' => '2026-08-18',
+        'date_depart' => '2026-08-20',
+        'date_retour' => '2026-08-24',
+        'lieu_signature' => 'Bamako',
+        'statut' => 'brouillon',
+        'nombre_vehicules' => '',
+        'distance_totale_km' => '',
+        'consommation_aux_cent' => '',
+        'litres_par_jour_ville' => '',
+        'prix_litre_carburant' => '',
+        'location_vehicule_jours' => '',
+        'location_vehicule_tarif' => '',
+        'montant_peages' => '',
+        'billets_economique_nombre' => '',
+        'billets_economique_unitaire' => '',
+        'participants' => [
+            ['nom_complet' => 'MOUSSA TRAORE', 'categorie' => 'cat_4'],
+        ],
+        'etapes' => [
+            [
+                'type_etape' => 'region',
+                'bareme' => 'national',
+                'localite' => 'Tombouctou',
+                'date_depart' => '2026-08-20',
+                'date_retour' => '2026-08-24',
+            ],
+        ],
+        'signataires' => missionSignatairesPayload(),
+    ];
+
+    $this->actingAs($admin)->post(route('missions.store'), $payload)
+        ->assertRedirect()
+        ->assertSessionHasNoErrors();
+
+    $mission = Mission::where('reference', '301/MSDS-CANAM-DAGRH')->first();
+
+    expect($mission)->not->toBeNull();
+    expect((float) $mission->distance_totale_km)->toBe(0.0);
+    expect((float) $mission->consommation_aux_cent)->toBe(0.0);
+    expect((float) $mission->prix_litre_carburant)->toBe(0.0);
+    expect((int) $mission->nombre_vehicules)->toBe(0);
+    expect((float) $mission->montant_carburant)->toBe(0.0);
+    expect((float) $mission->montant_autres_frais)->toBe(0.0);
+
+    $this->actingAs($admin)
+        ->put(route('missions.update', $mission), array_merge($payload, [
+            'objet' => 'Mission de supervision corrigée',
+        ]))
+        ->assertRedirect()
+        ->assertSessionHasNoErrors();
+
+    $mission->refresh();
+
+    expect($mission->objet)->toBe('Mission de supervision corrigée');
+    expect((float) $mission->distance_totale_km)->toBe(0.0);
+    expect((float) $mission->montant_carburant)->toBe(0.0);
+});
+
+test('une mission retient plusieurs services demandeurs, son code budgétaire et son point de départ', function () {
+    $admin = userWithRole('dbcgoq');
+    $premier = Departement::factory()->create(['nom' => 'Direction des Opérations']);
+    $second = Departement::factory()->create(['nom' => 'Direction Financière']);
+
+    // Ni date du document ni lieu de signature : ces champs ont quitté le formulaire.
+    $response = $this->actingAs($admin)->post(route('missions.store'), [
+        'type' => Mission::TYPE_REGION,
+        'reference' => '302/MSDS-CANAM-DAGRH',
+        'structures_demandeuses' => [$premier->id, $second->id],
+        'objet' => 'Mission de supervision conjointe',
+        'code_budgetaire' => Mission::CODES_BUDGETAIRES[1],
+        'point_depart' => 'Ségou',
+        'destination' => 'Mopti',
+        'date_depart' => '2026-08-20',
+        'date_retour' => '2026-08-24',
+        'statut' => 'brouillon',
+        'participants' => [
+            ['nom_complet' => 'MOUSSA TRAORE', 'categorie' => 'cat_4'],
+        ],
+        'etapes' => [
+            [
+                'type_etape' => 'region',
+                'bareme' => 'national',
+                'localite' => 'Mopti',
+                'date_depart' => '2026-08-20',
+                'date_retour' => '2026-08-24',
+            ],
+        ],
+        'signataires' => missionSignatairesPayload(),
+    ]);
+
+    $response->assertRedirect();
+    $response->assertSessionHasNoErrors();
+
+    $mission = Mission::where('reference', '302/MSDS-CANAM-DAGRH')->first();
+
+    expect($mission)->not->toBeNull();
+    expect($mission->departements->pluck('id')->all())->toBe([$premier->id, $second->id]);
+    // La première structure reste la structure principale des documents.
+    expect($mission->departement_id)->toBe($premier->id);
+    expect($mission->code_budgetaire)->toBe(Mission::CODES_BUDGETAIRES[1]);
+    expect($mission->point_depart)->toBe('Ségou');
+    expect($mission->date_document?->toDateString())->toBe(today()->toDateString());
+    expect($mission->lieu_signature)->toBe('Bamako');
+
+    // La mise à jour remplace la liste des services demandeurs.
+    $this->actingAs($admin)->put(route('missions.update', $mission), [
+        'type' => Mission::TYPE_REGION,
+        'reference' => '302/MSDS-CANAM-DAGRH',
+        'structures_demandeuses' => [$second->id],
+        'objet' => 'Mission de supervision conjointe',
+        'code_budgetaire' => '',
+        'point_depart' => 'Bamako',
+        'destination' => 'Mopti',
+        'date_depart' => '2026-08-20',
+        'date_retour' => '2026-08-24',
+        'statut' => 'brouillon',
+        'participants' => [
+            ['nom_complet' => 'MOUSSA TRAORE', 'categorie' => 'cat_4'],
+        ],
+        'etapes' => [
+            [
+                'type_etape' => 'region',
+                'bareme' => 'national',
+                'localite' => 'Mopti',
+                'date_depart' => '2026-08-20',
+                'date_retour' => '2026-08-24',
+            ],
+        ],
+        'signataires' => missionSignatairesPayload(),
+    ])->assertRedirect()->assertSessionHasNoErrors();
+
+    $mission->refresh()->load('departements');
+
+    expect($mission->departements->pluck('id')->all())->toBe([$second->id]);
+    expect($mission->departement_id)->toBe($second->id);
+    expect($mission->code_budgetaire)->toBeNull();
+    expect($mission->point_depart)->toBe('Bamako');
+    // La date du document posée à la création n'est pas perdue par la modification.
+    expect($mission->date_document?->toDateString())->toBe(today()->toDateString());
+});
+
+test('le formulaire de mission ne demande plus la date du document ni le lieu de signature', function () {
+    $admin = userWithRole('dbcgoq');
+
+    foreach ([Mission::TYPE_MEME_VILLE, Mission::TYPE_EXTERIEURE, Mission::TYPE_REGION] as $type) {
+        $response = $this->actingAs($admin)->get(route('missions.create', ['type' => $type]));
+
+        $response->assertOk();
+        $response->assertDontSee('name="date_document"', false);
+        $response->assertDontSee('name="lieu_signature"', false);
+        $response->assertSee('name="structures_demandeuses[]"', false);
+        $response->assertSee('name="code_budgetaire"', false);
+    }
+
+    $this->actingAs($admin)->get(route('missions.create', ['type' => Mission::TYPE_REGION]))
+        ->assertSee('name="point_depart"', false);
+});

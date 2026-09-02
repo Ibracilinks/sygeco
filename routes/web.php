@@ -122,7 +122,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/{activite}/pieces-jointes/{pieceJointe}', [ActiviteController::class, 'downloadPieceJointe'])->name('pieces-jointes.download');
     });
 
-    Route::middleware(['role:superadmin|dbcgoq|chef'])->group(function () {
+    // Le chargé des missions (service-budget) n'a accès qu'à ce module.
+    Route::middleware(['role:superadmin|dbcgoq|chef|service-budget'])->group(function () {
         Route::post('missions/{mission}/finaliser', [MissionController::class, 'finaliser'])->name('missions.finaliser');
         Route::resource('missions', MissionController::class);
     });

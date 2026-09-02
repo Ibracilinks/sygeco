@@ -110,7 +110,7 @@
                                 <div class="font-semibold text-slate-900 dark:text-white">{{ $mission->reference }}</div>
                                 <p class="mt-1 max-w-xl text-sm text-slate-600 dark:text-slate-300">{{ \Illuminate\Support\Str::limit($mission->objet, 120) }}</p>
                                 <div class="mt-2 text-xs text-slate-500 dark:text-slate-400">
-                                    {{ \App\Models\Mission::TYPES[$mission->type] ?? $mission->type }} • {{ $mission->departement?->nom ?? 'Sans structure' }} • créé par {{ $mission->createur?->name ?? '—' }}
+                                    {{ \App\Models\Mission::TYPES[$mission->type] ?? $mission->type }} • {{ $mission->departements->isNotEmpty() ? $mission->departements->pluck('nom')->join(', ') : ($mission->departement?->nom ?? 'Sans structure') }} • créé par {{ $mission->createur?->name ?? '—' }}
                                 </div>
                             </td>
                             <td class="px-5 py-4 text-sm text-slate-700 dark:text-slate-200">
