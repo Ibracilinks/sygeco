@@ -154,7 +154,7 @@ test('une mission regionale calcule les jours et les nuitées par étape', funct
         'reference' => '300/MSDS-CANAM-DAGRH',
         'departement_id' => $departement->id,
         'objet' => 'Mission de supervision regionale',
-        'destination' => 'Sikasso',
+        'destinations' => ['Sikasso'],
         'date_document' => '2026-08-18',
         'date_depart' => '2026-08-20',
         'date_retour' => '2026-08-29',
@@ -169,15 +169,13 @@ test('une mission regionale calcule les jours et les nuitées par étape', funct
                 'type_etape' => 'region',
                 'bareme' => 'national',
                 'localite' => 'Sikasso',
-                'date_depart' => '2026-08-20',
-                'date_retour' => '2026-08-24',
+                'nombre_jours' => 5,
             ],
             [
                 'type_etape' => 'cercle',
                 'bareme' => 'meme_region',
                 'localite' => 'Koutiala',
-                'date_depart' => '2026-08-25',
-                'date_retour' => '2026-08-29',
+                'nombre_jours' => 5,
                 'premiere_nuitee_payee' => '1',
             ],
         ],
@@ -196,6 +194,11 @@ test('une mission regionale calcule les jours et les nuitées par étape', funct
     expect($mission->etapes()->count())->toBe(2);
 
     $etapes = $mission->etapes()->orderBy('ordre')->get();
+    // Les dates ne sont plus saisies : elles s'enchaînent depuis le départ de la mission.
+    expect($etapes[0]->date_depart->toDateString())->toBe('2026-08-20');
+    expect($etapes[0]->date_retour->toDateString())->toBe('2026-08-24');
+    expect($etapes[1]->date_depart->toDateString())->toBe('2026-08-25');
+    expect($etapes[1]->date_retour->toDateString())->toBe('2026-08-29');
     expect((int) $etapes[0]->nombre_jours)->toBe(5);
     expect((int) $etapes[0]->nombre_nuitees)->toBe(4);
     expect((int) $etapes[1]->nombre_jours)->toBe(5);
@@ -460,8 +463,8 @@ test('le document intérieur du pays reprend le modèle officiel avec carburant 
         'montant_peages' => 5000,
         'participants' => [['nom_complet' => 'MOUSSA TRAORE', 'categorie' => 'cat_4']],
         'etapes' => [
-            ['type_etape' => 'cercle', 'bareme' => 'national', 'localite' => 'Koutiala', 'date_depart' => '2026-08-18', 'date_retour' => '2026-08-19'],
-            ['type_etape' => 'region', 'bareme' => 'national', 'localite' => 'Sikasso', 'date_depart' => '2026-08-20', 'date_retour' => '2026-08-22'],
+            ['type_etape' => 'cercle', 'bareme' => 'national', 'localite' => 'Koutiala', 'nombre_jours' => 2],
+            ['type_etape' => 'region', 'bareme' => 'national', 'localite' => 'Sikasso', 'nombre_jours' => 3],
         ],
         'signataires' => missionSignatairesPayload(),
     ])->assertSessionHasNoErrors();
@@ -508,8 +511,8 @@ test('les étapes ne peuvent pas totaliser plus de jours que la mission', functi
             'statut' => 'brouillon',
             'participants' => [['nom_complet' => 'MOUSSA TRAORE', 'categorie' => 'cat_4']],
             'etapes' => [
-                ['type_etape' => 'cercle', 'bareme' => 'national', 'localite' => 'Bla', 'date_depart' => '2026-08-18', 'date_retour' => '2026-08-20'],
-                ['type_etape' => 'region', 'bareme' => 'national', 'localite' => 'Ségou', 'date_depart' => '2026-08-19', 'date_retour' => '2026-08-22'],
+                ['type_etape' => 'cercle', 'bareme' => 'national', 'localite' => 'Bla', 'nombre_jours' => 3],
+                ['type_etape' => 'region', 'bareme' => 'national', 'localite' => 'Ségou', 'nombre_jours' => 4],
             ],
             'signataires' => missionSignatairesPayload(),
         ])->assertSessionHasErrors('etapes');
@@ -517,27 +520,32 @@ test('les étapes ne peuvent pas totaliser plus de jours que la mission', functi
     expect(Mission::where('reference', '015/CANAM-SI')->exists())->toBeFalse();
 });
 
-test('une étape hors de la période de la mission est refusée', function () {
+test('les dates des étapes découlent de leur durée', function () {
     $admin = userWithRole('dbcgoq');
 
-    $this->actingAs($admin)
-        ->from(route('missions.create', ['type' => Mission::TYPE_REGION]))
-        ->post(route('missions.store'), [
-            'type' => Mission::TYPE_REGION,
-            'reference' => '016/CANAM-SI',
-            'objet' => 'Étape hors période',
-            'destination' => 'Ségou',
-            'date_document' => '2026-08-18',
-            'date_depart' => '2026-08-18',
-            'date_retour' => '2026-08-22',
-            'lieu_signature' => 'Bamako',
-            'statut' => 'brouillon',
-            'participants' => [['nom_complet' => 'MOUSSA TRAORE', 'categorie' => 'cat_4']],
-            'etapes' => [
-                ['type_etape' => 'region', 'bareme' => 'national', 'localite' => 'Ségou', 'date_depart' => '2026-08-25', 'date_retour' => '2026-08-26'],
-            ],
-            'signataires' => missionSignatairesPayload(),
-        ])->assertSessionHasErrors('etapes.0.date_depart');
+    $this->actingAs($admin)->post(route('missions.store'), [
+        'type' => Mission::TYPE_REGION,
+        'reference' => '306/MSDS-CANAM-DAGRH',
+        'objet' => 'Tournée de supervision',
+        'destinations' => ['Ségou', 'Mopti'],
+        'date_depart' => '2026-08-18',
+        'date_retour' => '2026-08-23',
+        'statut' => 'brouillon',
+        'participants' => [['nom_complet' => 'MOUSSA TRAORE', 'categorie' => 'cat_4']],
+        'etapes' => [
+            ['type_etape' => 'cercle', 'bareme' => 'national', 'localite' => 'Bla', 'nombre_jours' => 2],
+            ['type_etape' => 'region', 'bareme' => 'national', 'localite' => 'Ségou', 'nombre_jours' => 1],
+            ['type_etape' => 'region', 'bareme' => 'national', 'localite' => 'Mopti', 'nombre_jours' => 3],
+        ],
+        'signataires' => missionSignatairesPayload(),
+    ])->assertRedirect()->assertSessionHasNoErrors();
+
+    $etapes = Mission::where('reference', '306/MSDS-CANAM-DAGRH')->first()->etapes()->orderBy('ordre')->get();
+
+    expect($etapes->map(fn ($etape) => $etape->date_depart->toDateString().' → '.$etape->date_retour->toDateString())->all())
+        ->toBe(['2026-08-18 → 2026-08-19', '2026-08-20 → 2026-08-20', '2026-08-21 → 2026-08-23']);
+    // Une nuitée par jour sauf la dernière, sauf si la première nuitée est payée.
+    expect($etapes->pluck('nombre_nuitees')->all())->toBe([1, 0, 2]);
 });
 
 test('les postes de transport laissés vides sont enregistrés à zéro', function () {
@@ -575,8 +583,7 @@ test('les postes de transport laissés vides sont enregistrés à zéro', functi
                 'type_etape' => 'region',
                 'bareme' => 'national',
                 'localite' => 'Tombouctou',
-                'date_depart' => '2026-08-20',
-                'date_retour' => '2026-08-24',
+                'nombre_jours' => 5,
             ],
         ],
         'signataires' => missionSignatairesPayload(),
@@ -635,8 +642,7 @@ test('une mission retient plusieurs services demandeurs, son code budgétaire et
                 'type_etape' => 'region',
                 'bareme' => 'national',
                 'localite' => 'Mopti',
-                'date_depart' => '2026-08-20',
-                'date_retour' => '2026-08-24',
+                'nombre_jours' => 5,
             ],
         ],
         'signataires' => missionSignatairesPayload(),
@@ -682,8 +688,7 @@ test('une mission retient plusieurs services demandeurs, son code budgétaire et
                 'type_etape' => 'region',
                 'bareme' => 'national',
                 'localite' => 'Mopti',
-                'date_depart' => '2026-08-20',
-                'date_retour' => '2026-08-24',
+                'nombre_jours' => 5,
             ],
         ],
         'signataires' => missionSignatairesPayload(),
@@ -714,4 +719,52 @@ test('le formulaire de mission ne demande plus la date du document ni le lieu de
 
     $this->actingAs($admin)->get(route('missions.create', ['type' => Mission::TYPE_REGION]))
         ->assertSee('name="point_depart"', false);
+});
+
+test('les régions de départ et de destination se choisissent dans la liste', function () {
+    $admin = userWithRole('dbcgoq');
+
+    $this->actingAs($admin)->post(route('missions.store'), [
+        'type' => Mission::TYPE_REGION,
+        'reference' => '307/MSDS-CANAM-DAGRH',
+        'objet' => 'Tournée de supervision',
+        'point_depart' => 'Koulikoro',
+        'destinations' => ['Ségou', 'Mopti'],
+        'date_depart' => '2026-08-18',
+        'date_retour' => '2026-08-22',
+        'statut' => 'brouillon',
+        'participants' => [['nom_complet' => 'MOUSSA TRAORE', 'categorie' => 'cat_4']],
+        'etapes' => [
+            ['type_etape' => 'region', 'bareme' => 'national', 'localite' => 'Ségou', 'nombre_jours' => 5],
+        ],
+        'signataires' => missionSignatairesPayload(),
+    ])->assertRedirect()->assertSessionHasNoErrors();
+
+    $mission = Mission::where('reference', '307/MSDS-CANAM-DAGRH')->first();
+
+    expect($mission->point_depart)->toBe('Koulikoro');
+    // Les régions retenues sont réunies dans la destination imprimée sur le document.
+    expect($mission->destination)->toBe('Ségou, Mopti');
+
+    // Le formulaire de modification represente les deux régions.
+    $this->actingAs($admin)->get(route('missions.edit', $mission))
+        ->assertOk()
+        ->assertSee('value="Ségou" selected', false)
+        ->assertSee('value="Mopti" selected', false);
+});
+
+test('le formulaire intérieur du pays propose les régions en liste déroulante', function () {
+    $admin = userWithRole('dbcgoq');
+
+    $response = $this->actingAs($admin)->get(route('missions.create', ['type' => Mission::TYPE_REGION]));
+
+    $response->assertOk();
+    $response->assertSee('name="point_depart"', false);
+    $response->assertSee('name="destinations[]"', false);
+    $response->assertSee('00 — District de Bamako', false);
+    $response->assertSee('19 — Bandiagara', false);
+    // Plus de destination ni de dates d'étapes en saisie libre.
+    $response->assertDontSee('name="destination"', false);
+    $response->assertDontSee('[date_depart]', false);
+    $response->assertSee('[nombre_jours]', false);
 });

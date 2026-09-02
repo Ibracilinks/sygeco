@@ -141,6 +141,35 @@ class Mission extends Model
     ];
 
     /**
+     * Régions administratives du Mali, telles que retenues pour les missions à
+     * l'intérieur du pays : point de départ et régions de destination.
+     *
+     * @var array<string, string>
+     */
+    public const REGIONS = [
+        '00' => 'District de Bamako',
+        '01' => 'Kayes',
+        '02' => 'Koulikoro',
+        '03' => 'Sikasso',
+        '04' => 'Ségou',
+        '05' => 'Mopti',
+        '06' => 'Tombouctou',
+        '07' => 'Gao',
+        '08' => 'Kidal',
+        '09' => 'Taoudénit',
+        '10' => 'Ménaka',
+        '11' => 'Nioro',
+        '12' => 'Kita',
+        '13' => 'Dioïla',
+        '14' => 'Nara',
+        '15' => 'Bougouni',
+        '16' => 'Koutiala',
+        '17' => 'San',
+        '18' => 'Douentza',
+        '19' => 'Bandiagara',
+    ];
+
+    /**
      * Codes budgétaires proposés à la saisie. Liste provisoire : les cinq lignes
      * seront remplacées par la nomenclature définitive de la DBCGOQ.
      *
@@ -722,13 +751,48 @@ class Mission extends Model
 
     public static function calculerNombreNuitees($dateDepart, $dateRetour, bool $premiereNuiteePayee = false): int
     {
-        $jours = self::calculerNombreJours($dateDepart, $dateRetour);
+        return self::nuiteesDepuisJours(self::calculerNombreJours($dateDepart, $dateRetour), $premiereNuiteePayee);
+    }
 
+    /**
+     * Nuitées d'un séjour : la dernière journée est celle du retour, sauf si la
+     * première nuitée est payée, auquel cas chaque journée ouvre une nuitée.
+     */
+    public static function nuiteesDepuisJours(int $jours, bool $premiereNuiteePayee = false): int
+    {
         if ($jours <= 0) {
             return 0;
         }
 
         return $premiereNuiteePayee ? $jours : max(0, $jours - 1);
+    }
+
+    /**
+     * Les étapes d'une mission régionale s'enchaînent : leur durée est saisie, leurs
+     * dates se déduisent du départ de la mission, étape après étape. Une date de
+     * départ illisible laisse les dates vides, la validation s'en chargera.
+     *
+     * @param  array<int, array<string, mixed>>  $etapes
+     * @return array<int, array<string, mixed>>
+     */
+    public static function datesEtapesSequentielles(array $etapes, $departMission): array
+    {
+        $curseur = rescue(fn () => Carbon::parse($departMission)->startOfDay(), null, false);
+
+        return array_map(function (array $etape) use (&$curseur): array {
+            if ($curseur === null) {
+                return array_merge($etape, ['date_depart' => null, 'date_retour' => null]);
+            }
+
+            $depart = $curseur->copy();
+            $retour = $depart->copy()->addDays(max(1, (int) ($etape['nombre_jours'] ?? 1)) - 1);
+            $curseur = $retour->copy()->addDay();
+
+            return array_merge($etape, [
+                'date_depart' => $depart->toDateString(),
+                'date_retour' => $retour->toDateString(),
+            ]);
+        }, $etapes);
     }
 
     public function getDureeTexteAttribute(): string

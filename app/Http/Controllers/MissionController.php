@@ -98,16 +98,14 @@ class MissionController extends Controller
                 'type_etape' => $etape->type_etape,
                 'bareme' => $etape->bareme,
                 'localite' => $etape->localite,
-                'date_depart' => optional($etape->date_depart)->format('Y-m-d'),
-                'date_retour' => optional($etape->date_retour)->format('Y-m-d'),
+                'nombre_jours' => (int) $etape->nombre_jours,
                 'premiere_nuitee_payee' => (bool) $etape->premiere_nuitee_payee,
             ])->all()
             : [[
                 'type_etape' => 'region',
                 'bareme' => 'national',
                 'localite' => '',
-                'date_depart' => today()->format('Y-m-d'),
-                'date_retour' => today()->format('Y-m-d'),
+                'nombre_jours' => 1,
                 'premiere_nuitee_payee' => false,
             ]];
 
@@ -132,7 +130,7 @@ class MissionController extends Controller
             $participants = $request->validated('participants');
             $etapes = $request->validated('etapes', []);
 
-            $mission = new Mission($request->safe()->except(['participants', 'signataires', 'etapes', 'structures_demandeuses']));
+            $mission = new Mission($request->safe()->except(['participants', 'signataires', 'etapes', 'structures_demandeuses', 'destinations']));
             $mission->cree_par = Auth::id();
             $mission->maj_par = Auth::id();
             $participants = $mission->appliquerCalculs($participants, $etapes);
@@ -197,8 +195,7 @@ class MissionController extends Controller
             'type_etape' => $etape->type_etape,
             'bareme' => $etape->bareme,
             'localite' => $etape->localite,
-            'date_depart' => optional($etape->date_depart)->format('Y-m-d'),
-            'date_retour' => optional($etape->date_retour)->format('Y-m-d'),
+            'nombre_jours' => (int) $etape->nombre_jours,
             'premiere_nuitee_payee' => (bool) $etape->premiere_nuitee_payee,
         ])->all();
         $signataires = $mission->signataires->map(fn ($signataire) => [
@@ -216,8 +213,7 @@ class MissionController extends Controller
                 'type_etape' => 'region',
                 'bareme' => 'national',
                 'localite' => '',
-                'date_depart' => optional($mission->date_depart)->format('Y-m-d'),
-                'date_retour' => optional($mission->date_retour)->format('Y-m-d'),
+                'nombre_jours' => 1,
                 'premiere_nuitee_payee' => false,
             ]];
         }
@@ -239,7 +235,7 @@ class MissionController extends Controller
             $participants = $request->validated('participants');
             $etapes = $request->validated('etapes', []);
 
-            $mission->fill($request->safe()->except(['participants', 'signataires', 'etapes', 'structures_demandeuses']));
+            $mission->fill($request->safe()->except(['participants', 'signataires', 'etapes', 'structures_demandeuses', 'destinations']));
             $mission->maj_par = Auth::id();
             $participants = $mission->appliquerCalculs($participants, $etapes);
             $mission->save();

@@ -4,10 +4,19 @@
         'type_etape' => 'region',
         'bareme' => 'national',
         'localite' => '',
-        'date_depart' => optional($mission->date_depart)->format('Y-m-d'),
-        'date_retour' => optional($mission->date_retour)->format('Y-m-d'),
+        'nombre_jours' => 1,
         'premiere_nuitee_payee' => false,
     ]]);
+    $totalJoursEtapes = collect($etapeValues)->sum(fn ($etape) => max(1, (int) ($etape['nombre_jours'] ?? 1)));
+
+    // Régions de destination : stockées réunies dans `destination`, réaffichées ici.
+    $destinationsSelectionnees = collect(old('destinations', array_filter(array_map('trim', explode(',', (string) $mission->destination)))))
+        ->map(fn ($region) => (string) $region)
+        ->filter()
+        ->unique()
+        ->values()
+        ->all();
+    $regionsHorsListe = array_diff($destinationsSelectionnees, \App\Models\Mission::REGIONS);
     $signataireValues = old('signataires', $signataires ?? [['libelle' => '', 'nom' => '', 'fonction' => '']]);
 @endphp
 
@@ -18,8 +27,31 @@
 <div class="grid grid-cols-1 gap-4 lg:grid-cols-4">
     <div><label for="reference" class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-200">Référence de l'ordre</label><input type="text" id="reference" name="reference" value="{{ old('reference', $mission->reference) }}" class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-950"></div>
     @include('pages.missions.partials.services-demandeurs')
-    <div><label for="point_depart" class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-200">Point de départ</label><input type="text" id="point_depart" name="point_depart" value="{{ old('point_depart', $mission->point_depart) }}" class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-950">@error('point_depart')<p class="mt-1 text-xs text-red-600">{{ $message }}</p>@enderror</div>
-    <div><label for="destination" class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-200">Région principale</label><input type="text" id="destination" name="destination" value="{{ old('destination', $mission->destination) }}" class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-950"></div>
+    <div>
+        <label for="point_depart" class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-200">Point de départ</label>
+        <select id="point_depart" name="point_depart" class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-950">
+            <option value="">Choisir une région</option>
+            @foreach (\App\Models\Mission::REGIONS as $code => $region)
+                <option value="{{ $region }}" @selected(old('point_depart', $mission->point_depart) === $region)>{{ $code }} — {{ $region }}</option>
+            @endforeach
+        </select>
+        @error('point_depart')<p class="mt-1 text-xs text-red-600">{{ $message }}</p>@enderror
+    </div>
+    <div>
+        <label for="destinations" class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-200">Régions de destination</label>
+        <select id="destinations" name="destinations[]" multiple size="4" class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-950">
+            {{-- Une destination saisie autrefois en texte libre reste sélectionnable. --}}
+            @foreach ($regionsHorsListe as $region)
+                <option value="{{ $region }}" selected>{{ $region }}</option>
+            @endforeach
+            @foreach (\App\Models\Mission::REGIONS as $code => $region)
+                <option value="{{ $region }}" @selected(in_array($region, $destinationsSelectionnees, true))>{{ $code }} — {{ $region }}</option>
+            @endforeach
+        </select>
+        <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">Ctrl (⌘ sur Mac) pour en sélectionner plusieurs.</p>
+        @error('destinations')<p class="mt-1 text-xs text-red-600">{{ $message }}</p>@enderror
+        @error('destinations.*')<p class="mt-1 text-xs text-red-600">{{ $message }}</p>@enderror
+    </div>
 </div>
 
 <div>
@@ -61,7 +93,7 @@
 <div class="rounded-xl border border-slate-200 p-4 dark:border-slate-700">
     <div class="mb-3 flex items-center justify-between gap-3"><div><h2 class="text-sm font-semibold text-slate-900 dark:text-white">Étapes de mission</h2></div><button type="button" class="rounded-lg bg-slate-200 px-3 py-2 text-xs font-medium text-slate-800 dark:bg-slate-700 dark:text-slate-100" data-add-row="etapes">Ajouter</button></div>
     <p class="mb-3 text-xs text-slate-500 dark:text-slate-400" data-etapes-total>
-        Total des jours d'étapes : <span class="font-semibold" data-etapes-jours>0</span>
+        Total des jours d'étapes : <span class="font-semibold" data-etapes-jours>{{ $totalJoursEtapes }}</span>
         sur <span class="font-semibold" data-mission-jours>{{ $mission->nombre_jours }}</span> jour(s) de mission.
     </p>
 
@@ -70,10 +102,9 @@
             <div class="grid grid-cols-1 gap-2 rounded-lg border border-slate-200 p-3 dark:border-slate-700 md:grid-cols-12" data-row>
                 <div class="md:col-span-2"><select name="etapes[{{ $index }}][type_etape]" class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-950">@foreach (\App\Models\Mission::TYPES_ETAPES_REGIONALES as $code => $label)<option value="{{ $code }}" @selected(($etape['type_etape'] ?? '') === $code)>{{ $label }}</option>@endforeach</select></div>
                 <div class="md:col-span-2"><select name="etapes[{{ $index }}][bareme]" class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-950">@foreach (\App\Models\Mission::BAREMES_REGIONAUX as $code => $bareme)<option value="{{ $code }}" @selected(($etape['bareme'] ?? 'national') === $code)>{{ $bareme['label'] }}</option>@endforeach</select></div>
-                <div class="md:col-span-2"><input type="text" name="etapes[{{ $index }}][localite]" value="{{ $etape['localite'] ?? '' }}" placeholder="Localité" class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-950"></div>
-                <div class="md:col-span-2"><input type="date" name="etapes[{{ $index }}][date_depart]" value="{{ $etape['date_depart'] ?? '' }}" class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-950"></div>
-                <div class="md:col-span-2"><input type="date" name="etapes[{{ $index }}][date_retour]" value="{{ $etape['date_retour'] ?? '' }}" class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-950"></div>
-                <div class="md:col-span-1 flex items-center justify-center"><label class="flex items-center gap-2 text-xs text-slate-600 dark:text-slate-300"><input type="checkbox" name="etapes[{{ $index }}][premiere_nuitee_payee]" value="1" @checked(!empty($etape['premiere_nuitee_payee']))>1re nuit</label></div>
+                <div class="md:col-span-3"><input type="text" name="etapes[{{ $index }}][localite]" value="{{ $etape['localite'] ?? '' }}" placeholder="Localité" class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-950"></div>
+                <div class="md:col-span-2"><input type="number" min="1" max="365" name="etapes[{{ $index }}][nombre_jours]" value="{{ $etape['nombre_jours'] ?? 1 }}" placeholder="Jours" title="Nombre de jours de l'étape" class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-950">@error('etapes.'.$index.'.nombre_jours')<p class="mt-1 text-xs text-red-600">{{ $message }}</p>@enderror</div>
+                <div class="md:col-span-2 flex items-center justify-center"><label class="flex items-center gap-2 text-xs text-slate-600 dark:text-slate-300"><input type="checkbox" name="etapes[{{ $index }}][premiere_nuitee_payee]" value="1" @checked(!empty($etape['premiere_nuitee_payee']))>1re nuit</label></div>
                 <div class="md:col-span-1"><button type="button" class="w-full rounded-lg bg-red-100 px-3 py-2 text-xs font-medium text-red-700 dark:bg-red-950 dark:text-red-200" data-remove-row>X</button></div>
             </div>
         @endforeach
@@ -120,10 +151,9 @@
     <div class="grid grid-cols-1 gap-2 rounded-lg border border-slate-200 p-3 dark:border-slate-700 md:grid-cols-12" data-row>
         <div class="md:col-span-2"><select data-name="type_etape" class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-950">@foreach (\App\Models\Mission::TYPES_ETAPES_REGIONALES as $code => $label)<option value="{{ $code }}">{{ $label }}</option>@endforeach</select></div>
         <div class="md:col-span-2"><select data-name="bareme" class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-950">@foreach (\App\Models\Mission::BAREMES_REGIONAUX as $code => $bareme)<option value="{{ $code }}">{{ $bareme['label'] }}</option>@endforeach</select></div>
-        <div class="md:col-span-2"><input type="text" data-name="localite" placeholder="Localité" class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-950"></div>
-        <div class="md:col-span-2"><input type="date" data-name="date_depart" class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-950"></div>
-        <div class="md:col-span-2"><input type="date" data-name="date_retour" class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-950"></div>
-        <div class="md:col-span-1 flex items-center justify-center"><label class="flex items-center gap-2 text-xs text-slate-600 dark:text-slate-300"><input type="checkbox" data-name="premiere_nuitee_payee" value="1">1re nuit</label></div>
+        <div class="md:col-span-3"><input type="text" data-name="localite" placeholder="Localité" class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-950"></div>
+        <div class="md:col-span-2"><input type="number" min="1" max="365" value="1" data-name="nombre_jours" placeholder="Jours" title="Nombre de jours de l'étape" class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-950"></div>
+        <div class="md:col-span-2 flex items-center justify-center"><label class="flex items-center gap-2 text-xs text-slate-600 dark:text-slate-300"><input type="checkbox" data-name="premiere_nuitee_payee" value="1">1re nuit</label></div>
         <div class="md:col-span-1"><button type="button" class="w-full rounded-lg bg-red-100 px-3 py-2 text-xs font-medium text-red-700 dark:bg-red-950 dark:text-red-200" data-remove-row>X</button></div>
     </div>
 </template>
@@ -210,19 +240,11 @@
                 const bloc = document.querySelector('[data-etapes-total]');
                 if (!conteneur || !affichage || !bloc) return;
 
-                const joursEntre = (debut, fin) => {
-                    const d = new Date(`${debut}T00:00:00`);
-                    const f = new Date(`${fin}T00:00:00`);
-                    if (Number.isNaN(d.getTime()) || Number.isNaN(f.getTime()) || f < d) return 0;
-                    return Math.floor((f - d) / 86400000) + 1;
-                };
-
                 const recalculer = () => {
                     let total = 0;
                     conteneur.querySelectorAll('[data-row]').forEach((ligne) => {
-                        const debut = ligne.querySelector('input[type="date"][name*="[date_depart]"]')?.value;
-                        const fin = ligne.querySelector('input[type="date"][name*="[date_retour]"]')?.value;
-                        if (debut && fin) total += joursEntre(debut, fin);
+                        const jours = Number(ligne.querySelector('input[name*="[nombre_jours]"]')?.value || 0);
+                        if (Number.isFinite(jours) && jours > 0) total += jours;
                     });
 
                     affichage.textContent = String(total);
@@ -239,6 +261,7 @@
                 if (conteneur.dataset.totalBound !== '1') {
                     conteneur.dataset.totalBound = '1';
                     conteneur.addEventListener('change', recalculer);
+                    conteneur.addEventListener('input', recalculer);
                     conteneur.addEventListener('click', () => setTimeout(recalculer, 0));
                 }
 

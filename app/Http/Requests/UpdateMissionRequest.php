@@ -36,6 +36,8 @@ class UpdateMissionRequest extends FormRequest
             'code_budgetaire' => 'nullable|string|max:60',
             'point_depart' => 'nullable|string|max:150',
             'destination' => 'nullable|string|max:150',
+            'destinations' => 'nullable|array',
+            'destinations.*' => 'string|max:150',
             'zone_code' => 'nullable|string|max:40',
             // La date du document n'est plus saisie : elle est posée à la création.
             'date_document' => 'nullable|date',
@@ -95,20 +97,18 @@ class UpdateMissionRequest extends FormRequest
             ->values()
             ->all();
 
+        // Chaque étape se saisit en nombre de jours ; ses dates sont déduites plus bas.
         $etapes = collect($this->input('etapes', []))
             ->map(function ($etape) {
-                $dateDepart = $etape['date_depart'] ?? null;
-                $dateRetour = $etape['date_retour'] ?? null;
                 $premiereNuiteePayee = filter_var($etape['premiere_nuitee_payee'] ?? false, FILTER_VALIDATE_BOOL);
+                $jours = is_numeric($etape['nombre_jours'] ?? null) ? max(1, (int) $etape['nombre_jours']) : 1;
 
                 return [
                     'type_etape' => trim((string) ($etape['type_etape'] ?? '')) ?: null,
                     'bareme' => trim((string) ($etape['bareme'] ?? '')) ?: 'national',
                     'localite' => trim((string) ($etape['localite'] ?? '')),
-                    'date_depart' => $dateDepart,
-                    'date_retour' => $dateRetour,
-                    'nombre_jours' => ($dateDepart && $dateRetour) ? Mission::calculerNombreJours($dateDepart, $dateRetour) : null,
-                    'nombre_nuitees' => ($dateDepart && $dateRetour) ? Mission::calculerNombreNuitees($dateDepart, $dateRetour, $premiereNuiteePayee) : null,
+                    'nombre_jours' => $jours,
+                    'nombre_nuitees' => Mission::nuiteesDepuisJours($jours, $premiereNuiteePayee),
                     'premiere_nuitee_payee' => $premiereNuiteePayee,
                 ];
             })
@@ -138,6 +138,17 @@ class UpdateMissionRequest extends FormRequest
         $dateDepart = $this->input('date_depart', now()->toDateString());
         $dateRetour = $this->input('date_retour', $dateDepart);
 
+        // Les étapes s'enchaînent à partir du départ de la mission.
+        $etapes = Mission::datesEtapesSequentielles($etapes, $dateDepart);
+
+        // Régions de destination : plusieurs par mission, réunies dans `destination`.
+        $destinations = collect($this->input('destinations', []))
+            ->map(fn ($region) => trim((string) $region))
+            ->filter()
+            ->unique()
+            ->values()
+            ->all();
+
         // Les postes budgétaires laissés vides valent zéro : leurs colonnes sont NOT NULL.
         $this->merge(Mission::normaliserMontantsFacultatifs($this->all()));
 
@@ -147,6 +158,8 @@ class UpdateMissionRequest extends FormRequest
             'statut' => $this->input('statut') ?: ($this->route('mission')?->statut ?? 'brouillon'),
             'lieu_signature' => trim((string) $this->input('lieu_signature', '')) ?: 'Bamako',
             'structures_demandeuses' => $structures,
+            'destinations' => $destinations,
+            'destination' => $destinations !== [] ? implode(', ', $destinations) : $this->input('destination'),
             'departement_id' => $structures[0] ?? $this->input('departement_id'),
             'date_document' => $this->input('date_document') ?: ($this->route('mission')?->date_document?->toDateString() ?? now()->toDateString()),
             'nombre_jours' => Mission::resoudreNombreJours(
@@ -181,6 +194,7 @@ class UpdateMissionRequest extends FormRequest
             'code_budgetaire' => 'code budgétaire',
             'point_depart' => 'point de départ',
             'destination' => 'destination',
+            'destinations' => 'régions de destination',
             'zone_code' => 'zone de majoration',
             'date_document' => 'date du document',
             'date_depart' => 'date de départ',
@@ -195,6 +209,7 @@ class UpdateMissionRequest extends FormRequest
             'participants.*.nombre_nuitees' => 'nombre de nuitées du participant',
             'etapes' => 'étapes',
             'etapes.*.localite' => 'localité de l\'étape',
+            'etapes.*.nombre_jours' => 'nombre de jours de l\'étape',
             'etapes.*.date_depart' => 'date de départ de l\'étape',
             'etapes.*.date_retour' => 'date de retour de l\'étape',
             'signataires' => 'signataires',
@@ -221,46 +236,23 @@ class UpdateMissionRequest extends FormRequest
             }
 
             if ($type === Mission::TYPE_REGION) {
-                // Les étapes découpent la mission : elles ne peuvent ni sortir de sa
-                // période, ni totaliser plus de jours qu'elle n'en compte.
-                $debutMission = (string) $this->input('date_depart');
-                $finMission = (string) $this->input('date_retour');
+                // Les étapes découpent la mission : enchaînées depuis son départ, elles
+                // ne peuvent pas totaliser plus de jours qu'elle n'en compte.
                 $joursMission = (int) $this->input('nombre_jours');
-                $totalJoursEtapes = 0;
-
-                foreach ((array) $this->input('etapes', []) as $index => $etape) {
-                    $debut = $etape['date_depart'] ?? null;
-                    $fin = $etape['date_retour'] ?? null;
-
-                    if (! $debut || ! $fin) {
-                        continue;
-                    }
-
-                    $totalJoursEtapes += (int) ($etape['nombre_jours'] ?? 0);
-
-                    // Une étape se déroule entièrement dans la période de la mission.
-                    if ($debutMission !== '' && $finMission !== '') {
-                        if ($debut < $debutMission || $debut > $finMission) {
-                            $validator->errors()->add("etapes.$index.date_depart", "L'étape doit commencer pendant la mission (du $debutMission au $finMission).");
-                        }
-
-                        if ($fin < $debutMission || $fin > $finMission) {
-                            $validator->errors()->add("etapes.$index.date_retour", "L'étape doit se terminer pendant la mission (du $debutMission au $finMission).");
-                        }
-                    }
-                }
+                $totalJoursEtapes = collect($this->input('etapes', []))
+                    ->sum(fn ($etape) => (int) ($etape['nombre_jours'] ?? 0));
 
                 if ($joursMission > 0 && $totalJoursEtapes > $joursMission) {
                     $validator->errors()->add(
                         'etapes',
-                        "Le total des jours d'étapes ($totalJoursEtapes) dépasse la durée de la mission ($joursMission jours) : les étapes se chevauchent ou sortent de la période."
+                        "Le total des jours d'étapes ($totalJoursEtapes) dépasse la durée de la mission ($joursMission jours)."
                     );
                 }
             }
 
             if ($type === Mission::TYPE_REGION) {
                 if (blank($this->input('destination'))) {
-                    $validator->errors()->add('destination', 'La région principale est requise pour une mission région.');
+                    $validator->errors()->add('destinations', 'Au moins une région de destination est requise pour une mission région.');
                 }
 
                 if (! is_array($this->input('etapes')) || count((array) $this->input('etapes')) === 0) {
