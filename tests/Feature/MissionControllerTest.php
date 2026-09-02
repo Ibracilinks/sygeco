@@ -493,6 +493,54 @@ test('le document intérieur du pays reprend le modèle officiel avec carburant 
         ->assertSee('Total général');
 });
 
+test('les documents de mission n\'affichent pas les catégories des participants', function () {
+    $admin = userWithRole('dbcgoq');
+
+    // Mission à l'étranger : catégorie « Catégorie IV » sur le barème extérieur.
+    $this->actingAs($admin)->post(route('missions.store'), [
+        'type' => Mission::TYPE_EXTERIEURE,
+        'reference' => '308/MSDS-CANAM-DAGRH',
+        'objet' => 'Atelier régional',
+        'destination' => 'Dakar',
+        'zone_code' => 'zone_c_ouest_cfa',
+        'date_depart' => '2026-08-21',
+        'date_retour' => '2026-08-25',
+        'statut' => 'brouillon',
+        'participants' => [['nom_complet' => 'MOUSSA TRAORE', 'categorie' => 'cat_4']],
+        'signataires' => missionSignatairesPayload(),
+    ])->assertRedirect()->assertSessionHasNoErrors();
+
+    $exterieure = Mission::where('reference', '308/MSDS-CANAM-DAGRH')->first();
+
+    $this->actingAs($admin)->get(route('missions.show', $exterieure))
+        ->assertOk()
+        ->assertSee('MOUSSA TRAORE')
+        ->assertDontSee('Catégorie IV');
+
+    // Mission intérieur du pays : même règle sur la répartition par étape.
+    $this->actingAs($admin)->post(route('missions.store'), [
+        'type' => Mission::TYPE_REGION,
+        'reference' => '309/MSDS-CANAM-DAGRH',
+        'objet' => 'Supervision régionale',
+        'destinations' => ['Sikasso'],
+        'date_depart' => '2026-08-18',
+        'date_retour' => '2026-08-22',
+        'statut' => 'brouillon',
+        'participants' => [['nom_complet' => 'FATOUMATA DIALLO', 'categorie' => 'cat_4']],
+        'etapes' => [
+            ['type_etape' => 'region', 'bareme' => 'national', 'localite' => 'Sikasso', 'nombre_jours' => 5],
+        ],
+        'signataires' => missionSignatairesPayload(),
+    ])->assertRedirect()->assertSessionHasNoErrors();
+
+    $region = Mission::where('reference', '309/MSDS-CANAM-DAGRH')->first();
+
+    $this->actingAs($admin)->get(route('missions.show', $region))
+        ->assertOk()
+        ->assertSee('FATOUMATA DIALLO')
+        ->assertDontSee('Catégorie IV');
+});
+
 test('les étapes ne peuvent pas totaliser plus de jours que la mission', function () {
     $admin = userWithRole('dbcgoq');
 

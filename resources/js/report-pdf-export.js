@@ -635,7 +635,7 @@ window.exportMissionExterieurePDF = async function exportMissionExterieurePDF(bu
             const hauteur = 6;
             drawCell(xs[0], y, widths[0], hauteur, index + 1, { align: 'center', middle: true });
             doc.setFont('helvetica', 'italic');
-            drawCell(xs[1], y, widths[1], hauteur, [participant.nom, participant.categorie].filter(Boolean).join(' — '), { middle: true });
+            drawCell(xs[1], y, widths[1], hauteur, participant.nom, { middle: true });
             doc.setFont('helvetica', 'normal');
             drawCell(xs[2], y, widths[2], hauteur, '1', { align: 'center', middle: true });
             drawCell(xs[3], y, widths[3], hauteur, fmt(participant.montant_par_jour), { align: 'right', middle: true });
@@ -916,7 +916,7 @@ window.exportMissionRegionPDF = async function exportMissionRegionPDF(button, da
                 doc.setFont('helvetica', 'normal');
                 drawCell(xs[0], y, widths[0], 6, index + 1, { align: 'center', middle: true });
                 doc.setFont('helvetica', 'italic');
-                drawCell(xs[1], y, widths[1], 6, [ligne.nom, ligne.categorie].filter(Boolean).join(' — '), { middle: true });
+                drawCell(xs[1], y, widths[1], 6, ligne.nom, { middle: true });
                 doc.setFont('helvetica', 'normal');
                 drawCell(xs[2], y, widths[2], 6, '1', { align: 'center', middle: true });
                 drawCell(xs[3], y, widths[3], 6, fmt(ligne.montant_par_jour), { align: 'right', middle: true });

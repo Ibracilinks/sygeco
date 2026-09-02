@@ -241,7 +241,6 @@
                                     <td class="border border-black px-1 py-1 text-center">{{ $loop->iteration }}</td>
                                     <td class="border border-black px-1 py-1 italic">
                                         {{ $participant->nom_complet }}
-                                        @if ($participant->categorie)<span class="text-[9px] text-slate-600">({{ \App\Models\Mission::categoriesExterieures()[$participant->categorie]['label'] ?? $participant->categorie }})</span>@endif
                                     </td>
                                     <td class="border border-black px-1 py-1 text-center">1</td>
                                     <td class="border border-black px-1 py-1 text-right">{{ number_format((float) $participant->montant_par_jour, 0, ',', ' ') }}</td>
@@ -379,7 +378,7 @@
                                 @foreach ($groupe['lignes'] as $indexLigne => $ligne)
                                     <tr>
                                         <td class="border border-black px-1 py-1 text-center">{{ $indexLigne + 1 }}</td>
-                                        <td class="border border-black px-1 py-1 italic">{{ $ligne['nom'] }}@if ($ligne['categorie'])<span class="text-[9px] text-slate-600"> ({{ $ligne['categorie'] }})</span>@endif</td>
+                                        <td class="border border-black px-1 py-1 italic">{{ $ligne['nom'] }}</td>
                                         <td class="border border-black px-1 py-1 text-center">1</td>
                                         <td class="border border-black px-1 py-1 text-right">{{ number_format($ligne['montant_par_jour'], 0, ',', ' ') }}</td>
                                         <td class="border border-black px-1 py-1 text-center">{{ $ligne['jours'] }}</td>
@@ -410,14 +409,14 @@
                             <tr>
                                 <td colspan="2" class="border border-black px-1 py-1 font-bold uppercase">Montant carburant trajet</td>
                                 <td colspan="2" class="border border-black px-1 py-1 text-center">{{ $mission->nombre_vehicules }}</td>
-                                <td colspan="3" class="border border-black px-1 py-1 text-center">{{ number_format($litresTrajet, 2, ',', ' ') }} L</td>
+                                <td colspan="3" class="border border-black px-1 py-1 text-center">{{ number_format($litresTrajet, 0, ',', ' ') }}</td>
                                 <td colspan="2" class="border border-black px-1 py-1 text-right">{{ number_format((float) $mission->prix_litre_carburant, 0, ',', ' ') }}</td>
                                 <td class="border border-black px-1 py-1 text-right">{{ number_format((float) $mission->montant_carburant_trajet, 0, ',', ' ') }}</td>
                             </tr>
                             <tr>
                                 <td colspan="2" class="border border-black px-1 py-1 font-bold uppercase">Montant carburant ville</td>
                                 <td colspan="2" class="border border-black px-1 py-1 text-center">{{ $mission->nombre_vehicules }}</td>
-                                <td colspan="3" class="border border-black px-1 py-1 text-center">{{ number_format($litresVille, 2, ',', ' ') }} L</td>
+                                <td colspan="3" class="border border-black px-1 py-1 text-center">{{ number_format($litresVille, 0, ',', ' ') }}</td>
                                 <td colspan="2" class="border border-black px-1 py-1 text-right">{{ number_format((float) $mission->prix_litre_carburant, 0, ',', ' ') }}</td>
                                 <td class="border border-black px-1 py-1 text-right">{{ number_format((float) $mission->montant_carburant_ville, 0, ',', ' ') }}</td>
                             </tr>
@@ -520,7 +519,6 @@
                 'billets_economique_total' => (float) $mission->billets_economique_total,
                 'participants' => $mission->participants->map(fn ($participant) => [
                     'nom' => $participant->nom_complet,
-                    'categorie' => $participant->categorie ? (\App\Models\Mission::categoriesExterieures()[$participant->categorie]['label'] ?? $participant->categorie) : '',
                     'montant_par_jour' => (float) $participant->montant_par_jour,
                     'montant_par_nuitee' => (float) $participant->montant_par_nuitee,
                     'nombre_nuitees' => $participant->nombre_nuitees,
@@ -559,7 +557,6 @@
                 'montant_peages' => (float) $mission->montant_peages,
                 'participants' => $mission->participants->map(fn ($participant) => [
                     'nom' => $participant->nom_complet,
-                    'categorie' => $participant->categorie ? (\App\Models\Mission::categoriesNationales()[$participant->categorie]['label'] ?? $participant->categorie) : '',
                     'nombre_nuitees' => $participant->nombre_nuitees,
                     'total_general' => (float) $participant->total_general,
                 ])->values()->all(),

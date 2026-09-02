@@ -385,7 +385,6 @@ class Mission extends Model
 
                 $lignes[] = [
                     'nom' => $participant->nom_complet,
-                    'categorie' => $categorie['label'] ?? null,
                     'montant_par_jour' => $jours > 0 ? round($totalFrais / $jours, 2) : 0.0,
                     'jours' => $jours,
                     'frais_mission' => round($totalFrais, 2),
