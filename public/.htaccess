@@ -1,9 +1,27 @@
+<IfModule mod_setenvif.c>
+    # Le TLS est terminé par Cloudflare : la requête arrive ici en clair et PHP se
+    # croit en HTTP. Il génère alors des URLs http:// (l'endpoint Livewire notamment),
+    # que le navigateur bloque en contenu mixte sur une page https. L'en-tête posé
+    # par le proxy rétablit le bon schéma.
+    SetEnvIf X-Forwarded-Proto "^https$" HTTPS=on
+    SetEnvIf X-Forwarded-Ssl "^on$" HTTPS=on
+</IfModule>
+
 <IfModule mod_rewrite.c>
     <IfModule mod_negotiation.c>
         Options -MultiViews -Indexes
     </IfModule>
 
     RewriteEngine On
+
+    # Force HTTPS / SSL
+    # Le test porte sur l'en-tête du proxy, jamais sur %{HTTPS} seul : derrière
+    # Cloudflare l'origine est toujours en clair, et une redirection inconditionnelle
+    # boucle à l'infini (ERR_TOO_MANY_REDIRECTS).
+    RewriteCond %{HTTP:X-Forwarded-Proto} !=https
+    RewriteCond %{HTTP:CF-Visitor} !https [NC]
+    RewriteCond %{HTTPS} !=on
+    RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
 
     # Handle Authorization Header
     RewriteCond %{HTTP:Authorization} .
