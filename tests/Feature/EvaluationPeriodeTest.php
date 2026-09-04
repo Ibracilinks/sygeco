@@ -123,6 +123,39 @@ test('un chef peut renseigner l\'évaluation de fin d\'année pendant sa fenêtr
     expect($activite->evaluation('fin_annee')->statut_execution)->toBe('realise');
 });
 
+test('la cellule suivi évaluation voit et renseigne toutes les activités en évaluation', function () {
+    seedRolesAndPermissions();
+
+    $departementSuivi = Departement::factory()->create();
+    $autreDepartement = Departement::factory()->create();
+    $user = User::factory()->dansDepartement($departementSuivi)->create();
+    $user->assignRole('suivi-evaluation');
+
+    $exercice = Exercice::factory()->actif()->create();
+    $activiteHorsPerimetre = activitePourExercice($exercice, $autreDepartement);
+    $activiteHorsPerimetre->update([
+        'trimestre_1' => 'oui',
+        'trimestre_2' => 'non',
+        'trimestre_3' => 'oui',
+        'trimestre_4' => 'non',
+    ]);
+
+    $this->actingAs($user)->get(route('evaluations.index', 'mi-parcours'))
+        ->assertOk()
+        ->assertSee($activiteHorsPerimetre->nom_activite);
+
+    $this->actingAs($user)->post(route('evaluations.enregistrer', [$activiteHorsPerimetre, 'fin-annee']), [
+        'statut_execution' => 'en_cours',
+        'observation' => 'Suivi transversal',
+        'valeur_indicateur' => 1,
+    ])->assertSessionHas('success');
+
+    expect($activiteHorsPerimetre->fresh()->evaluation('fin_annee'))
+        ->statut_execution->toBe('en_cours')
+        ->observation->toBe('Suivi transversal')
+        ->maj_par->toBe($user->id);
+});
+
 /*
 |--------------------------------------------------------------------------
 | Commande de notification activites:notifier-suivi

@@ -42,6 +42,7 @@ test('le tableau de bord ignore les activités mises à la corbeille', function 
 
     // Le KPI et le budget s'alignent sur la page Programmation, qui exclut la corbeille.
     expect($kpis['activites'])->toBe(2)
+        ->and($kpis['resultats_strategiques'])->toBe(1)
         ->and((float) $kpis['budget_total'])->toBe(2_000_000.0);
 });
 

@@ -100,7 +100,7 @@ class EvaluationController extends Controller
             return $this->refus($request, "Vous n'êtes pas autorisé à renseigner l'évaluation.");
         }
 
-        if (! $user->can('view', $activite)) {
+        if (! $this->peutEvaluerActivite($user, $activite)) {
             abort(403);
         }
 
@@ -254,8 +254,12 @@ class EvaluationController extends Controller
             $query->where(fn ($q) => $q->where('trimestre_1', 'oui')->orWhere('trimestre_2', 'oui'));
         }
 
-        // Même visibilité que la programmation.
-        VisibiliteActivites::appliquer($query, Auth::user());
+        // La cellule suivi & évaluation travaille sur tout le portefeuille pendant
+        // les rubriques d'évaluation ; les autres profils gardent le périmètre
+        // habituel de la programmation.
+        if (! $this->utilisateurVoitToutesLesActivitesEnEvaluation()) {
+            VisibiliteActivites::appliquer($query, Auth::user());
+        }
 
         if ($request->filled('extrant_id')) {
             $query->where('extrant_id', $request->extrant_id);
@@ -281,11 +285,26 @@ class EvaluationController extends Controller
         // entités qui lui sont rattachées.
         $query = Departement::active()->formulatrices()->ordered();
 
-        if ($perimetre = Auth::user()?->perimetreActivitesIds()) {
+        if (! $this->utilisateurVoitToutesLesActivitesEnEvaluation()
+            && ($perimetre = Auth::user()?->perimetreActivitesIds())) {
             $query->whereIn('id', $perimetre);
         }
 
         return $query->get();
+    }
+
+    private function utilisateurVoitToutesLesActivitesEnEvaluation(): bool
+    {
+        return Auth::user()?->isSuiviEvaluation() ?? false;
+    }
+
+    private function peutEvaluerActivite($user, Activite $activite): bool
+    {
+        if ($user?->isSuiviEvaluation()) {
+            return $activite->statut === 'valide';
+        }
+
+        return $user?->can('view', $activite) ?? false;
     }
 
     /**

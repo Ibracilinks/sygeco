@@ -675,6 +675,7 @@ class DashboardDataService
             ],
             'kpis' => [
                 'objectifs' => (int) ($stats['total_objectifs'] ?? 0),
+                'resultats_strategiques' => count($resultatsStrategiques),
                 'extrants' => (int) ($stats['total_extrants'] ?? 0),
                 'activites' => (int) ($stats['total_activites'] ?? 0),
                 'budget_total' => (float) ($stats['budget_total'] ?? 0),

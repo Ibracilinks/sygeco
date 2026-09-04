@@ -27,23 +27,19 @@
             </div>
         </section>
 
-        <section class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <section class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-5">
             <x-charts.kpi-card title="Objectifs" :value="$kpis['objectifs']" trend="up" color="blue" icon="document-text" />
+            <x-charts.kpi-card title="Resultats strategiques" :value="$kpis['resultats_strategiques']" trend="up" color="purple" icon="chart-bar" />
             <x-charts.kpi-card title="Extrants" :value="$kpis['extrants']" trend="up" color="green" icon="folder" />
             <x-charts.kpi-card title="Activites" :value="$kpis['activites']" trend="up" color="purple" icon="clipboard-document-list" />
-            <x-charts.kpi-card title="Budget total" :value="$kpis['budget_total']" unit="M FCFA" trend="up" color="yellow" icon="banknotes" divisor="1000000" decimals="1" />
+            <x-charts.kpi-card title="Budget total" :value="$kpis['budget_total']" unit="FCFA" trend="up" color="yellow" icon="banknotes" />
         </section>
 
-        <section class="grid grid-cols-1 gap-4 xl:grid-cols-3">
+        <section class="grid grid-cols-1 gap-4 xl:grid-cols-2">
             <div class="rounded-xl border border-emerald-200 bg-emerald-50/90 p-5 dark:border-emerald-900/60 dark:bg-emerald-950/25">
                 <p class="text-xs font-semibold uppercase tracking-wide text-emerald-700 dark:text-emerald-300">Qualite execution</p>
                 <p class="mt-2 text-3xl font-semibold text-emerald-800 dark:text-emerald-200">{{ number_format($kpis['taux_realisation'], 1, ',', ' ') }}%</p>
                 <p class="mt-1 text-sm text-emerald-700/90 dark:text-emerald-300/90">Taux de realisation global</p>
-            </div>
-            <div class="rounded-xl border border-amber-200 bg-amber-50/90 p-5 dark:border-amber-900/60 dark:bg-amber-950/25">
-                <p class="text-xs font-semibold uppercase tracking-wide text-amber-700 dark:text-amber-300">Backlog</p>
-                <p class="mt-2 text-3xl font-semibold text-amber-800 dark:text-amber-200">{{ number_format($kpis['en_attente'], 0, ',', ' ') }}</p>
-                <p class="mt-1 text-sm text-amber-700/90 dark:text-amber-300/90">Activites en brouillon ou soumises</p>
             </div>
             <div class="rounded-xl border border-sky-200 bg-sky-50/90 p-5 dark:border-sky-900/60 dark:bg-sky-950/25">
                 <p class="text-xs font-semibold uppercase tracking-wide text-sky-700 dark:text-sky-300">Soumission moyenne</p>
@@ -276,6 +272,7 @@
             'footer' => 'CANAM',
             'kpis' => [
                 ['label' => 'Objectifs', 'value' => number_format($kpis['objectifs'], 0, ',', ' ')],
+                ['label' => 'Résultats stratégiques', 'value' => number_format($kpis['resultats_strategiques'], 0, ',', ' ')],
                 ['label' => 'Extrants', 'value' => number_format($kpis['extrants'], 0, ',', ' ')],
                 ['label' => 'Activités', 'value' => number_format($kpis['activites'], 0, ',', ' ')],
                 ['label' => 'Budget total', 'value' => number_format($kpis['budget_total'] / 1000000, 1, ',', ' ') . ' M FCFA'],
