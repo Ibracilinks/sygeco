@@ -33,6 +33,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::prefix('documentation')->name('documentation.')->group(function () {
         Route::view('directions-centrales', 'pages.documentation.directions-centrales')->name('directions-centrales');
         Route::view('utilisateurs', 'pages.documentation.utilisateurs')->name('utilisateurs');
+        Route::view('exercices', 'pages.documentation.exercices')->name('exercices');
+        Route::view('planification', 'pages.documentation.planification')->name('planification');
+        Route::view('activites', 'pages.documentation.activites')->name('activites');
+        Route::view('validation', 'pages.documentation.validation')->name('validation');
+        Route::view('suivi', 'pages.documentation.suivi')->name('suivi');
+        Route::view('missions', 'pages.documentation.missions')->name('missions');
     });
 
     // Notifications in-app (accessible à tout utilisateur connecté)

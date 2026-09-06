@@ -11,6 +11,12 @@
         'index' => ['route' => 'documentation', 'label' => 'Accueil du manuel', 'icone' => '🏠'],
         'directions-centrales' => ['route' => 'documentation.directions-centrales', 'label' => 'Directions Centrales', 'icone' => '🏢'],
         'utilisateurs' => ['route' => 'documentation.utilisateurs', 'label' => 'Utilisateurs', 'icone' => '👥'],
+        'exercices' => ['route' => 'documentation.exercices', 'label' => 'Exercices', 'icone' => '📅'],
+        'planification' => ['route' => 'documentation.planification', 'label' => 'Planification', 'icone' => '🎯'],
+        'activites' => ['route' => 'documentation.activites', 'label' => 'Activités', 'icone' => '📋'],
+        'validation' => ['route' => 'documentation.validation', 'label' => 'Validation', 'icone' => '✅'],
+        'suivi' => ['route' => 'documentation.suivi', 'label' => 'Suivi & évaluation', 'icone' => '📊'],
+        'missions' => ['route' => 'documentation.missions', 'label' => 'Missions', 'icone' => '🧳'],
     ];
 @endphp
 

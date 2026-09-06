@@ -52,8 +52,31 @@
                 <p class="text-sm font-semibold text-slate-800 group-hover:text-sky-800 dark:text-slate-100 dark:group-hover:text-sky-200">👥 Utilisateurs</p>
                 <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">Comptes, rattachement à une structure, attribution des rôles, mot de passe, mail de bienvenue, périmètre de visibilité.</p>
             </a>
+            <a href="{{ route('documentation.exercices') }}" class="group rounded-lg border border-slate-200 p-4 transition hover:border-sky-300 hover:bg-sky-50/50 dark:border-slate-700 dark:hover:border-sky-800 dark:hover:bg-sky-950/20">
+                <p class="text-sm font-semibold text-slate-800 group-hover:text-sky-800 dark:text-slate-100 dark:group-hover:text-sky-200">📅 Exercices</p>
+                <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">Année budgétaire, fenêtres de saisie, de mi-parcours et d'évaluation, statut actif, export du PTA.</p>
+            </a>
+            <a href="{{ route('documentation.planification') }}" class="group rounded-lg border border-slate-200 p-4 transition hover:border-sky-300 hover:bg-sky-50/50 dark:border-slate-700 dark:hover:border-sky-800 dark:hover:bg-sky-950/20">
+                <p class="text-sm font-semibold text-slate-800 group-hover:text-sky-800 dark:text-slate-100 dark:group-hover:text-sky-200">🎯 Planification</p>
+                <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">Objectifs stratégiques, résultats et extrants : hiérarchie du cadre logique, création, activation, suppression.</p>
+            </a>
+            <a href="{{ route('documentation.activites') }}" class="group rounded-lg border border-slate-200 p-4 transition hover:border-sky-300 hover:bg-sky-50/50 dark:border-slate-700 dark:hover:border-sky-800 dark:hover:bg-sky-950/20">
+                <p class="text-sm font-semibold text-slate-800 group-hover:text-sky-800 dark:text-slate-100 dark:group-hover:text-sky-200">📋 Activités</p>
+                <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">Création, chronogramme, coût, activité non programmée, pièces jointes, soumission pour validation.</p>
+            </a>
+            <a href="{{ route('documentation.validation') }}" class="group rounded-lg border border-slate-200 p-4 transition hover:border-sky-300 hover:bg-sky-50/50 dark:border-slate-700 dark:hover:border-sky-800 dark:hover:bg-sky-950/20">
+                <p class="text-sm font-semibold text-slate-800 group-hover:text-sky-800 dark:text-slate-100 dark:group-hover:text-sky-200">✅ Validation</p>
+                <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">Circuit montant, validation groupée, arbitrage budgétaire (modifier, supprimer, fusionner), historique.</p>
+            </a>
+            <a href="{{ route('documentation.suivi') }}" class="group rounded-lg border border-slate-200 p-4 transition hover:border-sky-300 hover:bg-sky-50/50 dark:border-slate-700 dark:hover:border-sky-800 dark:hover:bg-sky-950/20">
+                <p class="text-sm font-semibold text-slate-800 group-hover:text-sky-800 dark:text-slate-100 dark:group-hover:text-sky-200">📊 Suivi &amp; évaluation</p>
+                <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">Renseigner l'exécution à mi-parcours et en fin d'exercice, comparatif budgétaire, export.</p>
+            </a>
+            <a href="{{ route('documentation.missions') }}" class="group rounded-lg border border-slate-200 p-4 transition hover:border-sky-300 hover:bg-sky-50/50 dark:border-slate-700 dark:hover:border-sky-800 dark:hover:bg-sky-950/20">
+                <p class="text-sm font-semibold text-slate-800 group-hover:text-sky-800 dark:text-slate-100 dark:group-hover:text-sky-200">🧳 Missions</p>
+                <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">Ordres de mission, participants et signataires, calcul automatique par barème, finalisation et PDF.</p>
+            </a>
         </div>
-        <p class="text-xs text-slate-500 dark:text-slate-400">D'autres chapitres (Exercices, Planification, Activités, Validation, Suivi) viendront compléter le manuel ; leur contenu figure pour l'instant en résumé ci-dessous.</p>
     </x-doc.section>
 
     <x-doc.section id="roles" titre="3. Rôles & niveaux d'accès" chapo="Les droits dépendent de votre rôle et de votre rattachement dans la hiérarchie des structures.">
@@ -113,25 +136,30 @@
         <x-doc.astuce>Utilisez le sélecteur d'exercice pour changer d'année de référence.</x-doc.astuce>
     </x-doc.section>
 
-    <x-doc.section id="planification" titre="6. Planification (PTA)" chapo="La planification se structure en cascade :">
+    <x-doc.section id="planification" titre="6. Planification (PTA)" chapo="Le cadre logique se structure en cascade, de l'objectif stratégique jusqu'à l'activité :">
         <div class="space-y-2">
             <div class="flex items-center gap-3 rounded-lg bg-slate-50 p-3 dark:bg-slate-950/40">
-                <span class="rounded bg-sky-100 px-2 py-0.5 text-xs font-semibold text-sky-800 dark:bg-sky-950/50 dark:text-sky-200">Résultat stratégique</span>
-                <span class="text-slate-500 dark:text-slate-400">→ orientation de haut niveau</span>
+                <span class="rounded bg-indigo-100 px-2 py-0.5 text-xs font-semibold text-indigo-800 dark:bg-indigo-950/50 dark:text-indigo-200">Objectif stratégique</span>
+                <span class="text-slate-500 dark:text-slate-400">→ couvre un ou plusieurs exercices</span>
             </div>
             <div class="flex items-center gap-3 rounded-lg bg-slate-50 p-3 dark:bg-slate-950/40">
-                <span class="rounded bg-indigo-100 px-2 py-0.5 text-xs font-semibold text-indigo-800 dark:bg-indigo-950/50 dark:text-indigo-200">Objectif</span>
-                <span class="text-slate-500 dark:text-slate-400">→ rattaché à un exercice</span>
+                <span class="rounded bg-emerald-100 px-2 py-0.5 text-xs font-semibold text-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-200">Résultat stratégique</span>
+                <span class="text-slate-500 dark:text-slate-400">→ rattaché à un objectif</span>
             </div>
             <div class="flex items-center gap-3 rounded-lg bg-slate-50 p-3 dark:bg-slate-950/40">
-                <span class="rounded bg-emerald-100 px-2 py-0.5 text-xs font-semibold text-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-200">Extrant / Résultat</span>
-                <span class="text-slate-500 dark:text-slate-400">→ produit attendu</span>
+                <span class="rounded bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-800 dark:bg-amber-950/50 dark:text-amber-200">Extrant</span>
+                <span class="text-slate-500 dark:text-slate-400">→ rattaché à un résultat</span>
             </div>
             <div class="flex items-center gap-3 rounded-lg bg-slate-50 p-3 dark:bg-slate-950/40">
-                <span class="rounded bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-800 dark:bg-amber-950/50 dark:text-amber-200">Activité</span>
+                <span class="rounded bg-sky-100 px-2 py-0.5 text-xs font-semibold text-sky-800 dark:bg-sky-950/50 dark:text-sky-200">Activité</span>
                 <span class="text-slate-500 dark:text-slate-400">→ action concrète, budgétée et positionnée sur le chronogramme</span>
             </div>
         </div>
+        <x-doc.astuce>
+            Le détail de ce référentiel (champs, activation, suppression) fait l'objet du chapitre
+            <a href="{{ route('documentation.planification') }}" class="font-medium underline">🎯 Planification</a>,
+            et le calendrier (fenêtres, statut actif) du chapitre <a href="{{ route('documentation.exercices') }}" class="font-medium underline">📅 Exercices</a>.
+        </x-doc.astuce>
     </x-doc.section>
 
     <x-doc.section id="activites" titre="7. Gestion des activités">
@@ -147,6 +175,10 @@
             Une activité imprévue (hors PTA) peut être ajoutée depuis la page <strong>Suivi</strong> via le bouton
             « + Activité non programmée ». Elle est rattachée directement à l'exercice en cours.
         </p>
+        <x-doc.astuce>
+            Détail complet des champs, du cycle de vie et des pièces jointes dans le chapitre
+            <a href="{{ route('documentation.activites') }}" class="font-medium underline">📋 Activités</a>.
+        </x-doc.astuce>
     </x-doc.section>
 
     <x-doc.section id="validation" titre="8. Circuit de validation" chapo="Les activités suivent une validation montante le long de la hiérarchie :">
@@ -164,33 +196,41 @@
             <li>Le responsable peut procéder à un <strong>arbitrage budgétaire</strong> (modification, suppression ou fusion) avant validation.</li>
             <li>Chaque action est tracée dans l'historique de validation de l'activité.</li>
         </ul>
+        <x-doc.astuce>
+            Écrans, périmètre exact du chef et arbitrage détaillés dans le chapitre
+            <a href="{{ route('documentation.validation') }}" class="font-medium underline">✅ Validation</a>.
+        </x-doc.astuce>
     </x-doc.section>
 
     <x-doc.section id="suivi" titre="9. Suivi & évaluation">
         <p>
-            La saisie de l'exécution n'est ouverte que pendant les <strong>fenêtres de mi-parcours ou d'évaluation</strong>
-            (le DBCGOQ y a accès en permanence). Depuis la page <strong>Suivi</strong> ou le détail d'une activité,
-            cliquez sur <strong>« ✎ Renseigner l'évaluation »</strong> pour ouvrir la fenêtre de saisie.
+            Depuis la page <strong>Suivi</strong> (mi-parcours ou fin d'année) ou le détail d'une activité, cliquez sur
+            <strong>« ✎ Renseigner l'évaluation »</strong> pour ouvrir la fenêtre de saisie. La saisie de l'exécution
+            reste <strong>ouverte en permanence</strong> : les dates de mi-parcours et d'évaluation réglées sur
+            l'exercice n'affichent qu'un bandeau indicatif, elles ne ferment jamais le formulaire.
         </p>
         <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div class="rounded-lg border border-slate-200 p-4 dark:border-slate-700">
                 <p class="text-sm font-medium text-slate-800 dark:text-slate-100">État d'exécution</p>
-                <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">Non réalisé / En cours / Réalisé, avec une observation libre.</p>
+                <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">Non réalisé / En cours / Réalisé, avec une observation obligatoire.</p>
             </div>
             <div class="rounded-lg border border-slate-200 p-4 dark:border-slate-700">
                 <p class="text-sm font-medium text-slate-800 dark:text-slate-100">Budget utilisé</p>
-                <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">Montant réellement consommé, comparé au budget planifié.</p>
+                <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">Montant réellement consommé ; visible uniquement pour superadmin/dbcgoq.</p>
             </div>
             <div class="rounded-lg border border-slate-200 p-4 dark:border-slate-700">
                 <p class="text-sm font-medium text-slate-800 dark:text-slate-100">Valeur de l'indicateur</p>
-                <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">Résultat mesuré de l'indicateur de l'activité.</p>
+                <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">Résultat mesuré de l'indicateur de l'activité (texte libre).</p>
             </div>
             <div class="rounded-lg border border-slate-200 p-4 dark:border-slate-700">
-                <p class="text-sm font-medium text-slate-800 dark:text-slate-100">Comparatif analytique</p>
-                <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">Sur le détail : écart / économie, taux de consommation du budget et alerte de dépassement.</p>
+                <p class="text-sm font-medium text-slate-800 dark:text-slate-100">Écart budgétaire</p>
+                <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">Planifié moins utilisé, sur le détail de l'activité.</p>
             </div>
         </div>
-        <x-doc.astuce>Un écart budgétaire positif indique une économie ; en rouge, un dépassement du budget planifié.</x-doc.astuce>
+        <x-doc.astuce>
+            Un écart budgétaire positif indique une économie ; en rouge, un dépassement du budget planifié. Détail
+            complet dans le chapitre <a href="{{ route('documentation.suivi') }}" class="font-medium underline">📊 Suivi &amp; évaluation</a>.
+        </x-doc.astuce>
     </x-doc.section>
 
     <x-doc.section id="budget" titre="10. Analyse budgétaire">
