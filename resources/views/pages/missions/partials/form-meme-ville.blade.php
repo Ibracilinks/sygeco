@@ -73,9 +73,9 @@
     <div class="rounded-xl border border-slate-200 p-4 dark:border-slate-700">
         <div class="mb-3 flex items-center justify-between gap-3">
             <div>
-                <h2 class="text-sm font-semibold text-slate-900 dark:text-white">Participants</h2>
+                <h2 class="text-sm font-semibold text-slate-900 dark:text-white">Participants <span class="font-normal text-slate-400" data-row-count="participants">(1)</span></h2>
             </div>
-            <button type="button" class="rounded-lg bg-slate-200 px-3 py-2 text-xs font-medium text-slate-800 dark:bg-slate-700 dark:text-slate-100" data-add-row="participants">Ajouter</button>
+            <button type="button" title="Ajouter un participant (ou appuyez sur Entrée dans le dernier champ)" class="rounded-lg bg-slate-200 px-3 py-2 text-xs font-medium text-slate-800 transition hover:bg-slate-300 dark:bg-slate-700 dark:text-slate-100 dark:hover:bg-slate-600" data-add-row="participants">+ Ajouter</button>
         </div>
         <div id="participants-rows" class="space-y-3">
             @foreach ($participantValues as $index => $participant)
@@ -85,7 +85,7 @@
                             class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-950">
                     </div>
                     <div class="md:col-span-1">
-                        <button type="button" class="w-full rounded-lg bg-red-100 px-3 py-2 text-xs font-medium text-red-700 dark:bg-red-950 dark:text-red-200" data-remove-row>X</button>
+                        <button type="button" class="w-full rounded-lg bg-red-100 px-3 py-2 text-xs font-medium text-red-700 dark:bg-red-950 dark:text-red-200" data-remove-row>&times;</button>
                     </div>
                 </div>
             @endforeach
@@ -95,9 +95,9 @@
     <div class="rounded-xl border border-slate-200 p-4 dark:border-slate-700">
         <div class="mb-3 flex items-center justify-between gap-3">
             <div>
-                <h2 class="text-sm font-semibold text-slate-900 dark:text-white">Signataires</h2>
+                <h2 class="text-sm font-semibold text-slate-900 dark:text-white">Signataires <span class="font-normal text-slate-400" data-row-count="signataires">(1)</span></h2>
             </div>
-            <button type="button" class="rounded-lg bg-slate-200 px-3 py-2 text-xs font-medium text-slate-800 dark:bg-slate-700 dark:text-slate-100" data-add-row="signataires">Ajouter</button>
+            <button type="button" title="Ajouter un signataire (ou appuyez sur Entrée dans le dernier champ)" class="rounded-lg bg-slate-200 px-3 py-2 text-xs font-medium text-slate-800 transition hover:bg-slate-300 dark:bg-slate-700 dark:text-slate-100 dark:hover:bg-slate-600" data-add-row="signataires">+ Ajouter</button>
         </div>
         <div id="signataires-rows" class="space-y-3">
             @foreach ($signataireValues as $index => $signataire)
@@ -105,7 +105,7 @@
                     <div class="md:col-span-4"><input type="text" name="signataires[{{ $index }}][libelle]" value="{{ $signataire['libelle'] ?? '' }}" placeholder="Libellé" class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-950"></div>
                     <div class="md:col-span-3"><input type="text" name="signataires[{{ $index }}][nom]" value="{{ $signataire['nom'] ?? '' }}" placeholder="Nom" class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-950"></div>
                     <div class="md:col-span-4"><input type="text" name="signataires[{{ $index }}][fonction]" value="{{ $signataire['fonction'] ?? '' }}" placeholder="Fonction (facultatif)" class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-950"></div>
-                    <div class="md:col-span-1"><button type="button" class="w-full rounded-lg bg-red-100 px-3 py-2 text-xs font-medium text-red-700 dark:bg-red-950 dark:text-red-200" data-remove-row>X</button></div>
+                    <div class="md:col-span-1"><button type="button" class="w-full rounded-lg bg-red-100 px-3 py-2 text-xs font-medium text-red-700 dark:bg-red-950 dark:text-red-200" data-remove-row>&times;</button></div>
                 </div>
             @endforeach
         </div>
@@ -115,7 +115,7 @@
 <template id="participant-row-template">
     <div class="grid grid-cols-1 gap-2 rounded-lg border border-slate-200 p-3 dark:border-slate-700 md:grid-cols-12" data-row>
         <div class="md:col-span-11"><input type="text" data-name="nom_complet" placeholder="Prénoms et noms" class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-950"></div>
-        <div class="md:col-span-1"><button type="button" class="w-full rounded-lg bg-red-100 px-3 py-2 text-xs font-medium text-red-700 dark:bg-red-950 dark:text-red-200" data-remove-row>X</button></div>
+        <div class="md:col-span-1"><button type="button" class="w-full rounded-lg bg-red-100 px-3 py-2 text-xs font-medium text-red-700 dark:bg-red-950 dark:text-red-200" data-remove-row>&times;</button></div>
     </div>
 </template>
 
@@ -124,7 +124,7 @@
         <div class="md:col-span-4"><input type="text" data-name="libelle" placeholder="Libellé" class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-950"></div>
         <div class="md:col-span-3"><input type="text" data-name="nom" placeholder="Nom" class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-950"></div>
         <div class="md:col-span-4"><input type="text" data-name="fonction" placeholder="Fonction (facultatif)" class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-950"></div>
-        <div class="md:col-span-1"><button type="button" class="w-full rounded-lg bg-red-100 px-3 py-2 text-xs font-medium text-red-700 dark:bg-red-950 dark:text-red-200" data-remove-row>X</button></div>
+        <div class="md:col-span-1"><button type="button" class="w-full rounded-lg bg-red-100 px-3 py-2 text-xs font-medium text-red-700 dark:bg-red-950 dark:text-red-200" data-remove-row>&times;</button></div>
     </div>
 </template>
 
@@ -157,29 +157,62 @@
                 const container = document.getElementById(rowsId);
                 const template = document.getElementById(templateId);
                 if (!container || !template) return;
+                const rows = () => [...container.querySelectorAll('[data-row]')];
+                const focusFirstInput = (row) => row?.querySelector('input, select')?.focus();
+
                 const renumber = () => {
-                    [...container.querySelectorAll('[data-row]')].forEach((row, index) => {
+                    const allRows = rows();
+                    allRows.forEach((row, index) => {
                         row.querySelectorAll('[data-name]').forEach((input) => {
                             input.name = `${collectionName}[${index}][${input.dataset.name}]`;
                         });
                     });
+                    container.querySelectorAll('[data-remove-row]').forEach((button) => {
+                        const seule = allRows.length <= 1;
+                        button.disabled = seule;
+                        button.classList.toggle('opacity-40', seule);
+                        button.classList.toggle('cursor-not-allowed', seule);
+                        button.title = seule ? 'Au moins une ligne est requise' : 'Retirer cette ligne';
+                    });
+                    const compteur = document.querySelector(`[data-row-count="${collectionName}"]`);
+                    if (compteur) compteur.textContent = `(${allRows.length})`;
                 };
+
+                const addRow = () => {
+                    container.appendChild(template.content.cloneNode(true));
+                    renumber();
+                    focusFirstInput(rows()[rows().length - 1]);
+                };
+
                 document.querySelectorAll(`[data-add-row="${collectionName}"]`).forEach((button) => {
                     if (button.dataset.bound === '1') return;
                     button.dataset.bound = '1';
-                    button.addEventListener('click', () => {
-                        container.appendChild(template.content.cloneNode(true));
-                        renumber();
-                    });
+                    button.addEventListener('click', addRow);
                 });
                 if (container.dataset.bound !== '1') {
                     container.dataset.bound = '1';
                     container.addEventListener('click', (event) => {
                         const button = event.target.closest('[data-remove-row]');
-                        if (!button || container.querySelectorAll('[data-row]').length <= 1) return;
+                        if (!button || button.disabled) return;
                         button.closest('[data-row]')?.remove();
                         renumber();
                     });
+                    // Entrée dans un champ ajoute une ligne (ou passe au champ suivant) au lieu de soumettre le formulaire.
+                    container.addEventListener('keydown', (event) => {
+                        if (event.key !== 'Enter' || event.target.tagName !== 'INPUT') return;
+                        event.preventDefault();
+                        const currentRow = event.target.closest('[data-row]');
+                        const allRows = rows();
+                        const currentIndex = allRows.indexOf(currentRow);
+                        if (currentIndex === allRows.length - 1) {
+                            addRow();
+                        } else {
+                            focusFirstInput(allRows[currentIndex + 1]);
+                        }
+                    });
+                    container.addEventListener('blur', (event) => {
+                        if (event.target.tagName === 'INPUT') event.target.value = event.target.value.trim();
+                    }, true);
                 }
                 renumber();
             };

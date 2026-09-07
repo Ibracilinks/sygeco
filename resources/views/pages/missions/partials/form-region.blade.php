@@ -39,7 +39,7 @@
     </div>
     <div>
         <label for="destinations" class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-200">Régions de destination</label>
-        <select id="destinations" name="destinations[]" multiple size="4" class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-950">
+        <select id="destinations" name="destinations[]" multiple size="4" data-ux-enhance data-placeholder="Choisir une ou plusieurs régions…" class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-950">
             {{-- Une destination saisie autrefois en texte libre reste sélectionnable. --}}
             @foreach ($regionsHorsListe as $region)
                 <option value="{{ $region }}" selected>{{ $region }}</option>
@@ -48,7 +48,6 @@
                 <option value="{{ $region }}" @selected(in_array($region, $destinationsSelectionnees, true))>{{ $code }} — {{ $region }}</option>
             @endforeach
         </select>
-        <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">Ctrl (⌘ sur Mac) pour en sélectionner plusieurs.</p>
         @error('destinations')<p class="mt-1 text-xs text-red-600">{{ $message }}</p>@enderror
         @error('destinations.*')<p class="mt-1 text-xs text-red-600">{{ $message }}</p>@enderror
     </div>
@@ -91,7 +90,7 @@
 </div>
 
 <div class="rounded-xl border border-slate-200 p-4 dark:border-slate-700">
-    <div class="mb-3 flex items-center justify-between gap-3"><div><h2 class="text-sm font-semibold text-slate-900 dark:text-white">Étapes de mission</h2></div><button type="button" class="rounded-lg bg-slate-200 px-3 py-2 text-xs font-medium text-slate-800 dark:bg-slate-700 dark:text-slate-100" data-add-row="etapes">Ajouter</button></div>
+    <div class="mb-3 flex items-center justify-between gap-3"><div><h2 class="text-sm font-semibold text-slate-900 dark:text-white">Étapes de mission <span class="font-normal text-slate-400" data-row-count="etapes">(1)</span></h2></div><button type="button" title="Ajouter une étape (ou appuyez sur Entrée dans le dernier champ)" class="rounded-lg bg-slate-200 px-3 py-2 text-xs font-medium text-slate-800 transition hover:bg-slate-300 dark:bg-slate-700 dark:text-slate-100 dark:hover:bg-slate-600" data-add-row="etapes">+ Ajouter</button></div>
     <p class="mb-3 text-xs text-slate-500 dark:text-slate-400" data-etapes-total>
         Total des jours d'étapes : <span class="font-semibold" data-etapes-jours>{{ $totalJoursEtapes }}</span>
         sur <span class="font-semibold" data-mission-jours>{{ $mission->nombre_jours }}</span> jour(s) de mission.
@@ -105,7 +104,7 @@
                 <div class="md:col-span-3"><input type="text" name="etapes[{{ $index }}][localite]" value="{{ $etape['localite'] ?? '' }}" placeholder="Localité" class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-950"></div>
                 <div class="md:col-span-2"><input type="number" min="1" max="365" name="etapes[{{ $index }}][nombre_jours]" value="{{ $etape['nombre_jours'] ?? 1 }}" placeholder="Jours" title="Nombre de jours de l'étape" class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-950">@error('etapes.'.$index.'.nombre_jours')<p class="mt-1 text-xs text-red-600">{{ $message }}</p>@enderror</div>
                 <div class="md:col-span-2 flex items-center justify-center"><label class="flex items-center gap-2 text-xs text-slate-600 dark:text-slate-300"><input type="checkbox" name="etapes[{{ $index }}][premiere_nuitee_payee]" value="1" @checked(!empty($etape['premiere_nuitee_payee']))>1re nuit</label></div>
-                <div class="md:col-span-1"><button type="button" class="w-full rounded-lg bg-red-100 px-3 py-2 text-xs font-medium text-red-700 dark:bg-red-950 dark:text-red-200" data-remove-row>X</button></div>
+                <div class="md:col-span-1"><button type="button" class="w-full rounded-lg bg-red-100 px-3 py-2 text-xs font-medium text-red-700 dark:bg-red-950 dark:text-red-200" data-remove-row>&times;</button></div>
             </div>
         @endforeach
     </div>
@@ -113,26 +112,26 @@
 
 <div class="mt-6 grid grid-cols-1 gap-6 xl:grid-cols-2">
     <div class="rounded-xl border border-slate-200 p-4 dark:border-slate-700">
-        <div class="mb-3 flex items-center justify-between gap-3"><h2 class="text-sm font-semibold text-slate-900 dark:text-white">Participants</h2><button type="button" class="rounded-lg bg-slate-200 px-3 py-2 text-xs font-medium text-slate-800 dark:bg-slate-700 dark:text-slate-100" data-add-row="participants">Ajouter</button></div>
+        <div class="mb-3 flex items-center justify-between gap-3"><h2 class="text-sm font-semibold text-slate-900 dark:text-white">Participants <span class="font-normal text-slate-400" data-row-count="participants">(1)</span></h2><button type="button" title="Ajouter un participant (ou appuyez sur Entrée dans le dernier champ)" class="rounded-lg bg-slate-200 px-3 py-2 text-xs font-medium text-slate-800 transition hover:bg-slate-300 dark:bg-slate-700 dark:text-slate-100 dark:hover:bg-slate-600" data-add-row="participants">+ Ajouter</button></div>
         <div id="participants-rows" class="space-y-3">
             @foreach ($participantValues as $index => $participant)
                 <div class="grid grid-cols-1 gap-2 rounded-lg border border-slate-200 p-3 dark:border-slate-700 md:grid-cols-12" data-row>
                     <div class="md:col-span-8"><input type="text" name="participants[{{ $index }}][nom_complet]" value="{{ $participant['nom_complet'] ?? '' }}" placeholder="Prénoms et noms" class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-950"></div>
                     <div class="md:col-span-3"><select name="participants[{{ $index }}][categorie]" class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-950"><option value="">Catégorie</option>@foreach (\App\Models\Mission::categoriesNationales() as $code => $categorie)<option value="{{ $code }}" @selected(($participant['categorie'] ?? null) === $code)>{{ $categorie['label'] }}</option>@endforeach</select></div>
-                    <div class="md:col-span-1"><button type="button" class="w-full rounded-lg bg-red-100 px-3 py-2 text-xs font-medium text-red-700 dark:bg-red-950 dark:text-red-200" data-remove-row>X</button></div>
+                    <div class="md:col-span-1"><button type="button" class="w-full rounded-lg bg-red-100 px-3 py-2 text-xs font-medium text-red-700 dark:bg-red-950 dark:text-red-200" data-remove-row>&times;</button></div>
                 </div>
             @endforeach
         </div>
     </div>
     <div class="rounded-xl border border-slate-200 p-4 dark:border-slate-700">
-        <div class="mb-3 flex items-center justify-between gap-3"><h2 class="text-sm font-semibold text-slate-900 dark:text-white">Signataires</h2><button type="button" class="rounded-lg bg-slate-200 px-3 py-2 text-xs font-medium text-slate-800 dark:bg-slate-700 dark:text-slate-100" data-add-row="signataires">Ajouter</button></div>
+        <div class="mb-3 flex items-center justify-between gap-3"><h2 class="text-sm font-semibold text-slate-900 dark:text-white">Signataires <span class="font-normal text-slate-400" data-row-count="signataires">(1)</span></h2><button type="button" title="Ajouter un signataire (ou appuyez sur Entrée dans le dernier champ)" class="rounded-lg bg-slate-200 px-3 py-2 text-xs font-medium text-slate-800 transition hover:bg-slate-300 dark:bg-slate-700 dark:text-slate-100 dark:hover:bg-slate-600" data-add-row="signataires">+ Ajouter</button></div>
         <div id="signataires-rows" class="space-y-3">
             @foreach ($signataireValues as $index => $signataire)
                 <div class="grid grid-cols-1 gap-2 rounded-lg border border-slate-200 p-3 dark:border-slate-700 md:grid-cols-12" data-row>
                     <div class="md:col-span-4"><input type="text" name="signataires[{{ $index }}][libelle]" value="{{ $signataire['libelle'] ?? '' }}" placeholder="Libellé" class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-950"></div>
                     <div class="md:col-span-3"><input type="text" name="signataires[{{ $index }}][nom]" value="{{ $signataire['nom'] ?? '' }}" placeholder="Nom" class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-950"></div>
                     <div class="md:col-span-4"><input type="text" name="signataires[{{ $index }}][fonction]" value="{{ $signataire['fonction'] ?? '' }}" placeholder="Fonction (facultatif)" class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-950"></div>
-                    <div class="md:col-span-1"><button type="button" class="w-full rounded-lg bg-red-100 px-3 py-2 text-xs font-medium text-red-700 dark:bg-red-950 dark:text-red-200" data-remove-row>X</button></div>
+                    <div class="md:col-span-1"><button type="button" class="w-full rounded-lg bg-red-100 px-3 py-2 text-xs font-medium text-red-700 dark:bg-red-950 dark:text-red-200" data-remove-row>&times;</button></div>
                 </div>
             @endforeach
         </div>
@@ -143,7 +142,7 @@
     <div class="grid grid-cols-1 gap-2 rounded-lg border border-slate-200 p-3 dark:border-slate-700 md:grid-cols-12" data-row>
         <div class="md:col-span-8"><input type="text" data-name="nom_complet" placeholder="Prénoms et noms" class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-950"></div>
         <div class="md:col-span-3"><select data-name="categorie" class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-950"><option value="">Catégorie</option>@foreach (\App\Models\Mission::categoriesNationales() as $code => $categorie)<option value="{{ $code }}">{{ $categorie['label'] }}</option>@endforeach</select></div>
-        <div class="md:col-span-1"><button type="button" class="w-full rounded-lg bg-red-100 px-3 py-2 text-xs font-medium text-red-700 dark:bg-red-950 dark:text-red-200" data-remove-row>X</button></div>
+        <div class="md:col-span-1"><button type="button" class="w-full rounded-lg bg-red-100 px-3 py-2 text-xs font-medium text-red-700 dark:bg-red-950 dark:text-red-200" data-remove-row>&times;</button></div>
     </div>
 </template>
 
@@ -154,7 +153,7 @@
         <div class="md:col-span-3"><input type="text" data-name="localite" placeholder="Localité" class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-950"></div>
         <div class="md:col-span-2"><input type="number" min="1" max="365" value="1" data-name="nombre_jours" placeholder="Jours" title="Nombre de jours de l'étape" class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-950"></div>
         <div class="md:col-span-2 flex items-center justify-center"><label class="flex items-center gap-2 text-xs text-slate-600 dark:text-slate-300"><input type="checkbox" data-name="premiere_nuitee_payee" value="1">1re nuit</label></div>
-        <div class="md:col-span-1"><button type="button" class="w-full rounded-lg bg-red-100 px-3 py-2 text-xs font-medium text-red-700 dark:bg-red-950 dark:text-red-200" data-remove-row>X</button></div>
+        <div class="md:col-span-1"><button type="button" class="w-full rounded-lg bg-red-100 px-3 py-2 text-xs font-medium text-red-700 dark:bg-red-950 dark:text-red-200" data-remove-row>&times;</button></div>
     </div>
 </template>
 
@@ -163,7 +162,7 @@
         <div class="md:col-span-4"><input type="text" data-name="libelle" placeholder="Libellé" class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-950"></div>
         <div class="md:col-span-3"><input type="text" data-name="nom" placeholder="Nom" class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-950"></div>
         <div class="md:col-span-4"><input type="text" data-name="fonction" placeholder="Fonction (facultatif)" class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-950"></div>
-        <div class="md:col-span-1"><button type="button" class="w-full rounded-lg bg-red-100 px-3 py-2 text-xs font-medium text-red-700 dark:bg-red-950 dark:text-red-200" data-remove-row>X</button></div>
+        <div class="md:col-span-1"><button type="button" class="w-full rounded-lg bg-red-100 px-3 py-2 text-xs font-medium text-red-700 dark:bg-red-950 dark:text-red-200" data-remove-row>&times;</button></div>
     </div>
 </template>
 
@@ -184,29 +183,62 @@
                 const container = document.getElementById(rowsId);
                 const template = document.getElementById(templateId);
                 if (!container || !template) return;
+                const rows = () => [...container.querySelectorAll('[data-row]')];
+                const focusFirstInput = (row) => row?.querySelector('input, select')?.focus();
+
                 const renumber = () => {
-                    [...container.querySelectorAll('[data-row]')].forEach((row, index) => {
+                    const allRows = rows();
+                    allRows.forEach((row, index) => {
                         row.querySelectorAll('[data-name]').forEach((input) => {
                             input.name = `${collectionName}[${index}][${input.dataset.name}]`;
                         });
                     });
+                    container.querySelectorAll('[data-remove-row]').forEach((button) => {
+                        const seule = allRows.length <= 1;
+                        button.disabled = seule;
+                        button.classList.toggle('opacity-40', seule);
+                        button.classList.toggle('cursor-not-allowed', seule);
+                        button.title = seule ? 'Au moins une ligne est requise' : 'Retirer cette ligne';
+                    });
+                    const compteur = document.querySelector(`[data-row-count="${collectionName}"]`);
+                    if (compteur) compteur.textContent = `(${allRows.length})`;
                 };
+
+                const addRow = () => {
+                    container.appendChild(template.content.cloneNode(true));
+                    renumber();
+                    focusFirstInput(rows()[rows().length - 1]);
+                };
+
                 document.querySelectorAll(`[data-add-row="${collectionName}"]`).forEach((button) => {
                     if (button.dataset.bound === '1') return;
                     button.dataset.bound = '1';
-                    button.addEventListener('click', () => {
-                        container.appendChild(template.content.cloneNode(true));
-                        renumber();
-                    });
+                    button.addEventListener('click', addRow);
                 });
                 if (container.dataset.bound !== '1') {
                     container.dataset.bound = '1';
                     container.addEventListener('click', (event) => {
                         const button = event.target.closest('[data-remove-row]');
-                        if (!button || container.querySelectorAll('[data-row]').length <= 1) return;
+                        if (!button || button.disabled) return;
                         button.closest('[data-row]')?.remove();
                         renumber();
                     });
+                    // Entrée dans un champ ajoute une ligne (ou passe au champ suivant) au lieu de soumettre le formulaire.
+                    container.addEventListener('keydown', (event) => {
+                        if (event.key !== 'Enter' || event.target.tagName !== 'INPUT') return;
+                        event.preventDefault();
+                        const currentRow = event.target.closest('[data-row]');
+                        const allRows = rows();
+                        const currentIndex = allRows.indexOf(currentRow);
+                        if (currentIndex === allRows.length - 1) {
+                            addRow();
+                        } else {
+                            focusFirstInput(allRows[currentIndex + 1]);
+                        }
+                    });
+                    container.addEventListener('blur', (event) => {
+                        if (event.target.tagName === 'INPUT' && event.target.type === 'text') event.target.value = event.target.value.trim();
+                    }, true);
                 }
                 renumber();
             };
