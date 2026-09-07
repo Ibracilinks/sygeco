@@ -59,6 +59,7 @@
     </x-doc.section>
 
     <x-doc.section id="ecran" titre="3. Écran de suivi" chapo="Un écran distinct par période (mi-parcours / fin d'année), avec ses propres filtres et compteurs.">
+        <x-doc.capture src="images/manuel/suivi.png" alt="Écran de suivi Mi-parcours">Le bandeau de fenêtre, les compteurs d'exécution et le tableau des activités validées.</x-doc.capture>
         <div class="grid grid-cols-1 gap-3 sm:grid-cols-3">
             <div class="rounded-lg border border-slate-200 p-4 dark:border-slate-700">
                 <p class="text-sm font-medium text-slate-800 dark:text-slate-100">État d'exécution</p>

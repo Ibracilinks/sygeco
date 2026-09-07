@@ -128,6 +128,7 @@
     </x-doc.section>
 
     <x-doc.section id="dashboard" titre="5. Tableau de bord" chapo="Le tableau de bord synthétise l'exercice sélectionné :">
+        <x-doc.capture src="images/manuel/dashboard.png" alt="Tableau de bord SYGECO">Le tableau de bord : indicateurs clés, chronogramme et répartitions.</x-doc.capture>
         <ul class="list-disc space-y-1.5 pl-5">
             <li><strong>Indicateurs clés</strong> : nombre d'objectifs, d'extrants, d'activités, budget total, taux de réalisation.</li>
             <li><strong>Évolution du chronogramme</strong> : volume d'activités planifiées et dynamique budgétaire par période (T1 → T4).</li>

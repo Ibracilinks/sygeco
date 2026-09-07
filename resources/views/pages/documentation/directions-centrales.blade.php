@@ -111,6 +111,7 @@
     </x-doc.section>
 
     <x-doc.section id="liste" titre="4. Écran « Directions Centrales »" chapo="L'écran principal se lit de haut en bas : compteurs, filtres, organigramme, tableau paginé.">
+        <x-doc.capture src="images/manuel/directions-centrales.png" alt="Écran Directions Centrales avec organigramme déplié">Compteurs, filtres et organigramme déplié en haut de l'écran.</x-doc.capture>
         <h3 class="text-sm font-semibold text-slate-800 dark:text-slate-100">Les quatre compteurs</h3>
         <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
             <div class="rounded-lg border border-slate-200 p-3 dark:border-slate-700"><p class="text-xs font-semibold text-slate-700 dark:text-slate-200">Total</p><p class="mt-1 text-xs text-slate-500 dark:text-slate-400">Nombre d'entités correspondant aux filtres.</p></div>

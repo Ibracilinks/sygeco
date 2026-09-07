@@ -53,6 +53,7 @@
     </x-doc.section>
 
     <x-doc.section id="index" titre="2. Écran « Validations » (vue globale)" chapo="Page d'accueil du module : les activités en attente, groupées par entité.">
+        <x-doc.capture src="images/manuel/validation.png" alt="Écran Arbitrage / Validation groupé par entité">Les entités à arbitrer, avec leur nombre d'activités en attente et leur budget soumis.</x-doc.capture>
         <ul class="list-disc space-y-1.5 pl-5">
             <li>Ne montre que les activités au statut <strong>En attente</strong>, regroupées par entité de rattachement, elles-mêmes classées par type (Direction, Direction Centrale, Service, Agence Comptable, Bureau Régional, autres).</li>
             <li>Chaque entité affiche le nombre d'activités en attente et le budget total soumis, avec un bouton <strong>« Arbitrer → »</strong> vers l'écran détaillé (§3).</li>

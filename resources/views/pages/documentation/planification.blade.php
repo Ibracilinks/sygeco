@@ -72,6 +72,7 @@
     </x-doc.section>
 
     <x-doc.section id="objectifs" titre="3. Objectifs stratégiques">
+        <x-doc.capture src="images/manuel/planification.png" alt="Écran Objectifs stratégiques">L'écran « Objectifs stratégiques », avec ses quatre cartes de synthèse.</x-doc.capture>
         <h3 class="text-sm font-semibold text-slate-800 dark:text-slate-100">Écran « Objectifs stratégiques »</h3>
         <p>Quatre cartes de synthèse (Total, Actifs, Inactifs, Avec résultats) puis un tableau paginé à 15 lignes, filtrable par recherche (code ou libellé), exercice, année et statut, triable par ordre, code, année ou date de création.</p>
         <ul class="list-disc space-y-1.5 pl-5">

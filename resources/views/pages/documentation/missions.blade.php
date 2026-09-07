@@ -73,6 +73,7 @@
     </x-doc.section>
 
     <x-doc.section id="liste" titre="3. Écran « Missions »" chapo="Sous-titre affiché en haut de la page : « Ordres de mission avec participants, signataires et génération PDF. »">
+        <x-doc.capture src="images/manuel/missions.png" alt="Liste des missions avec compteurs, filtres et tableau">L'écran « Toutes les missions » : compteurs, filtres et tableau.</x-doc.capture>
         <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
             <div class="rounded-lg border border-slate-200 p-3 dark:border-slate-700"><p class="text-xs font-semibold text-slate-700 dark:text-slate-200">Total</p></div>
             <div class="rounded-lg border border-slate-200 p-3 dark:border-slate-700"><p class="text-xs font-semibold text-slate-700 dark:text-slate-200">Brouillons</p></div>
@@ -87,6 +88,7 @@
     </x-doc.section>
 
     <x-doc.section id="creer" titre="4. Créer une mission">
+        <x-doc.capture src="images/manuel/missions-creer.png" alt="Formulaire de création d'une mission même ville">Le formulaire « Même ville », avec ses listes Participants et Signataires.</x-doc.capture>
         <ol class="list-decimal space-y-1.5 pl-5">
             <li>Depuis la liste, cliquez sur le bouton du <strong>type</strong> souhaité (§2).</li>
             <li>Renseignez la <strong>référence</strong> de l'ordre (unique), l'<strong>objet</strong> de la mission et le <strong>code budgétaire</strong> (liste fermée : « Sans code budgétaire », CE 630210, 638600, 638700, 630220, 630280).</li>
@@ -170,6 +172,7 @@
     </x-doc.section>
 
     <x-doc.section id="baremes" titre="8. Barèmes des missions" chapo="Écran séparé, réservé à superadmin et dbcgoq, accessible hors du module Missions.">
+        <x-doc.capture src="images/manuel/missions-baremes.png" alt="Écran des barèmes des missions">Le groupe « Catégories — missions à l'étranger », avec ses montants modifiables.</x-doc.capture>
         <ul class="list-disc space-y-1.5 pl-5">
             <li>Trois groupes de barèmes : <strong>Catégories — missions à l'étranger</strong> et <strong>Catégories — missions intérieur du pays</strong> (7 catégories chacune, avec un frais de mission par jour et une indemnité par nuitée), et <strong>Zones de majoration</strong> (12 zones, avec un taux en %).</li>
             <li>Seuls les <strong>montants</strong> (libellé, description, frais de mission, indemnités, taux) sont modifiables : la liste des catégories et des zones elle-même est <strong>réglementaire</strong>, fixée par l'application — on ne peut ni en ajouter ni en supprimer, pour ne jamais laisser une mission existante orpheline de son barème.</li>

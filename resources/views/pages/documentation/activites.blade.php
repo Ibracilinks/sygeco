@@ -65,6 +65,7 @@
     </x-doc.section>
 
     <x-doc.section id="liste" titre="3. Écran « Activités »" chapo="La liste se présente comme un cadre logique, pas comme un tableau plat : Résultat → Extrant → Activités.">
+        <x-doc.capture src="images/manuel/activites.png" alt="Écran Activités regroupé par résultat et extrant">Regroupement Résultat → Extrant → Activités, avec le statut de chaque ligne.</x-doc.capture>
         <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
             <div class="rounded-lg border border-slate-200 p-3 dark:border-slate-700"><p class="text-xs font-semibold text-slate-700 dark:text-slate-200">Total</p></div>
             <div class="rounded-lg border border-slate-200 p-3 dark:border-slate-700"><p class="text-xs font-semibold text-slate-700 dark:text-slate-200">Brouillon</p></div>

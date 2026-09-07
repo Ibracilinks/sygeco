@@ -72,6 +72,7 @@
     </x-doc.section>
 
     <x-doc.section id="liste" titre="3. Écran « Exercices »" chapo="La liste se lit de haut en bas : compteurs, filtre, tableau paginé.">
+        <x-doc.capture src="images/manuel/exercices.png" alt="Écran Exercices avec compteurs et tableau">Compteurs et tableau des exercices, avec l'indicateur de délai de la fenêtre de saisie.</x-doc.capture>
         <h3 class="text-sm font-semibold text-slate-800 dark:text-slate-100">Les quatre compteurs</h3>
         <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
             <div class="rounded-lg border border-slate-200 p-3 dark:border-slate-700"><p class="text-xs font-semibold text-slate-700 dark:text-slate-200">Total</p><p class="mt-1 text-xs text-slate-500 dark:text-slate-400">Tous les exercices créés.</p></div>
