@@ -131,6 +131,11 @@ class Mission extends Model
             'frais_mission' => 7500,
             'indemnites' => 10000,
         ],
+        'meme_cercle' => [
+            'label' => 'Mission à l’intérieur d’un même cercle',
+            'frais_mission' => 7500,
+            'indemnites' => 10000,
+        ],
     ];
 
     public const TYPES_ETAPES_REGIONALES = [
@@ -370,11 +375,12 @@ class Mission extends Model
                     $joursEtape = max(0, (int) $etape->nombre_jours);
                     $nuiteesEtape = max(0, (int) $etape->nombre_nuitees);
 
-                    $fraisMission = $bareme === 'meme_region'
-                        ? (float) self::BAREMES_REGIONAUX['meme_region']['frais_mission']
+                    $bonifie = $bareme !== 'national' && isset(self::BAREMES_REGIONAUX[$bareme]['frais_mission']);
+                    $fraisMission = $bonifie
+                        ? (float) self::BAREMES_REGIONAUX[$bareme]['frais_mission']
                         : (float) ($categorie['frais_mission'] ?? 0);
-                    $indemnites = $bareme === 'meme_region'
-                        ? (float) self::BAREMES_REGIONAUX['meme_region']['indemnites']
+                    $indemnites = $bonifie
+                        ? (float) self::BAREMES_REGIONAUX[$bareme]['indemnites']
                         : (float) ($categorie['indemnites'] ?? 0);
 
                     $totalFrais += $fraisMission * $joursEtape;
@@ -620,9 +626,9 @@ class Mission extends Model
                 $jours = (int) ($etape['nombre_jours'] ?? 1);
                 $nuites = (int) ($etape['nombre_nuitees'] ?? max(0, $jours - 1));
 
-                if ($bareme === 'meme_region') {
-                    $fraisMission = (float) self::BAREMES_REGIONAUX['meme_region']['frais_mission'];
-                    $indemnites = (float) self::BAREMES_REGIONAUX['meme_region']['indemnites'];
+                if ($bareme !== 'national' && isset(self::BAREMES_REGIONAUX[$bareme]['frais_mission'])) {
+                    $fraisMission = (float) self::BAREMES_REGIONAUX[$bareme]['frais_mission'];
+                    $indemnites = (float) self::BAREMES_REGIONAUX[$bareme]['indemnites'];
                 } else {
                     $fraisMission = (float) ($categorie['frais_mission'] ?? 0);
                     $indemnites = (float) ($categorie['indemnites'] ?? 0);

@@ -211,6 +211,46 @@ test('une mission regionale calcule les jours et les nuitées par étape', funct
     expect((int) $participants[1]->nombre_nuitees)->toBe(9);
 });
 
+test('une étape de type cercle applique le barème même cercle plutôt que la catégorie nationale', function () {
+    $admin = userWithRole('dbcgoq');
+    $departement = Departement::factory()->create();
+
+    $response = $this->actingAs($admin)->post(route('missions.store'), [
+        'type' => Mission::TYPE_REGION,
+        'reference' => '302/MSDS-CANAM-DAGRH',
+        'departement_id' => $departement->id,
+        'objet' => 'Mission de supervision dans un cercle',
+        'destinations' => ['Kayes'],
+        'date_document' => '2026-08-18',
+        'date_depart' => '2026-08-20',
+        'date_retour' => '2026-08-22',
+        'lieu_signature' => 'Bamako',
+        'statut' => 'brouillon',
+        'participants' => [
+            ['nom_complet' => 'MOUSSA TRAORE', 'categorie' => 'cat_4'],
+        ],
+        'etapes' => [
+            [
+                'type_etape' => 'cercle',
+                'bareme' => 'meme_cercle',
+                'localite' => 'Nioro',
+                'nombre_jours' => 3,
+            ],
+        ],
+        'signataires' => missionSignatairesPayload(),
+    ]);
+
+    $response->assertRedirect();
+    $response->assertSessionHasNoErrors();
+
+    $mission = Mission::where('reference', '302/MSDS-CANAM-DAGRH')->first();
+    $participant = $mission->participants()->first();
+
+    // 3 jours à 7500 (frais de mission) + 2 nuitées à 10000 (indemnités) = 42500,
+    // identique au barème « même région » et distinct du barème catégoriel national.
+    expect((float) $participant->total_general)->toBe(42500.0);
+});
+
 test('une mission regionale est refusee sans categorie ni etape', function () {
     $admin = userWithRole('dbcgoq');
 
