@@ -170,7 +170,7 @@
 
                     <p class="mt-4 text-center text-[12px] font-bold uppercase">{{ $mission->tickets_carburant_en_lettres }}</p>
 
-                    <p class="mt-6 text-right text-[12px]">{{ $mission->lieu_signature }}</p>
+                    <p class="mt-6 text-right text-[12px]">{{ $mission->lieu_signature }} le ....................</p>
 
                     <div class="mt-6 grid gap-6" style="grid-template-columns: repeat({{ max(1, $mission->signataires->count()) }}, minmax(0, 1fr));">
                         @foreach ($mission->signataires as $signataire)
@@ -306,7 +306,7 @@
                         Arrete a la somme de : <span class="text-red-600">{{ $mission->montant_total_en_lettres }}</span>
                     </p>
 
-                    <p class="mt-6 text-right text-[12px]">{{ $mission->lieu_signature }}</p>
+                    <p class="mt-6 text-right text-[12px]">{{ $mission->lieu_signature }} le ....................</p>
 
                     <div class="mt-6 grid gap-6" style="grid-template-columns: repeat({{ max(1, $mission->signataires->count()) }}, minmax(0, 1fr));">
                         @foreach ($mission->signataires as $signataire)
@@ -447,7 +447,7 @@
                         Arrete a la somme de : <span class="text-red-600">{{ $mission->montant_total_en_lettres }}</span>
                     </p>
 
-                    <p class="mt-6 text-right text-[12px]">{{ $mission->lieu_signature }}</p>
+                    <p class="mt-6 text-right text-[12px]">{{ $mission->lieu_signature }} le ....................</p>
 
                     <div class="mt-6 grid gap-6" style="grid-template-columns: repeat({{ max(1, $mission->signataires->count()) }}, minmax(0, 1fr));">
                         @foreach ($mission->signataires as $signataire)

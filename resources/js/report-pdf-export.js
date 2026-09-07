@@ -465,7 +465,7 @@ window.exportMissionMemeVillePDF = async function exportMissionMemeVillePDF(butt
         y += 10;
 
         doc.setFont('helvetica', 'normal');
-        text(doc, mission.lieu_signature, pageW - margin, y, { align: 'right' });
+        text(doc, `${mission.lieu_signature} le ....................`, pageW - margin, y, { align: 'right' });
         y += 12;
 
         const signataires = Array.isArray(mission.signataires) ? mission.signataires : [];
@@ -735,7 +735,7 @@ window.exportMissionExterieurePDF = async function exportMissionExterieurePDF(bu
 
         doc.setFont('helvetica', 'normal');
         doc.setFontSize(9);
-        doc.text(mission.lieu_signature, pageW - margin, y, { align: 'right' });
+        doc.text(`${mission.lieu_signature} le ....................`, pageW - margin, y, { align: 'right' });
         y += 12;
 
         const signataires = Array.isArray(mission.signataires) ? mission.signataires : [];
@@ -1015,7 +1015,7 @@ window.exportMissionRegionPDF = async function exportMissionRegionPDF(button, da
 
         doc.setFont('helvetica', 'normal');
         doc.setFontSize(9);
-        doc.text(mission.lieu_signature, pageW - margin, y, { align: 'right' });
+        doc.text(`${mission.lieu_signature} le ....................`, pageW - margin, y, { align: 'right' });
         y += 12;
 
         const signataires = Array.isArray(mission.signataires) ? mission.signataires : [];
