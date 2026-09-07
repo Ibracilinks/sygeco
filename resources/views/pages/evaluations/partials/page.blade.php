@@ -21,7 +21,7 @@
                 </p>
             </div>
             <div class="flex flex-wrap gap-2">
-                <a href="{{ route('evaluations.export', array_merge([$slug], request()->query())) }}"
+                <a href="{{ route('evaluations.export', array_merge([$slug], request()->query()), false) }}"
                     class="inline-flex items-center rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-emerald-500">
                     Exporter (Cadre logique)
                 </a>
@@ -94,7 +94,7 @@
         </div>
 
         {{-- Filtres --}}
-        <form method="GET" action="{{ route('evaluations.index', $slug) }}" class="grid grid-cols-1 gap-3 rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-900 md:grid-cols-5">
+        <form method="GET" action="{{ route('evaluations.index', $slug, false) }}" class="grid grid-cols-1 gap-3 rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-900 md:grid-cols-5">
             <input type="text" name="search" value="{{ $filters['search'] ?? '' }}" placeholder="Nom de l'activité"
                 class="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 focus:border-slate-500 focus:outline-none dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100">
 
@@ -120,7 +120,7 @@
 
             <div class="flex gap-2">
                 <button type="submit" class="w-full rounded-lg bg-slate-800 px-4 py-2 text-sm font-medium text-white dark:bg-slate-200 dark:text-slate-900">Filtrer</button>
-                <a href="{{ route('evaluations.index', $slug) }}" class="rounded-lg bg-slate-100 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-100 dark:hover:bg-slate-700">Reset</a>
+                <a href="{{ route('evaluations.index', $slug, false) }}" class="rounded-lg bg-slate-100 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-100 dark:hover:bg-slate-700">Reset</a>
             </div>
         </form>
 
@@ -143,7 +143,7 @@
                         @endphp
                         <tr class="align-top" data-ligne-activite="{{ $activite->id }}">
                             <td class="px-5 py-4">
-                                <a href="{{ route('activites.show', $activite) }}" class="text-sm font-semibold text-slate-900 transition hover:text-sky-700 hover:underline dark:text-white dark:hover:text-sky-300">
+                                <a href="{{ route('activites.show', $activite, false) }}" class="text-sm font-semibold text-slate-900 transition hover:text-sky-700 hover:underline dark:text-white dark:hover:text-sky-300">
                                     {{ Str::limit($activite->nom_activite, 90) }}
                                 </a>
                                 <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
@@ -188,7 +188,8 @@
                                 @if (auth()->user()->can('evaluate_activites') && $peutSaisir)
                                     @php
                                         $evalData = [
-                                            'action' => route('evaluations.enregistrer', [$activite, $slug]),
+                                            // Conserver le protocole du navigateur, même derrière un proxy HTTP.
+                                            'action' => route('evaluations.enregistrer', [$activite, $slug], false),
                                             'nom' => $activite->nom_activite,
                                             'cout' => (float) $activite->cout,
                                             'statut_execution' => $evaluation->statut_execution ?? 'non_realise',
@@ -212,7 +213,7 @@
             </table>
         </div>
 
-        <div class="mt-2">{{ $activites->links() }}</div>
+        <div class="mt-2">{{ $activites->withPath(route('evaluations.index', $slug, false))->links() }}</div>
     </div>
 
     @can('create_activites')
@@ -228,7 +229,7 @@
                         class="text-zinc-500 hover:text-zinc-800 dark:hover:text-white">✕</button>
                 </div>
 
-                <form action="{{ route('activites.non-programmee.store') }}" method="POST" class="mt-6 grid grid-cols-1 gap-4 md:grid-cols-2">
+                <form action="{{ route('activites.non-programmee.store', [], false) }}" method="POST" class="mt-6 grid grid-cols-1 gap-4 md:grid-cols-2">
                     @csrf
                     <div class="md:col-span-2">
                         <label class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-200">Intitulé de l'activité *</label>
