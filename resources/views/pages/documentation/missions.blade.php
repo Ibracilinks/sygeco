@@ -87,17 +87,42 @@
         </ul>
     </x-doc.section>
 
-    <x-doc.section id="creer" titre="4. Créer une mission">
-        <x-doc.capture src="images/manuel/missions-creer.png" alt="Formulaire de création d'une mission même ville">Le formulaire « Même ville », avec ses listes Participants et Signataires.</x-doc.capture>
+    <x-doc.section id="creer" titre="4. Créer une mission" chapo="Le squelette du formulaire (référence, objet, dates, participants, signataires) est commun aux trois types, mais chacun a ses propres champs de calcul — voir le détail par cas ci-dessous.">
         <ol class="list-decimal space-y-1.5 pl-5">
-            <li>Depuis la liste, cliquez sur le bouton du <strong>type</strong> souhaité (§2).</li>
+            <li>Depuis la liste, cliquez sur le bouton du <strong>type</strong> souhaité (§2) : « + Même ville », « + À l'étranger » ou « + Intérieur du pays ». Ce choix est définitif.</li>
             <li>Renseignez la <strong>référence</strong> de l'ordre (unique), l'<strong>objet</strong> de la mission et le <strong>code budgétaire</strong> (liste fermée : « Sans code budgétaire », CE 630210, 638600, 638700, 630220, 630280).</li>
             <li>Choisissez la ou les <strong>structures demandeuses</strong> — la première sélectionnée devient la structure principale portée sur le document officiel.</li>
-            <li>Selon le type : indiquez la <strong>destination</strong> libre (Même ville / À l'étranger), la <strong>zone de majoration</strong> (À l'étranger), ou les <strong>régions de destination</strong> et les <strong>étapes</strong> du trajet (Intérieur du pays).</li>
-            <li>Renseignez les <strong>dates de départ et de retour</strong> ; le nombre de jours se calcule automatiquement (voir §7) mais reste modifiable.</li>
-            <li>Ajoutez au moins un <strong>participant</strong> et au moins un <strong>signataire</strong> (§6).</li>
+            <li>Renseignez les <strong>dates de départ et de retour</strong> ; le nombre de jours se calcule automatiquement (voir §7) mais reste modifiable pour « Même ville ».</li>
+            <li>Complétez les champs propres au type choisi (détail par cas ci-dessous), ajoutez au moins un <strong>participant</strong> et au moins un <strong>signataire</strong> (§6).</li>
             <li>Enregistrez en <strong>Brouillon</strong> : message « Mission enregistrée avec succès. »</li>
         </ol>
+
+        <h3 class="text-sm font-semibold text-slate-800 dark:text-slate-100">🏙️ Cas « Même ville »</h3>
+        <x-doc.capture src="images/manuel/missions-creer.png" alt="Formulaire de création d'une mission même ville">Le formulaire « Même ville », le plus court des trois : pas de destination, pas de catégorie, pas de zone.</x-doc.capture>
+        <ul class="list-disc space-y-1.5 pl-5">
+            <li><strong>Nombre de jours ouvrables</strong> (les week-ends sont exclus du décompte, contrairement aux deux autres types) calculé à partir des dates, mais modifiable.</li>
+            <li><strong>Tickets carburant / jour</strong> : c'est l'unique poste budgétaire de ce type — aucun montant total en FCFA n'est calculé (§7), la fiche PDF affiche uniquement le nombre de tickets (§10).</li>
+            <li>Chaque participant ne demande qu'un <strong>nom complet</strong> : pas de catégorie, pas de nuitée à saisir.</li>
+        </ul>
+
+        <h3 class="text-sm font-semibold text-slate-800 dark:text-slate-100">✈️ Cas « À l'étranger »</h3>
+        <ul class="list-disc space-y-1.5 pl-5">
+            <li><strong>Destination</strong> (texte libre) et <strong>zone de majoration</strong> obligatoire (liste fermée de 12 zones, §8) : elle fixe le taux (25 à 50 %) qui majore le sous-total indemnités de chaque participant.</li>
+            <li><strong>Nombre de jours</strong> calendaires (week-ends inclus) ; les nuitées de chaque participant sont automatiquement fixées à <em>jours − 1</em>, quelle que soit la valeur saisie.</li>
+            <li>Deux blocs de frais annexes en saisie libre : <strong>frais de participation</strong> et <strong>frais de visa</strong>, chacun en nombre de personnes × montant unitaire.</li>
+            <li><strong>Billets d'avion</strong> : deux lignes distinctes à saisir, classe affaire et classe économique (nombre × prix unitaire chacune).</li>
+            <li>Chaque participant doit avoir une <strong>catégorie</strong> (liste fermée de 7 catégories étrangères, §8) : elle fixe son frais de mission par jour et son indemnité par nuitée.</li>
+        </ul>
+
+        <h3 class="text-sm font-semibold text-slate-800 dark:text-slate-100">🚗 Cas « Intérieur du pays »</h3>
+        <ul class="list-disc space-y-1.5 pl-5">
+            <li><strong>Point de départ</strong> et une ou plusieurs <strong>régions de destination</strong>, choisis dans la liste fermée des régions administratives du Mali.</li>
+            <li>Au moins une <strong>étape</strong> de déplacement (§6) : type d'étape, barème, localité, jours et nuitées.</li>
+            <li>Bloc « Carburant » en saisie libre : nombre de véhicules, distance totale (km), consommation (L / 100 km), prix du litre, carburant en ville (L / jour) — sert au calcul du carburant trajet et du carburant ville.</li>
+            <li>Bloc « Location & péages » : location de véhicule (nombre de jours × tarif par jour) et péages (montant global).</li>
+            <li><strong>Billets d'avion</strong> : une seule ligne, classe économique uniquement (pas de classe affaire pour ce type).</li>
+            <li>Chaque participant doit avoir une <strong>catégorie</strong> (liste fermée de 7 catégories nationales, §8), sauf sur une étape au forfait « même région »/« même cercle », où le montant forfaitaire prend le pas sur la catégorie (voir §6).</li>
+        </ul>
     </x-doc.section>
 
     <x-doc.section id="champs" titre="5. Détail des champs communs">
@@ -144,11 +169,16 @@
         <ul class="list-disc space-y-1.5 pl-5">
             <li>Au moins une étape est requise (« Au moins une étape est requise pour une mission région. »).</li>
             <li><strong>Type d'étape*</strong> : Chef-lieu de région / Cercle / Commune / Autre localité.</li>
-            <li><strong>Barème*</strong> : « Barème national par catégorie » ou « Mission à l'intérieur d'une même région » (taux forfaitaire).</li>
+            <li><strong>Barème*</strong> : « Barème national par catégorie » (lit le frais de mission et l'indemnité dans la catégorie du participant, §7), « Mission à l'intérieur d'une même région » ou « Mission à l'intérieur d'un même cercle » — ces deux derniers appliquent le même forfait fixe (7 500 FCFA de frais de mission, 10 000 FCFA d'indemnité par jour/nuitée), seule l'étiquette diffère selon l'échelon administratif traversé.</li>
             <li><strong>Localité</strong>, nombre de jours et de nuitées ; les dates de chaque étape s'enchaînent automatiquement à partir de la date de départ de la mission, selon leur durée.</li>
             <li>Le total des jours des étapes ne peut pas dépasser la durée de la mission : « Le total des jours d'étapes ({X}) dépasse la durée de la mission ({Y} jours). »</li>
             <li>Case <strong>« Première nuitée payée »</strong> : si cochée, le nombre de nuitées est égal au nombre de jours (au lieu de jours − 1).</li>
         </ul>
+        <x-doc.astuce>
+            Les forfaits « même région » et « même cercle » sont des montants fixes intégrés à l'application :
+            contrairement aux catégories nationales et étrangères, ils ne figurent pas dans l'écran « Barèmes des
+            missions » (§8) et ne peuvent pas être modifiés depuis l'interface.
+        </x-doc.astuce>
         <h3 class="text-sm font-semibold text-slate-800 dark:text-slate-100">Signataires (au moins un)</h3>
         <ul class="list-disc space-y-1.5 pl-5">
             <li><strong>Nom*</strong> obligatoire ; <strong>fonction</strong> facultative.</li>
@@ -208,15 +238,48 @@
     <x-doc.section id="fiche" titre="10. Fiche d'une mission & génération PDF">
         <p>
             La fiche reproduit fidèlement le formulaire officiel CANAM correspondant au type de mission (en-têtes
-            « Ministère de la Santé et du Développement Social », « Caisse Nationale d'Assurance Maladie », sections
-            « I- Frais et indemnités », « II- Carburant », « III- Péages » ou « III- Billets d'avion »), avec les
-            montants totaux exprimés aussi en toutes lettres.
+            « Ministère de la Santé et du Développement Social », « Caisse Nationale d'Assurance Maladie »), avec les
+            montants totaux exprimés aussi en toutes lettres. La mise en page — sections, orientation de la page —
+            diffère selon le type :
         </p>
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-slate-200 text-sm dark:divide-slate-700">
+                <thead>
+                    <tr class="text-left text-xs uppercase tracking-wide text-slate-400">
+                        <th class="py-2 pr-4">Type</th>
+                        <th class="py-2 pr-4">Format</th>
+                        <th class="py-2">Sections du document</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+                    <tr>
+                        <td class="py-2 pr-4 font-medium text-slate-800 dark:text-slate-100">🏙️ Même ville</td>
+                        <td class="py-2 pr-4">A4 portrait</td>
+                        <td class="py-2">I- Frais et indemnités (Sous-total 1) · II- Carburant, tickets par participant (Sous-total 2) · Total en tickets, sans montant en FCFA.</td>
+                    </tr>
+                    <tr>
+                        <td class="py-2 pr-4 font-medium text-slate-800 dark:text-slate-100">✈️ À l'étranger</td>
+                        <td class="py-2 pr-4">A4 paysage</td>
+                        <td class="py-2">I- Frais et indemnités (Sous-total 1) · II- Autres frais : participation, visa (Sous-total 2) · III- Billets d'avion : affaire, économique (Sous-total 3) · Total général · Visa du contrôleur financier.</td>
+                    </tr>
+                    <tr>
+                        <td class="py-2 pr-4 font-medium text-slate-800 dark:text-slate-100">🚗 Intérieur du pays</td>
+                        <td class="py-2 pr-4">A4 paysage</td>
+                        <td class="py-2">I- Frais et indemnités, un sous-total par étape/groupe · II- Carburant : trajet, ville, location véhicule, billet d'avion (Sous-total 2) · III- Péages · Total général.</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
         <p>
             Le bouton <strong>« Générer le PDF »</strong> (si vous détenez <code class="rounded bg-slate-100 px-1 dark:bg-slate-800">generate_missions_pdf</code>)
             produit le document directement dans votre navigateur, à partir des données déjà affichées sur la page —
             aucun aller-retour serveur n'est nécessaire.
         </p>
+        <x-doc.astuce>
+            Le bloc « Arrêté à la somme de » suivi du lieu, de la date et des signatures bascule automatiquement sur
+            une nouvelle page s'il ne tient pas dans l'espace restant, plutôt que de déborder hors du document — utile
+            pour les missions à nombreux participants.
+        </x-doc.astuce>
     </x-doc.section>
 
     <x-doc.section id="limites" titre="11. Ce que ce module ne fait pas (à ne pas chercher)" chapo="Pour éviter toute confusion, quelques points expressément absents de ce module.">
