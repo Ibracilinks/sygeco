@@ -19,6 +19,14 @@
         'purple' => 'bg-purple-100 dark:bg-purple-900 text-purple-600 dark:text-purple-300',
     ];
 
+    $accents = [
+        'blue' => 'bg-blue-500',
+        'green' => 'bg-green-500',
+        'red' => 'bg-red-500',
+        'yellow' => 'bg-yellow-500',
+        'purple' => 'bg-purple-500',
+    ];
+
     $trendColors = [
         'up' => 'text-green-600',
         'down' => 'text-red-600',
@@ -48,17 +56,19 @@
     };
 @endphp
 
-<div class="overflow-hidden rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-zinc-800 p-6">
+<div class="group relative overflow-hidden rounded-xl border border-slate-200 bg-white p-6 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md dark:border-slate-700 dark:bg-slate-900 dark:shadow-black/20">
+    <div class="absolute inset-x-0 top-0 h-1 {{ $accents[$color] ?? $accents['blue'] }}"></div>
+
     <div class="flex items-start justify-between">
-        <div>
+        <div class="min-w-0">
             @if ($title)
-                <p class="text-sm font-medium text-zinc-500 dark:text-zinc-400">{{ $title }}</p>
+                <p class="truncate text-sm font-medium text-slate-500 dark:text-slate-400">{{ $title }}</p>
             @endif
             <div class="flex items-baseline gap-2 mt-2">
                 <span
-                    class="text-3xl font-bold dark:text-white">{{ is_numeric($displayValue) ? number_format($displayValue, $decimals, ',', ' ') : $displayValue }}</span>
+                    class="text-3xl font-bold text-slate-900 dark:text-white">{{ is_numeric($displayValue) ? number_format($displayValue, $decimals, ',', ' ') : $displayValue }}</span>
                 @if ($unit)
-                    <span class="text-sm text-zinc-500">{{ $unit }}</span>
+                    <span class="text-sm text-slate-500 dark:text-slate-400">{{ $unit }}</span>
                 @endif
             </div>
 
@@ -71,7 +81,7 @@
                                 d="{{ $trendIcons[$trend] }}"></path>
                         </svg>
                     @endif
-                    <span class="text-sm {{ $trendColors[$trend] ?? 'text-zinc-500' }}">
+                    <span class="text-sm {{ $trendColors[$trend] ?? 'text-slate-500' }}">
                         {{ abs($percentageChange) }}% vs période précédente
                     </span>
                 </div>
@@ -79,7 +89,7 @@
         </div>
 
         @if ($iconSvg)
-            <div class="rounded-lg {{ $colors[$color] ?? $colors['blue'] }} p-3">
+            <div class="shrink-0 rounded-xl {{ $colors[$color] ?? $colors['blue'] }} p-3 ring-1 ring-inset ring-black/5 transition-transform duration-200 group-hover:scale-105 dark:ring-white/5">
                 <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke-width="1.6" stroke="currentColor" aria-hidden="true">{!! $iconSvg !!}</svg>
             </div>
         @endif

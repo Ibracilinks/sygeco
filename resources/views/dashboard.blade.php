@@ -36,20 +36,22 @@
         </section>
 
         <section class="grid grid-cols-1 gap-4 xl:grid-cols-2">
-            <div class="rounded-xl border border-emerald-200 bg-emerald-50/90 p-5 dark:border-emerald-900/60 dark:bg-emerald-950/25">
-                <p class="text-xs font-semibold uppercase tracking-wide text-emerald-700 dark:text-emerald-300">Qualite execution</p>
-                <p class="mt-2 text-3xl font-semibold text-emerald-800 dark:text-emerald-200">{{ number_format($kpis['taux_realisation'], 1, ',', ' ') }}%</p>
-                <p class="mt-1 text-sm text-emerald-700/90 dark:text-emerald-300/90">Taux de realisation global</p>
+            <div class="group relative overflow-hidden rounded-xl border border-emerald-200 bg-emerald-50/90 p-5 shadow-sm transition-shadow duration-200 hover:shadow-md dark:border-emerald-900/60 dark:bg-emerald-950/25">
+                <div class="absolute -top-6 -right-6 h-24 w-24 rounded-full bg-emerald-500/10 transition-transform duration-300 group-hover:scale-110 dark:bg-emerald-400/10"></div>
+                <p class="relative text-xs font-semibold uppercase tracking-wide text-emerald-700 dark:text-emerald-300">Qualite execution</p>
+                <p class="relative mt-2 text-3xl font-semibold text-emerald-800 dark:text-emerald-200">{{ number_format($kpis['taux_realisation'], 1, ',', ' ') }}%</p>
+                <p class="relative mt-1 text-sm text-emerald-700/90 dark:text-emerald-300/90">Taux de realisation global</p>
             </div>
-            <div class="rounded-xl border border-sky-200 bg-sky-50/90 p-5 dark:border-sky-900/60 dark:bg-sky-950/25">
-                <p class="text-xs font-semibold uppercase tracking-wide text-sky-700 dark:text-sky-300">Soumission moyenne</p>
-                <p class="mt-2 text-3xl font-semibold text-sky-800 dark:text-sky-200">{{ number_format($insights['soumission_moyenne'], 1, ',', ' ') }}%</p>
-                <p class="mt-1 text-sm text-sky-700/90 dark:text-sky-300/90">Par departement sur l'exercice actif</p>
+            <div class="group relative overflow-hidden rounded-xl border border-sky-200 bg-sky-50/90 p-5 shadow-sm transition-shadow duration-200 hover:shadow-md dark:border-sky-900/60 dark:bg-sky-950/25">
+                <div class="absolute -top-6 -right-6 h-24 w-24 rounded-full bg-sky-500/10 transition-transform duration-300 group-hover:scale-110 dark:bg-sky-400/10"></div>
+                <p class="relative text-xs font-semibold uppercase tracking-wide text-sky-700 dark:text-sky-300">Soumission moyenne</p>
+                <p class="relative mt-2 text-3xl font-semibold text-sky-800 dark:text-sky-200">{{ number_format($insights['soumission_moyenne'], 1, ',', ' ') }}%</p>
+                <p class="relative mt-1 text-sm text-sky-700/90 dark:text-sky-300/90">Par departement sur l'exercice actif</p>
             </div>
         </section>
 
         <section class="grid grid-cols-1 gap-6 lg:grid-cols-3">
-            <article class="lg:col-span-2 rounded-xl border border-slate-200 bg-white p-6 dark:border-slate-700 dark:bg-slate-900">
+            <article class="lg:col-span-2 rounded-xl border border-slate-200 bg-white p-6 shadow-sm transition-shadow duration-200 hover:shadow-md dark:border-slate-700 dark:bg-slate-900 dark:shadow-black/20">
                 <div class="mb-4 border-b border-slate-200 pb-4 dark:border-slate-700">
                     <h2 class="text-lg font-semibold text-slate-900 dark:text-white">Evolution du chronogramme</h2>
                     <p class="text-sm text-slate-500 dark:text-slate-400">Volume des activites planifiees et dynamique budgetaire par periode du chronogramme (T1 - T4)</p>
@@ -76,19 +78,19 @@
                 </div>
             </article>
 
-            <article class="rounded-xl border border-slate-200 bg-white p-6 dark:border-slate-700 dark:bg-slate-900">
+            <article class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm transition-shadow duration-200 hover:shadow-md dark:border-slate-700 dark:bg-slate-900 dark:shadow-black/20">
                 <div class="mb-4 border-b border-slate-200 pb-4 dark:border-slate-700">
                     <h2 class="text-lg font-semibold text-slate-900 dark:text-white">Execution des activites validees</h2>
                     <p class="text-sm text-slate-500 dark:text-slate-400">Etat d'execution evalue en fin d'annee</p>
                 </div>
                 <div id="dash-chart-execution-validees">
-                <x-charts.pie-chart :labels="$charts['execution_validees']['labels']" :data="$charts['execution_validees']['values']" type="pie" :height="300" />
+                <x-charts.pie-chart :labels="$charts['execution_validees']['labels']" :data="$charts['execution_validees']['values']" :colors="['#10b981', '#f59e0b', '#f43f5e', '#94a3b8']" type="pie" :height="300" />
                 </div>
             </article>
         </section>
 
         <section class="grid grid-cols-1 gap-6 xl:grid-cols-2">
-            <article class="rounded-xl border border-slate-200 bg-white p-6 dark:border-slate-700 dark:bg-slate-900">
+            <article class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm transition-shadow duration-200 hover:shadow-md dark:border-slate-700 dark:bg-slate-900 dark:shadow-black/20">
                 <div class="mb-4 border-b border-slate-200 pb-4 dark:border-slate-700">
                     <h2 class="text-lg font-semibold text-slate-900 dark:text-white">Budget par objectif</h2>
                     <p class="text-sm text-slate-500 dark:text-slate-400">Montants en millions FCFA</p>
@@ -105,7 +107,7 @@
                 </div>
             </article>
 
-            <article class="rounded-xl border border-slate-200 bg-white p-6 dark:border-slate-700 dark:bg-slate-900">
+            <article class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm transition-shadow duration-200 hover:shadow-md dark:border-slate-700 dark:bg-slate-900 dark:shadow-black/20">
                 <div class="mb-4 border-b border-slate-200 pb-4 dark:border-slate-700">
                     <h2 class="text-lg font-semibold text-slate-900 dark:text-white">Top extrants</h2>
                     <p class="text-sm text-slate-500 dark:text-slate-400">Distribution des activites par extrant</p>
@@ -118,7 +120,7 @@
 
         {{-- Résultats stratégiques : le niveau du cadre logique entre objectifs et extrants. --}}
         <section>
-            <article class="rounded-xl border border-slate-200 bg-white p-6 dark:border-slate-700 dark:bg-slate-900">
+            <article class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm transition-shadow duration-200 hover:shadow-md dark:border-slate-700 dark:bg-slate-900 dark:shadow-black/20">
                 <div class="mb-4 border-b border-slate-200 pb-4 dark:border-slate-700">
                     <h2 class="text-lg font-semibold text-slate-900 dark:text-white">Resultats strategiques</h2>
                     <p class="text-sm text-slate-500 dark:text-slate-400">Activites programmees et budget par resultat, dans l'ordre du cadre logique</p>
@@ -153,7 +155,7 @@
         </section>
 
         <section class="grid grid-cols-1 gap-6 xl:grid-cols-2">
-            <article class="rounded-xl border border-slate-200 bg-white p-6 dark:border-slate-700 dark:bg-slate-900">
+            <article class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm transition-shadow duration-200 hover:shadow-md dark:border-slate-700 dark:bg-slate-900 dark:shadow-black/20">
                 <div class="mb-4 border-b border-slate-200 pb-4 dark:border-slate-700">
                     <h2 class="text-lg font-semibold text-slate-900 dark:text-white">Top activites par cout</h2>
                     <p class="text-sm text-slate-500 dark:text-slate-400">Les activites les plus consommatrices du budget</p>
@@ -177,7 +179,7 @@
                 </div>
             </article>
 
-            <article class="rounded-xl border border-slate-200 bg-white p-6 dark:border-slate-700 dark:bg-slate-900">
+            <article class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm transition-shadow duration-200 hover:shadow-md dark:border-slate-700 dark:bg-slate-900 dark:shadow-black/20">
                 <div class="mb-4 border-b border-slate-200 pb-4 dark:border-slate-700">
                     <h2 class="text-lg font-semibold text-slate-900 dark:text-white">Distribution budgetaire</h2>
                     <p class="text-sm text-slate-500 dark:text-slate-400">Nombre d'activites par tranche de cout</p>
@@ -189,7 +191,7 @@
         </section>
 
         <section class="grid grid-cols-1 gap-6 xl:grid-cols-2">
-            <article class="rounded-xl border border-slate-200 bg-white p-6 dark:border-slate-700 dark:bg-slate-900">
+            <article class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm transition-shadow duration-200 hover:shadow-md dark:border-slate-700 dark:bg-slate-900 dark:shadow-black/20">
                 <div class="mb-4 border-b border-slate-200 pb-4 dark:border-slate-700">
                     <h2 class="text-lg font-semibold text-slate-900 dark:text-white">Activites par statut</h2>
                     <p class="text-sm text-slate-500 dark:text-slate-400">Distribution de l'etat d'avancement</p>
@@ -206,7 +208,7 @@
                 </div>
             </article>
 
-            <article class="rounded-xl border border-slate-200 bg-white p-6 dark:border-slate-700 dark:bg-slate-900">
+            <article class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm transition-shadow duration-200 hover:shadow-md dark:border-slate-700 dark:bg-slate-900 dark:shadow-black/20">
                 <div class="mb-4 border-b border-slate-200 pb-4 dark:border-slate-700">
                     <h2 class="text-lg font-semibold text-slate-900 dark:text-white">Chronogramme des activites</h2>
                     <p class="text-sm text-slate-500 dark:text-slate-400">Chronogramme declare</p>
@@ -225,7 +227,7 @@
         </section>
 
         <section class="grid grid-cols-1 gap-6 xl:grid-cols-3">
-            <article class="xl:col-span-2 rounded-xl border border-slate-200 bg-white p-6 dark:border-slate-700 dark:bg-slate-900">
+            <article class="xl:col-span-2 rounded-xl border border-slate-200 bg-white p-6 shadow-sm transition-shadow duration-200 hover:shadow-md dark:border-slate-700 dark:bg-slate-900 dark:shadow-black/20">
                 <div class="mb-4 border-b border-slate-200 pb-4 dark:border-slate-700">
                     <h2 class="text-lg font-semibold text-slate-900 dark:text-white">Soumission par departement</h2>
                     <p class="text-sm text-slate-500 dark:text-slate-400">Progression des activites soumises ou validees</p>
@@ -247,7 +249,7 @@
                 </div>
             </article>
 
-            <article class="rounded-xl border border-slate-200 bg-white p-6 dark:border-slate-700 dark:bg-slate-900">
+            <article class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm transition-shadow duration-200 hover:shadow-md dark:border-slate-700 dark:bg-slate-900 dark:shadow-black/20">
                 <div class="mb-4 border-b border-slate-200 pb-4 dark:border-slate-700">
                     <h2 class="text-lg font-semibold text-slate-900 dark:text-white">Departements en retard</h2>
                     <p class="text-sm text-slate-500 dark:text-slate-400">{{ $insights['departements_en_retard'] }} departement(s) a suivre</p>

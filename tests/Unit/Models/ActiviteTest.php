@@ -184,7 +184,8 @@ test('statut d\'exécution : libellé et couleur', function () {
     expect(Activite::factory()->create(['statut_execution' => 'realise'])->statut_execution_label)->toBe('Réalisé');
     expect(Activite::factory()->create(['statut_execution' => 'realise'])->statut_execution_couleur)->toBe('emerald');
     expect(Activite::factory()->create(['statut_execution' => 'en_cours'])->statut_execution_couleur)->toBe('amber');
-    // Valeur par défaut (non_realise) -> libellé et couleur de repli
+    expect(Activite::factory()->create(['statut_execution' => 'non_realise'])->statut_execution_couleur)->toBe('rose');
+    // Attribut non chargé en mémoire (avant fresh()) -> libellé et couleur de repli
     expect(Activite::factory()->create()->statut_execution_label)->toBe('Non réalisé');
     expect(Activite::factory()->create()->statut_execution_couleur)->toBe('slate');
 });

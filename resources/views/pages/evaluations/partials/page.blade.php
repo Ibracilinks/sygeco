@@ -158,9 +158,7 @@
                                 @if ($evaluation)
                                     <x-execution-badge :statut="$evaluation->statut_execution" />
                                 @else
-                                    <span class="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-500 dark:bg-slate-800 dark:text-slate-400">
-                                        Non évaluée
-                                    </span>
+                                    <x-execution-badge statut="non_evaluee" />
                                 @endif
                             </td>
                             <td class="px-5 py-4 text-xs text-slate-500 dark:text-slate-400" data-cellule="maj">

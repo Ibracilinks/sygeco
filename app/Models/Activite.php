@@ -83,6 +83,7 @@ class Activite extends Model
         return match ($this->statut_execution) {
             'realise' => 'emerald',
             'en_cours' => 'amber',
+            'non_realise' => 'rose',
             default => 'slate',
         };
     }
