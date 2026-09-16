@@ -304,7 +304,14 @@ window.exportMissionMemeVillePDF = async function exportMissionMemeVillePDF(butt
         button.innerHTML = 'Génération…';
     }
 
-    const fmt = (value) => new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 0 }).format(Number(value || 0));
+    // Regroupement manuel par espace ASCII classique : l'espace fine insécable
+    // que produit Intl.NumberFormat('fr-FR') n'existe pas dans les polices
+    // standard de jsPDF et s'affiche comme un caractère parasite (ex. "75/000").
+    const fmt = (value) => {
+        const nombre = Math.round(Number(value || 0));
+        const signe = nombre < 0 ? '-' : '';
+        return signe + Math.abs(nombre).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+    };
     const text = (doc, value, x, y, options = {}) => doc.text(String(value ?? ''), x, y, options);
 
     // Logo officiel : présent en clair dans la page (même origine), donc utilisable tel quel.
@@ -322,6 +329,7 @@ window.exportMissionMemeVillePDF = async function exportMissionMemeVillePDF(butt
     try {
         const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
         const pageW = doc.internal.pageSize.getWidth();
+        const pageH = doc.internal.pageSize.getHeight();
         const margin = 10;
         const fullW = pageW - margin * 2;
 
@@ -460,6 +468,12 @@ window.exportMissionMemeVillePDF = async function exportMissionMemeVillePDF(butt
         y += 12;
 
         // ── Total en lettres, lieu et signatures ────────────────────────────
+        // Bloc gardé groupé : bascule sur une nouvelle page plutôt que de
+        // laisser les signatures déborder hors du cadre imprimable.
+        if (y + 60 > pageH - margin) {
+            doc.addPage();
+            y = margin;
+        }
         doc.setFontSize(9);
         texteCentreAjuste(doc, mission.tickets_en_lettres || '', pageW / 2, y, fullW, 9);
         y += 10;
@@ -515,7 +529,14 @@ window.exportMissionExterieurePDF = async function exportMissionExterieurePDF(bu
         button.innerHTML = 'Génération…';
     }
 
-    const fmt = (value) => new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 0 }).format(Number(value || 0));
+    // Regroupement manuel par espace ASCII classique : l'espace fine insécable
+    // que produit Intl.NumberFormat('fr-FR') n'existe pas dans les polices
+    // standard de jsPDF et s'affiche comme un caractère parasite (ex. "75/000").
+    const fmt = (value) => {
+        const nombre = Math.round(Number(value || 0));
+        const signe = nombre < 0 ? '-' : '';
+        return signe + Math.abs(nombre).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+    };
 
     // Logo officiel : présent en clair dans la page (même origine), donc utilisable tel quel.
     const chargerLogo = async () => {
@@ -532,6 +553,7 @@ window.exportMissionExterieurePDF = async function exportMissionExterieurePDF(bu
     try {
         const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
         const pageW = doc.internal.pageSize.getWidth();
+        const pageH = doc.internal.pageSize.getHeight();
         const margin = 10;
         const fullW = pageW - margin * 2;
 
@@ -713,6 +735,12 @@ window.exportMissionExterieurePDF = async function exportMissionExterieurePDF(bu
         y += 12;
 
         // ── Montant en lettres, lieu et signatures ──────────────────────────
+        // Bloc gardé groupé (somme en lettres + lieu + signatures + visa) :
+        // bascule sur une nouvelle page plutôt que de déborder hors du cadre.
+        if (y + 75 > pageH - margin) {
+            doc.addPage();
+            y = margin;
+        }
         doc.setFontSize(8.5);
         // Le montant en lettres porte déjà « FRANCS CFA » : pas de suffixe ajouté ici.
         const prefixe = 'ARRETE A LA SOMME DE : ';
@@ -789,7 +817,14 @@ window.exportMissionRegionPDF = async function exportMissionRegionPDF(button, da
         button.innerHTML = 'Génération…';
     }
 
-    const fmt = (value) => new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 0 }).format(Number(value || 0));
+    // Regroupement manuel par espace ASCII classique : l'espace fine insécable
+    // que produit Intl.NumberFormat('fr-FR') n'existe pas dans les polices
+    // standard de jsPDF et s'affiche comme un caractère parasite (ex. "75/000").
+    const fmt = (value) => {
+        const nombre = Math.round(Number(value || 0));
+        const signe = nombre < 0 ? '-' : '';
+        return signe + Math.abs(nombre).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+    };
 
     const chargerLogo = async () => {
         const img = document.getElementById('mission-logo');
@@ -806,6 +841,7 @@ window.exportMissionRegionPDF = async function exportMissionRegionPDF(button, da
         // Paysage : les dix colonnes chiffrées du modèle ne tiennent pas en portrait.
         const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
         const pageW = doc.internal.pageSize.getWidth();
+        const pageH = doc.internal.pageSize.getHeight();
         const margin = 10;
         const fullW = pageW - margin * 2;
 
@@ -994,6 +1030,12 @@ window.exportMissionRegionPDF = async function exportMissionRegionPDF(button, da
         y += 12;
 
         // ── Montant en lettres, lieu et signatures ──────────────────────────
+        // Bloc gardé groupé (somme en lettres + lieu + signatures + visa) :
+        // bascule sur une nouvelle page plutôt que de déborder hors du cadre.
+        if (y + 75 > pageH - margin) {
+            doc.addPage();
+            y = margin;
+        }
         doc.setFontSize(8.5);
         const prefixe = 'ARRETE A LA SOMME DE : ';
         const lettres = String(mission.montant_total_en_lettres || '');
