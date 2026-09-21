@@ -1,6 +1,6 @@
 <x-doc.page
     title="Manuel d'utilisation"
-    subtitle="Guide pratique de la plateforme SYGECO — paramétrage, planification, suivi et évaluation des activités."
+    subtitle="Guide pratique de la plateforme LEAC (Logiciel d'évaluation des activités de la CANAM) — paramétrage, planification, suivi et évaluation des activités."
     icon="📖"
     current="index"
 >
@@ -21,7 +21,7 @@
 
     <x-doc.section id="presentation" titre="1. Présentation de la plateforme">
         <p>
-            SYGECO est l'outil de gestion et de coordination des activités de la CANAM. Il permet de
+            LEAC (Logiciel d'évaluation des activités de la CANAM) est l'outil de gestion et de coordination des activités de la CANAM. Il permet de
             structurer le <strong>Plan de Travail Annuel (PTA)</strong> autour des résultats stratégiques,
             objectifs, extrants et activités, puis d'en assurer le <strong>suivi de l'exécution</strong> et
             l'<strong>évaluation</strong> (mi-parcours et fin d'exercice).
@@ -128,7 +128,7 @@
     </x-doc.section>
 
     <x-doc.section id="dashboard" titre="5. Tableau de bord" chapo="Le tableau de bord synthétise l'exercice sélectionné :">
-        <x-doc.capture src="images/manuel/dashboard.png" alt="Tableau de bord SYGECO">Le tableau de bord : indicateurs clés, chronogramme et répartitions.</x-doc.capture>
+        <x-doc.capture src="images/manuel/dashboard.png" alt="Tableau de bord LEAC">Le tableau de bord : indicateurs clés, chronogramme et répartitions.</x-doc.capture>
         <ul class="list-disc space-y-1.5 pl-5">
             <li><strong>Indicateurs clés</strong> : nombre d'objectifs, d'extrants, d'activités, budget total, taux de réalisation.</li>
             <li><strong>Évolution du chronogramme</strong> : volume d'activités planifiées et dynamique budgétaire par période (T1 → T4).</li>

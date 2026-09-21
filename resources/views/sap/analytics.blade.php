@@ -254,7 +254,7 @@
     <div class="sac-filterbar">
         <span>Filtres&nbsp;:</span>
         <span class="sac-chip">Exercice <b>{{ $filters['selected_year'] ?? '—' }}</b></span>
-        <span class="sac-chip">Source <b>SYGECO · PTA</b></span>
+        <span class="sac-chip">Source <b>LEAC · PTA</b></span>
         <span class="sac-chip">Devise <b>FCFA</b></span>
     </div>
 

@@ -46,7 +46,7 @@
         </div>
     </x-doc.section>
 
-    <x-doc.section id="principes" titre="2. Principes de base" chapo="Un compte SYGECO repose sur trois éléments indissociables.">
+    <x-doc.section id="principes" titre="2. Principes de base" chapo="Un compte LEAC repose sur trois éléments indissociables.">
         <div class="grid grid-cols-1 gap-3 sm:grid-cols-3">
             <div class="rounded-lg border border-slate-200 p-4 dark:border-slate-700">
                 <p class="text-sm font-medium text-slate-800 dark:text-slate-100">🪪 Une identité</p>

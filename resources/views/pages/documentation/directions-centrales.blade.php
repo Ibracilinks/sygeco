@@ -302,7 +302,7 @@
         </x-doc.astuce>
     </x-doc.section>
 
-    <x-doc.section id="impacts" titre="11. Ce que la structure détermine ailleurs dans SYGECO" chapo="L'organigramme n'est pas un simple annuaire : il pilote la visibilité et le circuit de validation.">
+    <x-doc.section id="impacts" titre="11. Ce que la structure détermine ailleurs dans LEAC" chapo="L'organigramme n'est pas un simple annuaire : il pilote la visibilité et le circuit de validation.">
         <ul class="list-disc space-y-1.5 pl-5">
             <li><strong>Périmètre de consultation</strong> : un <em>chef</em> voit son entité <strong>et tout son sous-arbre</strong> (directions centrales et services rattachés, à toute profondeur) ; un <em>agent</em> ne voit que son entité.</li>
             <li><strong>Circuit de validation montant</strong> : une activité soumise remonte au responsable du niveau supérieur défini par le rattachement. Un rattachement erroné envoie donc les validations au mauvais interlocuteur.</li>

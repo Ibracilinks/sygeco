@@ -76,7 +76,7 @@
             <div class="space-y-6">
                 {{ $slot }}
 
-                <p class="pb-6 text-center text-xs text-slate-400">SYGECO — CANAM · Besoin d'aide supplémentaire ? Contactez la DBCGOQ.</p>
+                <p class="pb-6 text-center text-xs text-slate-400">LEAC (Logiciel d'évaluation des activités de la CANAM) · Besoin d'aide supplémentaire ? Contactez la DBCGOQ.</p>
             </div>
         </div>
     </div>

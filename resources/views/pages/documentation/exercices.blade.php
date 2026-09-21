@@ -141,7 +141,7 @@
         <p>Boutons disponibles : « Utiliser cet exercice », « Exporter (Excel) », « Modifier » (si <code class="rounded bg-slate-100 px-1 dark:bg-slate-800">manage_exercices</code>), « Retour ».</p>
     </x-doc.section>
 
-    <x-doc.section id="actif" titre="7. « Exercice actif » : deux notions à ne pas confondre" chapo="Le mot « actif » recouvre deux mécanismes distincts dans SYGECO.">
+    <x-doc.section id="actif" titre="7. « Exercice actif » : deux notions à ne pas confondre" chapo="Le mot « actif » recouvre deux mécanismes distincts dans LEAC.">
         <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div class="rounded-lg border border-emerald-200 p-4 dark:border-emerald-900/70">
                 <p class="text-sm font-medium text-emerald-800 dark:text-emerald-200">Statut « Actif » (donnée persistée)</p>
@@ -186,7 +186,7 @@
         <p>Si la suppression réussit, le message « Exercice supprimé. » s'affiche ; si l'exercice supprimé était le contexte actif de votre session, celui-ci est réinitialisé automatiquement.</p>
     </x-doc.section>
 
-    <x-doc.section id="impacts" titre="10. Ce que l'exercice déclenche ailleurs dans SYGECO" chapo="L'exercice n'est pas qu'un repère calendaire : il pilote plusieurs automatismes.">
+    <x-doc.section id="impacts" titre="10. Ce que l'exercice déclenche ailleurs dans LEAC" chapo="L'exercice n'est pas qu'un repère calendaire : il pilote plusieurs automatismes.">
         <ul class="list-disc space-y-1.5 pl-5">
             <li><strong>Ouverture de la saisie</strong> : à la date d'ouverture, tous les comptes non-administrateurs (hors rôle dbcgoq) reçoivent un nouveau mot de passe généré automatiquement et une notification avec leurs accès. Les comptes dbcgoq sont volontairement épargnés, pour ne jamais rendre un compte d'administration inaccessible.</li>
             <li><strong>Relances de date limite</strong> : des rappels sont envoyés aux paliers J-15, J-10, J-7, J-5, J-3, J-2, J-1 et J avant la date limite de saisie.</li>

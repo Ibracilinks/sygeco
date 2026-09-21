@@ -322,7 +322,7 @@
             <li>Vérifiez les <strong>barèmes</strong> avant une campagne de missions importante : leurs montants ne s'appliquent pas rétroactivement aux missions déjà enregistrées.</li>
             <li>Adaptez systématiquement les <strong>signataires</strong> pré-remplis au circuit de signature réel de la mission avant de finaliser.</li>
             <li>Utilisez la <strong>finalisation</strong> comme un repère de gestion (« ce document ne doit plus bouger ») plutôt que comme une protection technique : évitez toute modification après ce point.</li>
-            <li>Suivez le paiement effectif des missions dans l'outil comptable dédié : SYGECO ne trace que le document et son montant calculé, pas son règlement.</li>
+            <li>Suivez le paiement effectif des missions dans l'outil comptable dédié : LEAC ne trace que le document et son montant calculé, pas son règlement.</li>
         </ul>
         <p class="text-xs text-slate-500 dark:text-slate-400">
             Chapitre précédent : <a href="{{ route('documentation.suivi') }}" class="font-medium underline">📊 Suivi &amp; évaluation</a>.
