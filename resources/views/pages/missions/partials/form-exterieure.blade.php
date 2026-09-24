@@ -55,8 +55,8 @@
         <div id="participants-rows" class="space-y-3">
             @foreach ($participantValues as $index => $participant)
                 <div class="grid grid-cols-1 gap-2 rounded-lg border border-slate-200 p-3 dark:border-slate-700 md:grid-cols-12" data-row>
-                    <div class="md:col-span-7"><input type="text" name="participants[{{ $index }}][nom_complet]" value="{{ $participant['nom_complet'] ?? '' }}" placeholder="Prénoms et noms" class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-950"></div>
-                    <div class="md:col-span-4"><select name="participants[{{ $index }}][categorie]" class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-950"><option value="">Catégorie</option>@foreach (\App\Models\Mission::categoriesExterieures() as $code => $categorie)<option value="{{ $code }}" @selected(($participant['categorie'] ?? null) === $code)>{{ $categorie['label'] }}</option>@endforeach</select></div>
+                    <div class="md:col-span-5"><input type="text" name="participants[{{ $index }}][nom_complet]" value="{{ $participant['nom_complet'] ?? '' }}" placeholder="Prénoms et noms" class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-950"></div>
+                    <div class="md:col-span-6"><select name="participants[{{ $index }}][categorie]" class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-950"><option value="">Catégorie</option>@foreach (\App\Models\Mission::categoriesExterieures() as $code => $categorie)<option value="{{ $code }}" @selected(($participant['categorie'] ?? null) === $code)>{{ $categorie['label'] }}@if (filled($categorie['description'] ?? null)) ({{ $categorie['description'] }})@endif</option>@endforeach</select></div>
                     <div class="md:col-span-1"><button type="button" class="w-full rounded-lg bg-red-100 px-3 py-2 text-xs font-medium text-red-700 dark:bg-red-950 dark:text-red-200" data-remove-row>&times;</button></div>
                 </div>
             @endforeach
@@ -79,8 +79,8 @@
 
 <template id="participant-row-template">
     <div class="grid grid-cols-1 gap-2 rounded-lg border border-slate-200 p-3 dark:border-slate-700 md:grid-cols-12" data-row>
-        <div class="md:col-span-7"><input type="text" data-name="nom_complet" placeholder="Prénoms et noms" class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-950"></div>
-        <div class="md:col-span-4"><select data-name="categorie" class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-950"><option value="">Catégorie</option>@foreach (\App\Models\Mission::categoriesExterieures() as $code => $categorie)<option value="{{ $code }}">{{ $categorie['label'] }}</option>@endforeach</select></div>
+        <div class="md:col-span-5"><input type="text" data-name="nom_complet" placeholder="Prénoms et noms" class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-950"></div>
+        <div class="md:col-span-6"><select data-name="categorie" class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-950"><option value="">Catégorie</option>@foreach (\App\Models\Mission::categoriesExterieures() as $code => $categorie)<option value="{{ $code }}">{{ $categorie['label'] }}@if (filled($categorie['description'] ?? null)) ({{ $categorie['description'] }})@endif</option>@endforeach</select></div>
         <div class="md:col-span-1"><button type="button" class="w-full rounded-lg bg-red-100 px-3 py-2 text-xs font-medium text-red-700 dark:bg-red-950 dark:text-red-200" data-remove-row>&times;</button></div>
     </div>
 </template>

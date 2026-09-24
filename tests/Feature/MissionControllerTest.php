@@ -856,3 +856,12 @@ test('le formulaire intérieur du pays propose les régions en liste déroulante
     $response->assertDontSee('[date_depart]', false);
     $response->assertSee('[nombre_jours]', false);
 });
+
+test('le choix de catégorie affiche la correspondance entre parenthèses', function (string $type) {
+    $html = $this->actingAs(userWithRole('dbcgoq'))
+        ->get(route('missions.create', ['type' => $type]))
+        ->assertOk()
+        ->getContent();
+
+    expect($html)->toContain('Catégorie I (Ministère de Tutelle, PCA, Directeur Général)');
+})->with([Mission::TYPE_EXTERIEURE, Mission::TYPE_REGION]);
