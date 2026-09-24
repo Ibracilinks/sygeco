@@ -82,7 +82,7 @@ const surUnePage = (dessiner, debutCorps) => {
     return doc;
 };
 
-/** « ARRETE A LA SOMME DE : » suivi du montant en lettres (en rouge), centré. */
+/** « ARRETE A LA SOMME DE : » suivi du montant en lettres, centré. */
 const sommeEnLettres = (doc, montantEnLettres, y, taille, largeurMax) => {
     const pageW = doc.internal.pageSize.getWidth();
     const prefixe = 'ARRETE A LA SOMME DE : ';
@@ -100,9 +100,7 @@ const sommeEnLettres = (doc, montantEnLettres, y, taille, largeurMax) => {
     const depart = (pageW - (largeurPrefixe + largeurLettres)) / 2;
 
     doc.text(prefixe, depart, y);
-    doc.setTextColor(200, 0, 0);
     doc.text(lettres, depart + largeurPrefixe, y);
-    doc.setTextColor(0, 0, 0);
 };
 
 /**
@@ -446,9 +444,7 @@ window.exportMissionMemeVillePDF = async function exportMissionMemeVillePDF(butt
         const departTitre = (pageW - (largeurTitre + largeurRef)) / 2;
 
         doc.text(titre, departTitre, y);
-        doc.setTextColor(200, 0, 0);
         doc.text(reference, departTitre + largeurTitre, y);
-        doc.setTextColor(0, 0, 0);
         doc.line(departTitre, y + 1, departTitre + largeurTitre + largeurRef, y + 1);
 
         // ── Objet et durée ──────────────────────────────────────────────────
@@ -639,7 +635,7 @@ window.exportMissionExterieurePDF = async function exportMissionExterieurePDF(bu
             doc.addImage(logo, 'PNG', centreGauche - 8, 27, 16, 16);
         }
 
-        // ── Titre, référence en rouge ───────────────────────────────────────
+        // ── Titre et référence ──────────────────────────────────────────────
         let y = 50;
         const titre = "PROJET DE BUDGET RELATIF A LA LEVEE D'ORDRE DE MISSION N°";
         const reference = String(mission.reference || '');
@@ -654,9 +650,7 @@ window.exportMissionExterieurePDF = async function exportMissionExterieurePDF(bu
         const departTitre = (pageW - (largeurTitre + largeurRef)) / 2;
 
         doc.text(titre, departTitre, y);
-        doc.setTextColor(200, 0, 0);
         doc.text(reference, departTitre + largeurTitre, y);
-        doc.setTextColor(0, 0, 0);
         doc.line(departTitre, y + 1, departTitre + largeurTitre + largeurRef, y + 1);
 
         // ── Objet et durée ──────────────────────────────────────────────────
@@ -897,7 +891,7 @@ window.exportMissionRegionPDF = async function exportMissionRegionPDF(button, da
             doc.addImage(logo, 'PNG', centreGauche - 8, 27, 16, 16);
         }
 
-        // ── Titre, référence en rouge ───────────────────────────────────────
+        // ── Titre et référence ──────────────────────────────────────────────
         let y = 50;
         const titre = "BUDGET RELATIF A L'ORDRE DE MISSION N°";
         const reference = String(mission.reference || '');
@@ -912,9 +906,7 @@ window.exportMissionRegionPDF = async function exportMissionRegionPDF(button, da
         const departTitre = (pageW - (largeurTitre + largeurRef)) / 2;
 
         doc.text(titre, departTitre, y);
-        doc.setTextColor(200, 0, 0);
         doc.text(reference, departTitre + largeurTitre, y);
-        doc.setTextColor(0, 0, 0);
         doc.line(departTitre, y + 1, departTitre + largeurTitre + largeurRef, y + 1);
 
         // ── Objet, durée, dates ─────────────────────────────────────────────
@@ -930,9 +922,7 @@ window.exportMissionRegionPDF = async function exportMissionRegionPDF(button, da
         y += objet.length * r(4.2) + r(6);
         doc.text('DUREE :', margin, y);
         doc.line(margin, y + 1, margin + doc.getStringUnitWidth('DUREE :') * r(9) / doc.internal.scaleFactor, y + 1);
-        doc.setTextColor(200, 0, 0);
         doc.text(`${mission.nombre_jours} JOURS`, margin + r(18), y);
-        doc.setTextColor(0, 0, 0);
         doc.text(String(mission.destination || ''), pageW - margin, y, { align: 'right' });
         doc.setFont('helvetica', 'normal');
         doc.text(`DATE : Du ${mission.date_depart} au ${mission.date_retour}`, margin, y + r(5));

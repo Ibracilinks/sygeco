@@ -107,7 +107,7 @@
                     </div>
 
                     <h3 class="mt-6 text-center text-base font-bold uppercase underline">
-                        Budget relatif a l'ordre de mission n°<span class="text-red-600">{{ $mission->reference }}</span>
+                        Budget relatif a l'ordre de mission n°{{ $mission->reference }}
                     </h3>
 
                     <p class="mt-5 text-justify text-[12px] font-bold uppercase underline">
@@ -200,7 +200,7 @@
                     </div>
 
                     <h3 class="mt-6 text-center text-base font-bold uppercase underline">
-                        Projet de budget relatif a la levee d'ordre de mission n°<span class="text-red-600">{{ $mission->reference }}</span>
+                        Projet de budget relatif a la levee d'ordre de mission n°{{ $mission->reference }}
                     </h3>
 
                     <p class="mt-5 text-center text-[12px] font-bold uppercase underline">Objet de la mission : {{ $mission->objet }}</p>
@@ -303,7 +303,7 @@
 
                     <p class="mt-4 text-center text-[12px] font-bold uppercase">
                         {{-- Le libellé en lettres porte déjà « FRANCS CFA ». --}}
-                        Arrete a la somme de : <span class="text-red-600">{{ $mission->montant_total_en_lettres }}</span>
+                        Arrete a la somme de : {{ $mission->montant_total_en_lettres }}
                     </p>
 
                     <p class="mt-6 text-right text-[12px]">{{ $mission->lieu_signature }} le ....................</p>
@@ -341,14 +341,14 @@
                     </div>
 
                     <h3 class="mt-6 text-center text-base font-bold uppercase underline">
-                        Budget relatif a l'ordre de mission n°<span class="text-red-600">{{ $mission->reference }}</span>
+                        Budget relatif a l'ordre de mission n°{{ $mission->reference }}
                     </h3>
 
                     <p class="mt-5 text-[12px] font-bold uppercase underline">Objet de la mission : {{ $mission->objet }}</p>
 
                     <div class="mt-5 flex items-start justify-between text-[12px]">
                         <div>
-                            <p><span class="font-bold uppercase underline">Durée :</span> <span class="font-bold text-red-600">{{ $mission->nombre_jours }} jours</span></p>
+                            <p><span class="font-bold uppercase underline">Durée :</span> <span class="font-bold">{{ $mission->nombre_jours }} jours</span></p>
                             <p>Date : Du {{ $mission->date_depart?->format('d/m/Y') }} au {{ $mission->date_retour?->format('d/m/Y') }}</p>
                         </div>
                         <p class="font-bold">{{ $mission->destination }}</p>
@@ -444,7 +444,7 @@
                     </table>
 
                     <p class="mt-4 text-center text-[12px] font-bold uppercase">
-                        Arrete a la somme de : <span class="text-red-600">{{ $mission->montant_total_en_lettres }}</span>
+                        Arrete a la somme de : {{ $mission->montant_total_en_lettres }}
                     </p>
 
                     <p class="mt-6 text-right text-[12px]">{{ $mission->lieu_signature }} le ....................</p>
