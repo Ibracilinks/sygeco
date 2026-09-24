@@ -239,8 +239,8 @@
         <p>
             La fiche reproduit fidèlement le formulaire officiel CANAM correspondant au type de mission (en-têtes
             « Ministère de la Santé et du Développement Social », « Caisse Nationale d'Assurance Maladie »), avec les
-            montants totaux exprimés aussi en toutes lettres. La mise en page — sections, orientation de la page —
-            diffère selon le type :
+            montants totaux exprimés aussi en toutes lettres. Le document est toujours un A4 portrait ; les sections
+            diffèrent selon le type :
         </p>
         <div class="overflow-x-auto">
             <table class="min-w-full divide-y divide-slate-200 text-sm dark:divide-slate-700">
@@ -259,12 +259,12 @@
                     </tr>
                     <tr>
                         <td class="py-2 pr-4 font-medium text-slate-800 dark:text-slate-100">✈️ À l'étranger</td>
-                        <td class="py-2 pr-4">A4 paysage</td>
+                        <td class="py-2 pr-4">A4 portrait</td>
                         <td class="py-2">I- Frais et indemnités (Sous-total 1) · II- Autres frais : participation, visa (Sous-total 2) · III- Billets d'avion : affaire, économique (Sous-total 3) · Total général · Visa du contrôleur financier.</td>
                     </tr>
                     <tr>
                         <td class="py-2 pr-4 font-medium text-slate-800 dark:text-slate-100">🚗 Intérieur du pays</td>
-                        <td class="py-2 pr-4">A4 paysage</td>
+                        <td class="py-2 pr-4">A4 portrait</td>
                         <td class="py-2">I- Frais et indemnités, un sous-total par étape/groupe · II- Carburant : trajet, ville, location véhicule, billet d'avion (Sous-total 2) · III- Péages · Total général.</td>
                     </tr>
                 </tbody>
@@ -276,9 +276,9 @@
             aucun aller-retour serveur n'est nécessaire.
         </p>
         <x-doc.astuce>
-            Le bloc « Arrêté à la somme de » suivi du lieu, de la date et des signatures bascule automatiquement sur
-            une nouvelle page s'il ne tient pas dans l'espace restant, plutôt que de déborder hors du document — utile
-            pour les missions à nombreux participants.
+            Le document tient toujours sur <strong>une seule page</strong>, signatures comprises. Pour les missions à
+            nombreux participants, les lignes du tableau et le texte sont resserrés automatiquement ; toutes les
+            colonnes restent affichées.
         </x-doc.astuce>
     </x-doc.section>
 

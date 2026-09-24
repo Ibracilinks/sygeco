@@ -48,7 +48,7 @@ const cellule = (doc, x, y, w, h, valeur = '', options = {}) => {
 
     const { texte, taille } = ajusterTexte(doc, valeur, largeurUtile, tailleInitiale);
     doc.setFontSize(taille);
-    doc.text(texte, textX, y + h / 2 + taille * 0.18, { align, baseline: 'middle' });
+    doc.text(texte, textX, y + h / 2, { align, baseline: 'middle' });
     doc.setFontSize(tailleInitiale);
 };
 
@@ -60,6 +60,74 @@ const texteCentreAjuste = (doc, valeur, centreX, y, largeur, taille) => {
     doc.setFontSize(taille);
 
     return ajuste;
+};
+
+/**
+ * Produit un A4 portrait tenant sur une seule page. `dessiner(doc, k)` trace le
+ * document et renvoie l'ordonnée de fin ; tout ce qui suit l'en-tête (à partir de
+ * `debutCorps`) doit être dimensionné en multiples de `k`. Un premier passage à
+ * blanc mesure la hauteur à l'échelle 1 ; si elle dépasse la page, hauteurs de
+ * ligne, espacements et polices sont réduits d'un même facteur.
+ */
+const surUnePage = (dessiner, debutCorps) => {
+    const nouveau = () => new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+    const brouillon = nouveau();
+    const fin = dessiner(brouillon, 1);
+    const disponible = brouillon.internal.pageSize.getHeight() - 10 - debutCorps;
+    const k = Math.min(1, disponible / Math.max(1, fin - debutCorps));
+
+    const doc = nouveau();
+    dessiner(doc, k);
+
+    return doc;
+};
+
+/** « ARRETE A LA SOMME DE : » suivi du montant en lettres (en rouge), centré. */
+const sommeEnLettres = (doc, montantEnLettres, y, taille, largeurMax) => {
+    const pageW = doc.internal.pageSize.getWidth();
+    const prefixe = 'ARRETE A LA SOMME DE : ';
+    const lettres = String(montantEnLettres || '');
+    const plancher = taille * 5 / 8.5;
+    const mesure = () => (doc.getStringUnitWidth(prefixe + lettres) * taille) / doc.internal.scaleFactor;
+
+    doc.setFont('helvetica', 'bold');
+    while (taille > plancher && mesure() > largeurMax) {
+        taille -= 0.25;
+    }
+    doc.setFontSize(taille);
+    const largeurPrefixe = doc.getStringUnitWidth(prefixe) * taille / doc.internal.scaleFactor;
+    const largeurLettres = doc.getStringUnitWidth(lettres) * taille / doc.internal.scaleFactor;
+    const depart = (pageW - (largeurPrefixe + largeurLettres)) / 2;
+
+    doc.text(prefixe, depart, y);
+    doc.setTextColor(200, 0, 0);
+    doc.text(lettres, depart + largeurPrefixe, y);
+    doc.setTextColor(0, 0, 0);
+};
+
+/**
+ * Blocs de signature côte à côte : libellé, nom souligné `ecartNom` mm plus bas
+ * (à l'échelle k), fonction en italique dessous.
+ */
+const signatures = (doc, signataires, y, k, margin, fullW, souligne, ecartNom) => {
+    const liste = Array.isArray(signataires) ? signataires : [];
+    const blockWidth = fullW / Math.max(1, liste.length || 1);
+
+    liste.forEach((signataire, index) => {
+        const centerX = margin + blockWidth * index + blockWidth / 2;
+
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(8 * k);
+        doc.text(doc.splitTextToSize(String(signataire.libelle || ''), blockWidth - 6), centerX, y, { align: 'center' });
+
+        const nom = String(signataire.nom || '');
+        const nomAjuste = texteCentreAjuste(doc, nom, centerX, y + ecartNom * k, blockWidth - 6, 9 * k);
+        souligne(nomAjuste.texte, centerX, y + ecartNom * k, nomAjuste.taille);
+
+        doc.setFont('helvetica', 'italic');
+        doc.setFontSize(7.5 * k);
+        doc.text(doc.splitTextToSize(String(signataire.fonction || ''), blockWidth - 6), centerX, y + (ecartNom + 5) * k, { align: 'center' });
+    });
 };
 
 
@@ -327,9 +395,12 @@ window.exportMissionMemeVillePDF = async function exportMissionMemeVillePDF(butt
     };
 
     try {
-        const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+        const logo = await chargerLogo();
+
+        // Tout ce qui suit l'en-tête est exprimé en multiples de k (voir surUnePage).
+        const dessiner = (doc, k) => {
+        const r = (valeur) => valeur * k;
         const pageW = doc.internal.pageSize.getWidth();
-        const pageH = doc.internal.pageSize.getHeight();
         const margin = 10;
         const fullW = pageW - margin * 2;
 
@@ -356,7 +427,6 @@ window.exportMissionMemeVillePDF = async function exportMissionMemeVillePDF(butt
         doc.text('----------------------', centreDroite, 18, { align: 'center' });
         doc.text('UN PEUPLE – UN BUT – UNE FOI', centreDroite, 22, { align: 'center' });
 
-        const logo = await chargerLogo();
         if (logo) {
             doc.addImage(logo, 'PNG', centreGauche - 8, 27, 16, 16);
         }
@@ -365,9 +435,9 @@ window.exportMissionMemeVillePDF = async function exportMissionMemeVillePDF(butt
         let y = 50;
         const titre = "BUDGET RELATIF A L'ORDRE DE MISSION N°";
         const reference = String(mission.reference || '');
-        let tailleTitre = 12;
+        let tailleTitre = r(12);
         const mesureTitre = () => (doc.getStringUnitWidth(titre + reference) * tailleTitre) / doc.internal.scaleFactor;
-        while (tailleTitre > 7 && mesureTitre() > fullW) {
+        while (tailleTitre > r(7) && mesureTitre() > fullW) {
             tailleTitre -= 0.25;
         }
         doc.setFontSize(tailleTitre);
@@ -382,24 +452,24 @@ window.exportMissionMemeVillePDF = async function exportMissionMemeVillePDF(butt
         doc.line(departTitre, y + 1, departTitre + largeurTitre + largeurRef, y + 1);
 
         // ── Objet et durée ──────────────────────────────────────────────────
-        y += 8;
-        doc.setFontSize(9);
+        y += r(8);
+        doc.setFontSize(r(9));
         const objet = doc.splitTextToSize(`OBJET DE LA MISSION: ${String(mission.objet || '').toUpperCase()}`, fullW);
-        doc.text(objet, margin, y);
         objet.forEach((ligne, index) => {
-            const largeur = doc.getStringUnitWidth(ligne) * 9 / doc.internal.scaleFactor;
-            doc.line(margin, y + index * 4.2 + 1, margin + largeur, y + index * 4.2 + 1);
+            const largeur = doc.getStringUnitWidth(ligne) * r(9) / doc.internal.scaleFactor;
+            doc.text(ligne, margin, y + index * r(4.2));
+            doc.line(margin, y + index * r(4.2) + 1, margin + largeur, y + index * r(4.2) + 1);
         });
 
-        y += objet.length * 4.2 + 6;
+        y += objet.length * r(4.2) + r(6);
         doc.text('DUREE :', margin, y);
-        doc.line(margin, y + 1, margin + doc.getStringUnitWidth('DUREE :') * 9 / doc.internal.scaleFactor, y + 1);
-        doc.text(`${mission.nombre_jours} jour(s) ouvrable(s)`, margin + 18, y);
+        doc.line(margin, y + 1, margin + doc.getStringUnitWidth('DUREE :') * r(9) / doc.internal.scaleFactor, y + 1);
+        doc.text(`${mission.nombre_jours} jour(s) ouvrable(s)`, margin + r(18), y);
         doc.setFont('helvetica', 'normal');
-        doc.text(`${mission.date_depart} au ${mission.date_retour}`, margin, y + 5);
+        doc.text(`${mission.date_depart} au ${mission.date_retour}`, margin, y + r(5));
 
         // ── Tableau (mêmes colonnes que le modèle officiel) ──────────────────
-        y += 11;
+        y += r(11);
         const colWidths = [9, 46, 13, 15, 13, 16, 17, 15, 19, 27];
         const colX = [];
         let cursor = margin;
@@ -410,95 +480,78 @@ window.exportMissionMemeVillePDF = async function exportMissionMemeVillePDF(butt
         const largeurTable = cursor - margin;
         const derniere = colWidths.length - 1;
 
-        doc.setFontSize(6.5);
+        doc.setFontSize(r(6.5));
         doc.setFont('helvetica', 'bold');
         const entetes = ['N°', 'LIBELLE', 'Nbre de\npers.', 'Mtant\npar jour', 'Nbre\nde Jrs', 'Frais de\nmission',
             'Mtant\npar nuitée', 'Nbre de\nnuitées', 'Indemnités\nde Mission', 'TOTAL'];
-        entetes.forEach((entete, index) => drawCell(colX[index], y, colWidths[index], 9, entete.split('\n'), { align: 'center', valignMiddle: true }));
-        y += 9;
+        entetes.forEach((entete, index) => drawCell(colX[index], y, colWidths[index], r(9), entete.split('\n'), { align: 'center', valignMiddle: true }));
+        y += r(9);
 
-        drawCell(margin, y, largeurTable, 5, 'I-  FRAIS ET INDEMNITES', { align: 'center', valignMiddle: true });
-        y += 5;
-        drawCell(colX[0], y, colWidths[0], 5, '');
-        drawCell(colX[1], y, colWidths[1], 5, 'PRENOMS ET NOMS', { align: 'center', valignMiddle: true });
-        drawCell(colX[2], y, largeurTable - colWidths[0] - colWidths[1], 5, '');
-        y += 5;
+        drawCell(margin, y, largeurTable, r(5), 'I-  FRAIS ET INDEMNITES', { align: 'center', valignMiddle: true });
+        y += r(5);
+        drawCell(colX[0], y, colWidths[0], r(5), '');
+        drawCell(colX[1], y, colWidths[1], r(5), 'PRENOMS ET NOMS', { align: 'center', valignMiddle: true });
+        drawCell(colX[2], y, largeurTable - colWidths[0] - colWidths[1], r(5), '');
+        y += r(5);
 
         doc.setFont('helvetica', 'italic');
-        doc.setFontSize(7);
+        doc.setFontSize(r(7));
         mission.participants.forEach((participant, index) => {
-            colWidths.forEach((largeur, colonneIndex) => drawCell(colX[colonneIndex], y, largeur, 5, ''));
+            colWidths.forEach((largeur, colonneIndex) => drawCell(colX[colonneIndex], y, largeur, r(5), ''));
             doc.setFont('helvetica', 'normal');
-            drawCell(colX[0], y, colWidths[0], 5, index + 1, { align: 'center', valignMiddle: true });
+            drawCell(colX[0], y, colWidths[0], r(5), index + 1, { align: 'center', valignMiddle: true });
             doc.setFont('helvetica', 'italic');
-            drawCell(colX[1], y, colWidths[1], 5, participant.nom, { valignMiddle: true });
+            drawCell(colX[1], y, colWidths[1], r(5), participant.nom, { valignMiddle: true });
             doc.setFont('helvetica', 'bold');
-            drawCell(colX[2], y, colWidths[2], 5, '1', { align: 'center', valignMiddle: true });
-            drawCell(colX[4], y, colWidths[4], 5, mission.nombre_jours, { align: 'center', valignMiddle: true });
+            drawCell(colX[2], y, colWidths[2], r(5), '1', { align: 'center', valignMiddle: true });
+            drawCell(colX[4], y, colWidths[4], r(5), mission.nombre_jours, { align: 'center', valignMiddle: true });
             doc.setFont('helvetica', 'italic');
-            y += 5;
+            y += r(5);
         });
 
         doc.setFont('helvetica', 'bold');
-        drawCell(margin, y, largeurTable - colWidths[derniere], 5, 'SOUS-TOTAL 1', { align: 'center', valignMiddle: true });
-        drawCell(colX[derniere], y, colWidths[derniere], 5, '-', { align: 'right', valignMiddle: true });
-        y += 5;
+        drawCell(margin, y, largeurTable - colWidths[derniere], r(5), 'SOUS-TOTAL 1', { align: 'center', valignMiddle: true });
+        drawCell(colX[derniere], y, colWidths[derniere], r(5), '-', { align: 'right', valignMiddle: true });
+        y += r(5);
 
-        drawCell(margin, y, largeurTable, 5, 'II-  CARBURANT', { align: 'center', valignMiddle: true });
-        y += 5;
-        drawCell(margin, y, largeurTable / 2, 5, 'NBRE DE JOURS OUVRABLE', { align: 'center', valignMiddle: true });
-        drawCell(margin + largeurTable / 2, y, largeurTable / 2, 5, 'NOMBRE DE TICKET PAR JOUR', { align: 'center', valignMiddle: true });
-        y += 5;
+        drawCell(margin, y, largeurTable, r(5), 'II-  CARBURANT', { align: 'center', valignMiddle: true });
+        y += r(5);
+        drawCell(margin, y, largeurTable / 2, r(5), 'NBRE DE JOURS OUVRABLE', { align: 'center', valignMiddle: true });
+        drawCell(margin + largeurTable / 2, y, largeurTable / 2, r(5), 'NOMBRE DE TICKET PAR JOUR', { align: 'center', valignMiddle: true });
+        y += r(5);
 
         const largeurRestante = largeurTable - colWidths[derniere];
-        drawCell(margin, y, largeurRestante / 3, 5, 'TICKETS DE CARBURANT', { valignMiddle: true });
+        drawCell(margin, y, largeurRestante / 3, r(5), 'TICKETS DE CARBURANT', { valignMiddle: true });
         doc.setFont('helvetica', 'normal');
-        drawCell(margin + largeurRestante / 3, y, largeurRestante / 3, 5, mission.nombre_jours, { align: 'center', valignMiddle: true });
-        drawCell(margin + (largeurRestante * 2) / 3, y, largeurRestante / 3, 5, mission.tickets_par_jour, { align: 'center', valignMiddle: true });
+        drawCell(margin + largeurRestante / 3, y, largeurRestante / 3, r(5), mission.nombre_jours, { align: 'center', valignMiddle: true });
+        drawCell(margin + (largeurRestante * 2) / 3, y, largeurRestante / 3, r(5), mission.tickets_par_jour, { align: 'center', valignMiddle: true });
         doc.setFont('helvetica', 'bold');
-        drawCell(colX[derniere], y, colWidths[derniere], 5, mission.nombre_tickets, { align: 'center', valignMiddle: true });
-        y += 5;
+        drawCell(colX[derniere], y, colWidths[derniere], r(5), mission.nombre_tickets, { align: 'center', valignMiddle: true });
+        y += r(5);
 
-        drawCell(margin, y, largeurRestante, 5, 'SOUS-TOTAL 2', { align: 'center', valignMiddle: true });
-        drawCell(colX[derniere], y, colWidths[derniere], 5, mission.nombre_tickets, { align: 'center', valignMiddle: true });
-        y += 5;
-        doc.setFontSize(9);
-        drawCell(margin, y, largeurRestante, 6, 'TOTAL', { align: 'center', valignMiddle: true });
-        drawCell(colX[derniere], y, colWidths[derniere], 6, mission.nombre_tickets, { align: 'center', valignMiddle: true });
-        y += 12;
+        drawCell(margin, y, largeurRestante, r(5), 'SOUS-TOTAL 2', { align: 'center', valignMiddle: true });
+        drawCell(colX[derniere], y, colWidths[derniere], r(5), mission.nombre_tickets, { align: 'center', valignMiddle: true });
+        y += r(5);
+        doc.setFontSize(r(9));
+        drawCell(margin, y, largeurRestante, r(6), 'TOTAL', { align: 'center', valignMiddle: true });
+        drawCell(colX[derniere], y, colWidths[derniere], r(6), mission.nombre_tickets, { align: 'center', valignMiddle: true });
+        y += r(12);
 
         // ── Total en lettres, lieu et signatures ────────────────────────────
-        // Bloc gardé groupé : bascule sur une nouvelle page plutôt que de
-        // laisser les signatures déborder hors du cadre imprimable.
-        if (y + 60 > pageH - margin) {
-            doc.addPage();
-            y = margin;
-        }
-        doc.setFontSize(9);
-        texteCentreAjuste(doc, mission.tickets_en_lettres || '', pageW / 2, y, fullW, 9);
-        y += 10;
+        doc.setFontSize(r(9));
+        texteCentreAjuste(doc, mission.tickets_en_lettres || '', pageW / 2, y, fullW, r(9));
+        y += r(10);
 
         doc.setFont('helvetica', 'normal');
         text(doc, `${mission.lieu_signature} le ....................`, pageW - margin, y, { align: 'right' });
-        y += 12;
+        y += r(12);
 
-        const signataires = Array.isArray(mission.signataires) ? mission.signataires : [];
-        const blockWidth = fullW / Math.max(1, signataires.length || 1);
-        signataires.forEach((signataire, index) => {
-            const centerX = margin + blockWidth * index + blockWidth / 2;
+        signatures(doc, mission.signataires, y, k, margin, fullW, souligne, 28);
 
-            doc.setFont('helvetica', 'bold');
-            doc.setFontSize(8);
-            doc.text(doc.splitTextToSize(String(signataire.libelle || ''), blockWidth - 6), centerX, y, { align: 'center' });
+        return y + r(40);
+        };
 
-            const nom = String(signataire.nom || '');
-            const nomAjuste = texteCentreAjuste(doc, nom, centerX, y + 28, blockWidth - 6, 9);
-            souligne(nomAjuste.texte, centerX, y + 28, nomAjuste.taille);
-
-            doc.setFont('helvetica', 'italic');
-            doc.setFontSize(7.5);
-            doc.text(doc.splitTextToSize(String(signataire.fonction || ''), blockWidth - 6), centerX, y + 33, { align: 'center' });
-        });
+        const doc = surUnePage(dessiner, 50);
 
         doc.save(`mission-${String(mission.reference || 'meme-ville').replace(/[^\w-]+/g, '_')}.pdf`);
     } catch (e) {
@@ -551,9 +604,12 @@ window.exportMissionExterieurePDF = async function exportMissionExterieurePDF(bu
     };
 
     try {
-        const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+        const logo = await chargerLogo();
+
+        // Tout ce qui suit l'en-tête est exprimé en multiples de k (voir surUnePage).
+        const dessiner = (doc, k) => {
+        const r = (valeur) => valeur * k;
         const pageW = doc.internal.pageSize.getWidth();
-        const pageH = doc.internal.pageSize.getHeight();
         const margin = 10;
         const fullW = pageW - margin * 2;
 
@@ -579,7 +635,6 @@ window.exportMissionExterieurePDF = async function exportMissionExterieurePDF(bu
         doc.text('----------------------', centreDroite, 18, { align: 'center' });
         doc.text('UN PEUPLE – UN BUT – UNE FOI', centreDroite, 22, { align: 'center' });
 
-        const logo = await chargerLogo();
         if (logo) {
             doc.addImage(logo, 'PNG', centreGauche - 8, 27, 16, 16);
         }
@@ -588,9 +643,9 @@ window.exportMissionExterieurePDF = async function exportMissionExterieurePDF(bu
         let y = 50;
         const titre = "PROJET DE BUDGET RELATIF A LA LEVEE D'ORDRE DE MISSION N°";
         const reference = String(mission.reference || '');
-        let tailleTitre = 11;
+        let tailleTitre = r(11);
         const mesureTitre = () => (doc.getStringUnitWidth(titre + reference) * tailleTitre) / doc.internal.scaleFactor;
-        while (tailleTitre > 7 && mesureTitre() > fullW) {
+        while (tailleTitre > r(7) && mesureTitre() > fullW) {
             tailleTitre -= 0.25;
         }
         doc.setFontSize(tailleTitre);
@@ -605,26 +660,28 @@ window.exportMissionExterieurePDF = async function exportMissionExterieurePDF(bu
         doc.line(departTitre, y + 1, departTitre + largeurTitre + largeurRef, y + 1);
 
         // ── Objet et durée ──────────────────────────────────────────────────
-        y += 8;
-        doc.setFontSize(9);
+        y += r(8);
+        doc.setFontSize(r(9));
         const objet = doc.splitTextToSize(`OBJET DE LA MISSION : ${String(mission.objet || '').toUpperCase()}`, fullW);
-        doc.text(objet, pageW / 2, y, { align: 'center' });
-        objet.forEach((ligne, index) => souligne(ligne, pageW / 2, y + index * 4.2, 9));
+        objet.forEach((ligne, index) => {
+            doc.text(ligne, pageW / 2, y + index * r(4.2), { align: 'center' });
+            souligne(ligne, pageW / 2, y + index * r(4.2), r(9));
+        });
 
-        y += objet.length * 4.2 + 6;
+        y += objet.length * r(4.2) + r(6);
         doc.text('DUREE MISSION :', margin, y);
-        doc.line(margin, y + 1, margin + doc.getStringUnitWidth('DUREE MISSION :') * 9 / doc.internal.scaleFactor, y + 1);
-        doc.text(`${mission.nombre_jours} jour(s)`, margin + 32, y);
+        doc.line(margin, y + 1, margin + doc.getStringUnitWidth('DUREE MISSION :') * r(9) / doc.internal.scaleFactor, y + 1);
+        doc.text(`${mission.nombre_jours} jour(s)`, margin + r(32), y);
         doc.text(String(mission.destination || ''), pageW - margin, y, { align: 'right' });
 
         doc.setFont('helvetica', 'normal');
-        doc.text(`DUREE : Du ${mission.date_depart} au ${mission.date_retour}`, margin, y + 5);
-        doc.setFontSize(8);
-        doc.text(String(mission.zone_label || ''), pageW - margin, y + 5, { align: 'right' });
+        doc.text(`DUREE : Du ${mission.date_depart} au ${mission.date_retour}`, margin, y + r(5));
+        doc.setFontSize(r(8));
+        doc.text(String(mission.zone_label || ''), pageW - margin, y + r(5), { align: 'right' });
 
-        // ── Tableau (12 colonnes du modèle officiel) ────────────────────────
-        y += 11;
-        const widths = [10, 55, 14, 22, 12, 24, 22, 14, 24, 26, 28, 26];
+        // ── Tableau (12 colonnes du modèle officiel, réparties sur 190 mm) ──
+        y += r(11);
+        const widths = [7, 38, 9, 15, 8, 17, 15, 9, 17, 18, 19, 18];
         const xs = [];
         let cursor = margin;
         widths.forEach((w) => {
@@ -635,26 +692,26 @@ window.exportMissionExterieurePDF = async function exportMissionExterieurePDF(bu
         const derniere = widths.length - 1;
 
         doc.setFont('helvetica', 'bold');
-        doc.setFontSize(6.5);
+        doc.setFontSize(r(6));
         [
             'N°', 'LIBELLE', 'Nbre de\npers.', 'Mtant\npar jour', 'Nbre\nde Jrs', 'Frais de\nmission',
-            'Mtant\npar nuitée', 'Nbre de\nnuitées', 'Indemnités\nde Mission', 'SOUS TOTAL',
-            `Taux de majoration\npar zone ${Number(mission.zone_taux || 0)}%`, 'TOTAL\nGENERAL',
-        ].forEach((entete, index) => drawCell(xs[index], y, widths[index], 11, entete.split('\n'), { align: 'center', middle: true }));
-        y += 11;
+            'Mtant\npar nuitée', 'Nbre de\nnuitées', 'Indemnités\nde Mission', 'SOUS\nTOTAL',
+            `Majoration\nzone ${Number(mission.zone_taux || 0)}%`, 'TOTAL\nGENERAL',
+        ].forEach((entete, index) => drawCell(xs[index], y, widths[index], r(9), entete.split('\n'), { align: 'center', middle: true }));
+        y += r(9);
 
-        doc.setFontSize(7.5);
-        drawCell(margin, y, largeurTable, 5, 'I-  FRAIS ET INDEMNITES', { align: 'center', middle: true });
-        y += 5;
-        drawCell(xs[0], y, widths[0], 5, '');
-        drawCell(xs[1], y, widths[1], 5, 'PRENOMS ET NOMS', { align: 'center', middle: true });
-        drawCell(xs[2], y, largeurTable - widths[0] - widths[1], 5, '');
-        y += 5;
+        doc.setFontSize(r(7.5));
+        drawCell(margin, y, largeurTable, r(5), 'I-  FRAIS ET INDEMNITES', { align: 'center', middle: true });
+        y += r(5);
+        drawCell(xs[0], y, widths[0], r(5), '');
+        drawCell(xs[1], y, widths[1], r(5), 'PRENOMS ET NOMS', { align: 'center', middle: true });
+        drawCell(xs[2], y, largeurTable - widths[0] - widths[1], r(5), '');
+        y += r(5);
 
         doc.setFont('helvetica', 'normal');
-        doc.setFontSize(7);
+        doc.setFontSize(r(6.5));
         mission.participants.forEach((participant, index) => {
-            const hauteur = 6;
+            const hauteur = r(6);
             drawCell(xs[0], y, widths[0], hauteur, index + 1, { align: 'center', middle: true });
             doc.setFont('helvetica', 'italic');
             drawCell(xs[1], y, widths[1], hauteur, participant.nom, { middle: true });
@@ -673,10 +730,10 @@ window.exportMissionExterieurePDF = async function exportMissionExterieurePDF(bu
         });
 
         doc.setFont('helvetica', 'bold');
-        doc.setFontSize(7.5);
-        drawCell(margin, y, largeurTable - widths[derniere], 5, 'SOUS TOTAL 1', { align: 'center', middle: true });
-        drawCell(xs[derniere], y, widths[derniere], 5, fmt(Number(mission.montant_indemnites || 0) + Number(mission.montant_majoration || 0)), { align: 'right', middle: true });
-        y += 5;
+        doc.setFontSize(r(7.5));
+        drawCell(margin, y, largeurTable - widths[derniere], r(5), 'SOUS TOTAL 1', { align: 'center', middle: true });
+        drawCell(xs[derniere], y, widths[derniere], r(5), fmt(Number(mission.montant_indemnites || 0) + Number(mission.montant_majoration || 0)), { align: 'right', middle: true });
+        y += r(5);
 
         // Sections II et III : mêmes colonnes fusionnées que le modèle.
         const colLibelle = widths[0] + widths[1];
@@ -689,104 +746,71 @@ window.exportMissionExterieurePDF = async function exportMissionExterieurePDF(bu
 
         const ligneDetail = (libelle, nombre, unitaire, total) => {
             doc.setFont('helvetica', 'bold');
-            drawCell(margin, y, colLibelle, 5, libelle, { middle: true });
+            drawCell(margin, y, colLibelle, r(5), libelle, { middle: true });
             doc.setFont('helvetica', 'normal');
-            drawCell(xNombre, y, colNombre, 5, nombre, { align: 'center', middle: true });
-            drawCell(xUnitaire, y, colUnitaire, 5, fmt(unitaire), { align: 'right', middle: true });
-            drawCell(xTotal, y, colTotal, 5, fmt(total), { align: 'right', middle: true });
-            y += 5;
+            drawCell(xNombre, y, colNombre, r(5), nombre, { align: 'center', middle: true });
+            drawCell(xUnitaire, y, colUnitaire, r(5), fmt(unitaire), { align: 'right', middle: true });
+            drawCell(xTotal, y, colTotal, r(5), fmt(total), { align: 'right', middle: true });
+            y += r(5);
         };
 
         const sousTotal = (libelle, valeur) => {
             doc.setFont('helvetica', 'bold');
-            drawCell(margin, y, largeurTable - colTotal, 5, libelle, { align: 'center', middle: true });
-            drawCell(xTotal, y, colTotal, 5, fmt(valeur), { align: 'right', middle: true });
-            y += 5;
+            drawCell(margin, y, largeurTable - colTotal, r(5), libelle, { align: 'center', middle: true });
+            drawCell(xTotal, y, colTotal, r(5), fmt(valeur), { align: 'right', middle: true });
+            y += r(5);
         };
 
         doc.setFont('helvetica', 'bold');
-        drawCell(margin, y, largeurTable, 5, 'II-  AUTRES FRAIS', { align: 'center', middle: true });
-        y += 5;
-        drawCell(margin, y, colLibelle, 5, '');
-        drawCell(xNombre, y, colNombre, 5, 'NBRE DE PERSONNES', { align: 'center', middle: true });
-        drawCell(xUnitaire, y, colUnitaire, 5, 'MONTANT PAR PERSONNE', { align: 'center', middle: true });
-        drawCell(xTotal, y, colTotal, 5, 'MONTANT TOTAL', { align: 'center', middle: true });
-        y += 5;
+        drawCell(margin, y, largeurTable, r(5), 'II-  AUTRES FRAIS', { align: 'center', middle: true });
+        y += r(5);
+        drawCell(margin, y, colLibelle, r(5), '');
+        drawCell(xNombre, y, colNombre, r(5), 'NBRE DE PERSONNES', { align: 'center', middle: true });
+        drawCell(xUnitaire, y, colUnitaire, r(5), 'MONTANT PAR PERSONNE', { align: 'center', middle: true });
+        drawCell(xTotal, y, colTotal, r(5), 'MONTANT TOTAL', { align: 'center', middle: true });
+        y += r(5);
         ligneDetail('FRAIS DE PARTICIPATION', mission.frais_participation_nombre, mission.frais_participation_unitaire, mission.frais_participation_total);
         ligneDetail('FRAIS DE VISA', mission.frais_visa_nombre, mission.frais_visa_unitaire, mission.frais_visa_total);
         sousTotal('SOUS TOTAL 2', mission.montant_autres_frais);
 
         doc.setFont('helvetica', 'bold');
-        drawCell(margin, y, largeurTable, 5, "III-  BILLETS D'AVION", { align: 'center', middle: true });
-        y += 5;
-        drawCell(margin, y, colLibelle, 5, '');
-        drawCell(xNombre, y, colNombre, 5, 'NBRE DE PERSONNES', { align: 'center', middle: true });
-        drawCell(xUnitaire, y, colUnitaire, 5, "PRIX D'UN BILLET", { align: 'center', middle: true });
-        drawCell(xTotal, y, colTotal, 5, 'MONTANT TOTAL', { align: 'center', middle: true });
-        y += 5;
+        drawCell(margin, y, largeurTable, r(5), "III-  BILLETS D'AVION", { align: 'center', middle: true });
+        y += r(5);
+        drawCell(margin, y, colLibelle, r(5), '');
+        drawCell(xNombre, y, colNombre, r(5), 'NBRE DE PERSONNES', { align: 'center', middle: true });
+        drawCell(xUnitaire, y, colUnitaire, r(5), "PRIX D'UN BILLET", { align: 'center', middle: true });
+        drawCell(xTotal, y, colTotal, r(5), 'MONTANT TOTAL', { align: 'center', middle: true });
+        y += r(5);
         ligneDetail('CLASSE AFFAIRE', mission.billets_affaire_nombre, mission.billets_affaire_unitaire, mission.billets_affaire_total);
         ligneDetail('CLASSE ECONOMIQUE', mission.billets_economique_nombre, mission.billets_economique_unitaire, mission.billets_economique_total);
         sousTotal('SOUS TOTAL 3', mission.montant_billets);
 
-        doc.setFontSize(8);
+        doc.setFontSize(r(8));
         doc.setFont('helvetica', 'bold');
-        drawCell(margin, y, largeurTable - colTotal, 6, 'TOTAL', { align: 'center', middle: true });
-        drawCell(xTotal, y, colTotal, 6, fmt(mission.montant_total), { align: 'right', middle: true });
-        y += 12;
+        drawCell(margin, y, largeurTable - colTotal, r(6), 'TOTAL', { align: 'center', middle: true });
+        drawCell(xTotal, y, colTotal, r(6), fmt(mission.montant_total), { align: 'right', middle: true });
+        y += r(12);
 
         // ── Montant en lettres, lieu et signatures ──────────────────────────
-        // Bloc gardé groupé (somme en lettres + lieu + signatures + visa) :
-        // bascule sur une nouvelle page plutôt que de déborder hors du cadre.
-        if (y + 75 > pageH - margin) {
-            doc.addPage();
-            y = margin;
-        }
-        doc.setFontSize(8.5);
         // Le montant en lettres porte déjà « FRANCS CFA » : pas de suffixe ajouté ici.
-        const prefixe = 'ARRETE A LA SOMME DE : ';
-        const lettres = String(mission.montant_total_en_lettres || '');
-        let tailleSomme = 8.5;
-        const mesureSomme = () => (doc.getStringUnitWidth(prefixe + lettres) * tailleSomme) / doc.internal.scaleFactor;
-        while (tailleSomme > 5 && mesureSomme() > fullW) {
-            tailleSomme -= 0.25;
-        }
-        doc.setFontSize(tailleSomme);
-        const largeurPrefixe = doc.getStringUnitWidth(prefixe) * tailleSomme / doc.internal.scaleFactor;
-        const largeurLettres = doc.getStringUnitWidth(lettres) * tailleSomme / doc.internal.scaleFactor;
-        const departSomme = (pageW - (largeurPrefixe + largeurLettres)) / 2;
-
-        doc.text(prefixe, departSomme, y);
-        doc.setTextColor(200, 0, 0);
-        doc.text(lettres, departSomme + largeurPrefixe, y);
-        doc.setTextColor(0, 0, 0);
-        y += 10;
+        sommeEnLettres(doc, mission.montant_total_en_lettres, y, r(8.5), fullW);
+        y += r(10);
 
         doc.setFont('helvetica', 'normal');
-        doc.setFontSize(9);
+        doc.setFontSize(r(9));
         doc.text(`${mission.lieu_signature} le ....................`, pageW - margin, y, { align: 'right' });
-        y += 12;
+        y += r(12);
 
-        const signataires = Array.isArray(mission.signataires) ? mission.signataires : [];
-        const blockWidth = fullW / Math.max(1, signataires.length || 1);
-        signataires.forEach((signataire, index) => {
-            const centerX = margin + (blockWidth * index) + blockWidth / 2;
-
-            doc.setFont('helvetica', 'bold');
-            doc.setFontSize(8);
-            doc.text(doc.splitTextToSize(String(signataire.libelle || ''), blockWidth - 6), centerX, y, { align: 'center' });
-
-            const nom = String(signataire.nom || '');
-            const nomAjuste = texteCentreAjuste(doc, nom, centerX, y + 26, blockWidth - 6, 9);
-            souligne(nomAjuste.texte, centerX, y + 26, nomAjuste.taille);
-
-            doc.setFont('helvetica', 'italic');
-            doc.setFontSize(7.5);
-            doc.text(doc.splitTextToSize(String(signataire.fonction || ''), blockWidth - 6), centerX, y + 31, { align: 'center' });
-        });
+        signatures(doc, mission.signataires, y, k, margin, fullW, souligne, 26);
 
         doc.setFont('helvetica', 'bold');
-        doc.setFontSize(9);
-        doc.text('VISA DU CONTROLEUR FINANCIER', pageW / 2, y + 48, { align: 'center' });
+        doc.setFontSize(r(9));
+        doc.text('VISA DU CONTROLEUR FINANCIER', pageW / 2, y + r(48), { align: 'center' });
+
+        return y + r(50);
+        };
+
+        const doc = surUnePage(dessiner, 50);
 
         doc.save(`mission-${String(mission.reference || 'exterieure').replace(/[^\w-]+/g, '_')}.pdf`);
     } catch (e) {
@@ -838,10 +862,12 @@ window.exportMissionRegionPDF = async function exportMissionRegionPDF(button, da
     };
 
     try {
-        // Paysage : les dix colonnes chiffrées du modèle ne tiennent pas en portrait.
-        const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+        const logo = await chargerLogo();
+
+        // Tout ce qui suit l'en-tête est exprimé en multiples de k (voir surUnePage).
+        const dessiner = (doc, k) => {
+        const r = (valeur) => valeur * k;
         const pageW = doc.internal.pageSize.getWidth();
-        const pageH = doc.internal.pageSize.getHeight();
         const margin = 10;
         const fullW = pageW - margin * 2;
 
@@ -859,26 +885,25 @@ window.exportMissionRegionPDF = async function exportMissionRegionPDF(button, da
 
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(8);
-        doc.text('MINISTERE DE LA SANTE ET DU DEVELOPPEMENT SOCIAL', centreGauche, 14, { align: 'center' });
-        doc.text('------------------------', centreGauche, 18, { align: 'center' });
-        doc.text("CAISSE NATIONALE D'ASSURANCE MALADIE", centreGauche, 22, { align: 'center' });
+        doc.text(doc.splitTextToSize('MINISTERE DE LA SANTE ET DU DEVELOPPEMENT SOCIAL', colonne - 6), centreGauche, 14, { align: 'center' });
+        doc.text('------------------------', centreGauche, 21, { align: 'center' });
+        doc.text("CAISSE NATIONALE D'ASSURANCE MALADIE", centreGauche, 25, { align: 'center' });
 
         doc.text('REPUBLIQUE DU MALI', centreDroite, 14, { align: 'center' });
         doc.text('----------------------', centreDroite, 18, { align: 'center' });
         doc.text('UN PEUPLE – UN BUT – UNE FOI', centreDroite, 22, { align: 'center' });
 
-        const logo = await chargerLogo();
         if (logo) {
-            doc.addImage(logo, 'PNG', centreGauche - 8, 25, 16, 16);
+            doc.addImage(logo, 'PNG', centreGauche - 8, 27, 16, 16);
         }
 
         // ── Titre, référence en rouge ───────────────────────────────────────
-        let y = 48;
+        let y = 50;
         const titre = "BUDGET RELATIF A L'ORDRE DE MISSION N°";
         const reference = String(mission.reference || '');
-        let tailleTitre = 12;
+        let tailleTitre = r(12);
         const mesureTitre = () => (doc.getStringUnitWidth(titre + reference) * tailleTitre) / doc.internal.scaleFactor;
-        while (tailleTitre > 7 && mesureTitre() > fullW) {
+        while (tailleTitre > r(7) && mesureTitre() > fullW) {
             tailleTitre -= 0.25;
         }
         doc.setFontSize(tailleTitre);
@@ -893,28 +918,28 @@ window.exportMissionRegionPDF = async function exportMissionRegionPDF(button, da
         doc.line(departTitre, y + 1, departTitre + largeurTitre + largeurRef, y + 1);
 
         // ── Objet, durée, dates ─────────────────────────────────────────────
-        y += 8;
-        doc.setFontSize(9);
+        y += r(8);
+        doc.setFontSize(r(9));
         const objet = doc.splitTextToSize(`OBJET DE LA MISSION : ${String(mission.objet || '').toUpperCase()}`, fullW);
-        doc.text(objet, margin, y);
         objet.forEach((ligne, index) => {
-            const largeur = doc.getStringUnitWidth(ligne) * 9 / doc.internal.scaleFactor;
-            doc.line(margin, y + index * 4.2 + 1, margin + largeur, y + index * 4.2 + 1);
+            const largeur = doc.getStringUnitWidth(ligne) * r(9) / doc.internal.scaleFactor;
+            doc.text(ligne, margin, y + index * r(4.2));
+            doc.line(margin, y + index * r(4.2) + 1, margin + largeur, y + index * r(4.2) + 1);
         });
 
-        y += objet.length * 4.2 + 6;
+        y += objet.length * r(4.2) + r(6);
         doc.text('DUREE :', margin, y);
-        doc.line(margin, y + 1, margin + doc.getStringUnitWidth('DUREE :') * 9 / doc.internal.scaleFactor, y + 1);
+        doc.line(margin, y + 1, margin + doc.getStringUnitWidth('DUREE :') * r(9) / doc.internal.scaleFactor, y + 1);
         doc.setTextColor(200, 0, 0);
-        doc.text(`${mission.nombre_jours} JOURS`, margin + 18, y);
+        doc.text(`${mission.nombre_jours} JOURS`, margin + r(18), y);
         doc.setTextColor(0, 0, 0);
         doc.text(String(mission.destination || ''), pageW - margin, y, { align: 'right' });
         doc.setFont('helvetica', 'normal');
-        doc.text(`DATE : Du ${mission.date_depart} au ${mission.date_retour}`, margin, y + 5);
+        doc.text(`DATE : Du ${mission.date_depart} au ${mission.date_retour}`, margin, y + r(5));
 
-        // ── Tableau (10 colonnes du modèle officiel) ────────────────────────
-        y += 11;
-        const widths = [10, 62, 16, 26, 14, 28, 26, 16, 30, 49];
+        // ── Tableau (10 colonnes du modèle officiel, réparties sur 190 mm) ──
+        y += r(11);
+        const widths = [7, 44, 10, 17, 9, 19, 17, 10, 21, 36];
         const xs = [];
         let cursor = margin;
         widths.forEach((w) => {
@@ -925,51 +950,51 @@ window.exportMissionRegionPDF = async function exportMissionRegionPDF(button, da
         const derniere = widths.length - 1;
 
         doc.setFont('helvetica', 'bold');
-        doc.setFontSize(6.5);
+        doc.setFontSize(r(6));
         [
             'N°', 'LIBELLE', 'Nbre de\npers.', 'Mtant\npar jour', 'Nbre\nde Jrs', 'Frais de\nmission',
             'Mtant\npar nuitée', 'Nbre de\nnuitées', 'Indemnités\nde Mission', 'TOTAL',
-        ].forEach((entete, index) => drawCell(xs[index], y, widths[index], 10, entete.split('\n'), { align: 'center', middle: true }));
-        y += 10;
+        ].forEach((entete, index) => drawCell(xs[index], y, widths[index], r(9), entete.split('\n'), { align: 'center', middle: true }));
+        y += r(9);
 
-        doc.setFontSize(7.5);
-        drawCell(margin, y, largeurTable, 5, 'I-  FRAIS ET INDEMNITES', { align: 'center', middle: true });
-        y += 5;
-        drawCell(xs[0], y, widths[0], 5, '');
-        drawCell(xs[1], y, widths[1], 5, 'PRENOM ET NOM', { align: 'center', middle: true });
-        drawCell(xs[2], y, largeurTable - widths[0] - widths[1], 5, '');
-        y += 5;
+        doc.setFontSize(r(7.5));
+        drawCell(margin, y, largeurTable, r(5), 'I-  FRAIS ET INDEMNITES', { align: 'center', middle: true });
+        y += r(5);
+        drawCell(xs[0], y, widths[0], r(5), '');
+        drawCell(xs[1], y, widths[1], r(5), 'PRENOM ET NOM', { align: 'center', middle: true });
+        drawCell(xs[2], y, largeurTable - widths[0] - widths[1], r(5), '');
+        y += r(5);
 
         const groupes = Array.isArray(mission.groupes) ? mission.groupes : [];
         groupes.forEach((groupe, indexGroupe) => {
             doc.setFont('helvetica', 'bold');
-            doc.setFontSize(7.5);
-            drawCell(margin, y, largeurTable, 5, `${indexGroupe + 1}- ${String(groupe.libelle || '').toUpperCase()}`, { align: 'center', middle: true });
-            y += 5;
+            doc.setFontSize(r(7.5));
+            drawCell(margin, y, largeurTable, r(5), `${indexGroupe + 1}- ${String(groupe.libelle || '').toUpperCase()}`, { align: 'center', middle: true });
+            y += r(5);
 
-            doc.setFontSize(7);
+            doc.setFontSize(r(6.5));
             (groupe.lignes || []).forEach((ligne, index) => {
                 doc.setFont('helvetica', 'normal');
-                drawCell(xs[0], y, widths[0], 6, index + 1, { align: 'center', middle: true });
+                drawCell(xs[0], y, widths[0], r(6), index + 1, { align: 'center', middle: true });
                 doc.setFont('helvetica', 'italic');
-                drawCell(xs[1], y, widths[1], 6, ligne.nom, { middle: true });
+                drawCell(xs[1], y, widths[1], r(6), ligne.nom, { middle: true });
                 doc.setFont('helvetica', 'normal');
-                drawCell(xs[2], y, widths[2], 6, '1', { align: 'center', middle: true });
-                drawCell(xs[3], y, widths[3], 6, fmt(ligne.montant_par_jour), { align: 'right', middle: true });
-                drawCell(xs[4], y, widths[4], 6, ligne.jours, { align: 'center', middle: true });
-                drawCell(xs[5], y, widths[5], 6, fmt(ligne.frais_mission), { align: 'right', middle: true });
-                drawCell(xs[6], y, widths[6], 6, fmt(ligne.montant_par_nuitee), { align: 'right', middle: true });
-                drawCell(xs[7], y, widths[7], 6, ligne.nuitees, { align: 'center', middle: true });
-                drawCell(xs[8], y, widths[8], 6, fmt(ligne.indemnites), { align: 'right', middle: true });
-                drawCell(xs[9], y, widths[9], 6, fmt(ligne.total), { align: 'right', middle: true });
-                y += 6;
+                drawCell(xs[2], y, widths[2], r(6), '1', { align: 'center', middle: true });
+                drawCell(xs[3], y, widths[3], r(6), fmt(ligne.montant_par_jour), { align: 'right', middle: true });
+                drawCell(xs[4], y, widths[4], r(6), ligne.jours, { align: 'center', middle: true });
+                drawCell(xs[5], y, widths[5], r(6), fmt(ligne.frais_mission), { align: 'right', middle: true });
+                drawCell(xs[6], y, widths[6], r(6), fmt(ligne.montant_par_nuitee), { align: 'right', middle: true });
+                drawCell(xs[7], y, widths[7], r(6), ligne.nuitees, { align: 'center', middle: true });
+                drawCell(xs[8], y, widths[8], r(6), fmt(ligne.indemnites), { align: 'right', middle: true });
+                drawCell(xs[9], y, widths[9], r(6), fmt(ligne.total), { align: 'right', middle: true });
+                y += r(6);
             });
 
             doc.setFont('helvetica', 'bold');
-            doc.setFontSize(7.5);
-            drawCell(margin, y, largeurTable - widths[derniere], 5, `SOUS TOTAL ${indexGroupe + 1}`, { align: 'center', middle: true });
-            drawCell(xs[derniere], y, widths[derniere], 5, fmt(groupe.sous_total), { align: 'right', middle: true });
-            y += 5;
+            doc.setFontSize(r(7.5));
+            drawCell(margin, y, largeurTable - widths[derniere], r(5), `SOUS TOTAL ${indexGroupe + 1}`, { align: 'center', middle: true });
+            drawCell(xs[derniere], y, widths[derniere], r(5), fmt(groupe.sous_total), { align: 'right', middle: true });
+            y += r(5);
         });
 
         // ── II- Carburant ───────────────────────────────────────────────────
@@ -984,24 +1009,27 @@ window.exportMissionRegionPDF = async function exportMissionRegionPDF(button, da
         const xMontant = xPrix + colPrix;
 
         doc.setFont('helvetica', 'bold');
-        drawCell(margin, y, largeurTable, 5, 'II-  CARBURANT', { align: 'center', middle: true });
-        y += 5;
-        drawCell(margin, y, colLibelle, 5, '');
-        drawCell(xVehicules, y, colVehicules, 5, 'NBRE DE VEHICULES', { align: 'center', middle: true });
-        drawCell(xQuantite, y, colQuantite, 5, 'QTE DE CARBURANT / NOMBRE JOURS', { align: 'center', middle: true });
-        drawCell(xPrix, y, colPrix, 5, "PRIX DU LITRE / PRIX UNITAIRE", { align: 'center', middle: true });
-        drawCell(xMontant, y, colMontant, 5, 'MONTANT', { align: 'center', middle: true });
-        y += 5;
+        drawCell(margin, y, largeurTable, r(5), 'II-  CARBURANT', { align: 'center', middle: true });
+        y += r(5);
+        // En portrait, les intitulés longs passent sur deux lignes.
+        doc.setFontSize(r(6.5));
+        drawCell(margin, y, colLibelle, r(8), '');
+        drawCell(xVehicules, y, colVehicules, r(8), ['NBRE DE', 'VEHICULES'], { align: 'center', middle: true });
+        drawCell(xQuantite, y, colQuantite, r(8), ['QTE DE CARBURANT /', 'NOMBRE JOURS'], { align: 'center', middle: true });
+        drawCell(xPrix, y, colPrix, r(8), ['PRIX DU LITRE /', 'PRIX UNITAIRE'], { align: 'center', middle: true });
+        drawCell(xMontant, y, colMontant, r(8), 'MONTANT', { align: 'center', middle: true });
+        y += r(8);
+        doc.setFontSize(r(7.5));
 
         const ligneTransport = (libelle, vehicules, quantite, prix, montant) => {
             doc.setFont('helvetica', 'bold');
-            drawCell(margin, y, colLibelle, 5, libelle, { middle: true });
+            drawCell(margin, y, colLibelle, r(5), libelle, { middle: true });
             doc.setFont('helvetica', 'normal');
-            drawCell(xVehicules, y, colVehicules, 5, vehicules, { align: 'center', middle: true });
-            drawCell(xQuantite, y, colQuantite, 5, quantite, { align: 'center', middle: true });
-            drawCell(xPrix, y, colPrix, 5, fmt(prix), { align: 'right', middle: true });
-            drawCell(xMontant, y, colMontant, 5, fmt(montant), { align: 'right', middle: true });
-            y += 5;
+            drawCell(xVehicules, y, colVehicules, r(5), vehicules, { align: 'center', middle: true });
+            drawCell(xQuantite, y, colQuantite, r(5), quantite, { align: 'center', middle: true });
+            drawCell(xPrix, y, colPrix, r(5), fmt(prix), { align: 'right', middle: true });
+            drawCell(xMontant, y, colMontant, r(5), fmt(montant), { align: 'right', middle: true });
+            y += r(5);
         };
 
         ligneTransport('MONTANT CARBURANT TRAJET', mission.nombre_vehicules, `${fmt(mission.litres_trajet)} L`, mission.prix_litre, mission.montant_carburant_trajet);
@@ -1013,70 +1041,37 @@ window.exportMissionRegionPDF = async function exportMissionRegionPDF(button, da
             + Number(mission.montant_location || 0) + Number(mission.montant_billets || 0);
 
         doc.setFont('helvetica', 'bold');
-        drawCell(margin, y, largeurTable - colMontant, 5, 'SOUS-TOTAL 2', { align: 'center', middle: true });
-        drawCell(xMontant, y, colMontant, 5, fmt(sousTotal2), { align: 'right', middle: true });
-        y += 5;
+        drawCell(margin, y, largeurTable - colMontant, r(5), 'SOUS-TOTAL 2', { align: 'center', middle: true });
+        drawCell(xMontant, y, colMontant, r(5), fmt(sousTotal2), { align: 'right', middle: true });
+        y += r(5);
 
         // ── III- Péages ─────────────────────────────────────────────────────
-        drawCell(margin, y, largeurTable, 5, 'III-  PEAGES', { align: 'center', middle: true });
-        y += 5;
-        drawCell(margin, y, largeurTable - colMontant, 5, 'PEAGES', { middle: true });
-        drawCell(xMontant, y, colMontant, 5, fmt(mission.montant_peages), { align: 'right', middle: true });
-        y += 5;
+        drawCell(margin, y, largeurTable, r(5), 'III-  PEAGES', { align: 'center', middle: true });
+        y += r(5);
+        drawCell(margin, y, largeurTable - colMontant, r(5), 'PEAGES', { middle: true });
+        drawCell(xMontant, y, colMontant, r(5), fmt(mission.montant_peages), { align: 'right', middle: true });
+        y += r(5);
 
-        doc.setFontSize(9);
-        drawCell(margin, y, largeurTable - colMontant, 6, 'TOTAL GENERAL', { align: 'center', middle: true });
-        drawCell(xMontant, y, colMontant, 6, fmt(mission.montant_total), { align: 'right', middle: true });
-        y += 12;
+        doc.setFontSize(r(9));
+        drawCell(margin, y, largeurTable - colMontant, r(6), 'TOTAL GENERAL', { align: 'center', middle: true });
+        drawCell(xMontant, y, colMontant, r(6), fmt(mission.montant_total), { align: 'right', middle: true });
+        y += r(12);
 
         // ── Montant en lettres, lieu et signatures ──────────────────────────
-        // Bloc gardé groupé (somme en lettres + lieu + signatures + visa) :
-        // bascule sur une nouvelle page plutôt que de déborder hors du cadre.
-        if (y + 75 > pageH - margin) {
-            doc.addPage();
-            y = margin;
-        }
-        doc.setFontSize(8.5);
-        const prefixe = 'ARRETE A LA SOMME DE : ';
-        const lettres = String(mission.montant_total_en_lettres || '');
-        let tailleSomme = 8.5;
-        const mesureSomme = () => (doc.getStringUnitWidth(prefixe + lettres) * tailleSomme) / doc.internal.scaleFactor;
-        while (tailleSomme > 5 && mesureSomme() > fullW) {
-            tailleSomme -= 0.25;
-        }
-        doc.setFontSize(tailleSomme);
-        const largeurPrefixe = doc.getStringUnitWidth(prefixe) * tailleSomme / doc.internal.scaleFactor;
-        const largeurLettres = doc.getStringUnitWidth(lettres) * tailleSomme / doc.internal.scaleFactor;
-        const departSomme = (pageW - (largeurPrefixe + largeurLettres)) / 2;
-
-        doc.text(prefixe, departSomme, y);
-        doc.setTextColor(200, 0, 0);
-        doc.text(lettres, departSomme + largeurPrefixe, y);
-        doc.setTextColor(0, 0, 0);
-        y += 10;
+        sommeEnLettres(doc, mission.montant_total_en_lettres, y, r(8.5), fullW);
+        y += r(10);
 
         doc.setFont('helvetica', 'normal');
-        doc.setFontSize(9);
+        doc.setFontSize(r(9));
         doc.text(`${mission.lieu_signature} le ....................`, pageW - margin, y, { align: 'right' });
-        y += 12;
+        y += r(12);
 
-        const signataires = Array.isArray(mission.signataires) ? mission.signataires : [];
-        const blockWidth = fullW / Math.max(1, signataires.length || 1);
-        signataires.forEach((signataire, index) => {
-            const centerX = margin + (blockWidth * index) + blockWidth / 2;
+        signatures(doc, mission.signataires, y, k, margin, fullW, souligne, 26);
 
-            doc.setFont('helvetica', 'bold');
-            doc.setFontSize(8);
-            doc.text(doc.splitTextToSize(String(signataire.libelle || ''), blockWidth - 6), centerX, y, { align: 'center' });
+        return y + r(40);
+        };
 
-            const nom = String(signataire.nom || '');
-            const nomAjuste = texteCentreAjuste(doc, nom, centerX, y + 26, blockWidth - 6, 9);
-            souligne(nomAjuste.texte, centerX, y + 26, nomAjuste.taille);
-
-            doc.setFont('helvetica', 'italic');
-            doc.setFontSize(7.5);
-            doc.text(doc.splitTextToSize(String(signataire.fonction || ''), blockWidth - 6), centerX, y + 31, { align: 'center' });
-        });
+        const doc = surUnePage(dessiner, 50);
 
         doc.save(`mission-${String(mission.reference || 'region').replace(/[^\w-]+/g, '_')}.pdf`);
     } catch (e) {
