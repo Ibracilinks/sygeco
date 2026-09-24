@@ -10,7 +10,7 @@ use Illuminate\Database\Eloquent\Builder;
  * Règles de visibilité des activités, en un seul endroit : la programmation, le
  * tableau de bord, l'évaluation et la policy doivent répondre la même chose.
  *
- * - superadmin : tout ;
+ * - superadmin et service contrôle de gestion : tout ;
  * - agent : ses seules saisies, et rien d'autre ;
  * - dbcgoq : tout sauf les brouillons d'autrui, qui ne le concernent pas tant
  *   qu'ils ne sont pas soumis ;
@@ -33,7 +33,7 @@ class VisibiliteActivites
     {
         // Hors requête HTTP authentifiée (tests, commandes), on ne restreint rien :
         // c'est l'appelant qui porte alors la responsabilité du périmètre.
-        if ($user === null || $user->hasRole('superadmin')) {
+        if ($user === null || $user->hasAnyRole(['superadmin', 'service-controle-gestion'])) {
             return;
         }
 
@@ -61,7 +61,7 @@ class VisibiliteActivites
      */
     public static function peutVoir(User $user, Activite $activite): bool
     {
-        if ($user->hasRole('superadmin')) {
+        if ($user->hasAnyRole(['superadmin', 'service-controle-gestion'])) {
             return true;
         }
 
@@ -87,7 +87,7 @@ class VisibiliteActivites
      */
     public static function signature(?User $user): string
     {
-        if ($user === null || $user->hasRole('superadmin')) {
+        if ($user === null || $user->hasAnyRole(['superadmin', 'service-controle-gestion'])) {
             return 'global';
         }
 
@@ -112,8 +112,8 @@ class VisibiliteActivites
      */
     private static function estSimpleAgent(User $user): bool
     {
-        return $user->hasRole('agent')
+        return $user->hasRole('chef-service')
             && ! $user->hasRole('dbcgoq')
-            && ! $user->hasRole('chef');
+            && ! $user->hasRole('responsable-programme');
     }
 }

@@ -65,14 +65,14 @@ class User extends Authenticatable
         return $this->hasRole('dbcgoq');
     }
 
-    public function isChef()
+    public function isResponsableProgramme()
     {
-        return $this->hasRole('chef');
+        return $this->hasRole('responsable-programme');
     }
 
-    public function isAgent()
+    public function isChefService()
     {
-        return $this->hasRole('agent');
+        return $this->hasRole('chef-service');
     }
 
     /**
@@ -92,6 +92,15 @@ class User extends Authenticatable
     }
 
     /**
+     * Service contrôle de gestion : cumule les cellules planification et suivi &
+     * évaluation, sur l'ensemble des entités.
+     */
+    public function isServiceControleGestion()
+    {
+        return $this->hasRole('service-controle-gestion');
+    }
+
+    /**
      * Chargé des missions : ne travaille que sur le module Missions.
      */
     public function isServiceBudget()
@@ -106,7 +115,7 @@ class User extends Authenticatable
      */
     public function suitLePta(): bool
     {
-        return $this->hasAnyRole(['superadmin', 'dbcgoq', 'chef', 'agent', 'agent-planification', 'suivi-evaluation']);
+        return $this->hasAnyRole(['superadmin', 'dbcgoq', 'responsable-programme', 'chef-service', 'agent-planification', 'suivi-evaluation', 'service-controle-gestion']);
     }
 
     /**
@@ -117,7 +126,7 @@ class User extends Authenticatable
      */
     public function entitesSupervisees()
     {
-        if (! $this->isChef() || $this->departement_id === null) {
+        if (! $this->isResponsableProgramme() || $this->departement_id === null) {
             return Departement::query()->whereRaw('1 = 0');
         }
 
@@ -128,7 +137,7 @@ class User extends Authenticatable
      * Périmètre de visibilité des activités (par departement_id) :
      * - un chef voit son entité ET toutes les entités situées en dessous (sous-arbre) ;
      * - un agent (y compris agent-planification / suivi-evaluation) ne voit que sa propre entité ;
-     * - les autres (dbcgoq, superadmin…) ne sont pas restreints → null.
+     * - les autres (dbcgoq, superadmin, service-controle-gestion…) ne sont pas restreints → null.
      *
      * @return array<int, int>|null null = aucune restriction
      */
@@ -136,7 +145,7 @@ class User extends Authenticatable
     {
         // Le superadmin et le dbcgoq voient tout, même s'ils sont rattachés à une entité
         // et cumulent un rôle chef ou agent (cohérent avec ActivitePolicy::view()).
-        if ($this->hasRole('superadmin') || $this->hasRole('dbcgoq')) {
+        if ($this->hasAnyRole(['superadmin', 'dbcgoq', 'service-controle-gestion'])) {
             return null;
         }
 
@@ -144,7 +153,7 @@ class User extends Authenticatable
             return null;
         }
 
-        if ($this->isChef()) {
+        if ($this->isResponsableProgramme()) {
             return $this->departement?->sousArbreIds()
                 ?? Departement::find($this->departement_id)?->sousArbreIds()
                 ?? [$this->departement_id];
@@ -152,7 +161,7 @@ class User extends Authenticatable
 
         // Agent, cellule planification et cellule suivi & évaluation travaillent
         // tous les trois sur le périmètre de leur seule entité de rattachement.
-        if ($this->isAgent() || $this->isAgentPlanification() || $this->isSuiviEvaluation()) {
+        if ($this->isChefService() || $this->isAgentPlanification() || $this->isSuiviEvaluation()) {
             return [$this->departement_id];
         }
 

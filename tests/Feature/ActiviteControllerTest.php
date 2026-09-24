@@ -49,7 +49,7 @@ test('un utilisateur sans rôle ne peut pas accéder à la liste', function () {
 });
 
 test('un agent peut voir la liste des activités', function () {
-    $agent = userWithRole('agent');
+    $agent = userWithRole('chef-service');
 
     $this->actingAs($agent)->get(route('activites.index'))->assertOk();
 });
@@ -61,7 +61,7 @@ test('le dbcgoq peut voir le formulaire de création', function () {
 });
 
 test('un agent ne peut pas créer d\'activité (pas de permission create)', function () {
-    $agent = userWithRole('agent');
+    $agent = userWithRole('chef-service');
 
     $this->actingAs($agent)->get(route('activites.create'))->assertForbidden();
 });
@@ -112,7 +112,7 @@ test('un chef de département voit son département forcé à la création', fun
     $dep = Departement::factory()->create();
     $autreDep = Departement::factory()->create();
     $chef = User::factory()->dansDepartement($dep)->create();
-    $chef->assignRole('chef');
+    $chef->assignRole('responsable-programme');
     $extrant = Extrant::factory()->create();
 
     $this->actingAs($chef)->post(route('activites.store'), [
@@ -207,7 +207,7 @@ test('un chef peut soumettre une activité de son département', function () {
     seedRolesAndPermissions();
     $dep = Departement::factory()->create();
     $chef = User::factory()->dansDepartement($dep)->create();
-    $chef->assignRole('chef');
+    $chef->assignRole('responsable-programme');
     $activite = Activite::factory()->brouillon()->pourDepartement($dep)->create();
 
     $this->actingAs($chef)->post(route('activites.soumettre', $activite))
@@ -221,7 +221,7 @@ test('un chef ne peut pas soumettre une activité d\'un autre département', fun
     $dep = Departement::factory()->create();
     $autreDep = Departement::factory()->create();
     $chef = User::factory()->dansDepartement($dep)->create();
-    $chef->assignRole('chef');
+    $chef->assignRole('responsable-programme');
     $activite = Activite::factory()->brouillon()->pourDepartement($autreDep)->create();
 
     $this->actingAs($chef)->post(route('activites.soumettre', $activite))->assertForbidden();
@@ -243,7 +243,7 @@ test('le dbcgoq peut valider une activité soumise', function () {
 });
 
 test('un agent ne peut pas valider une activité', function () {
-    $agent = userWithRole('agent');
+    $agent = userWithRole('chef-service');
     $activite = Activite::factory()->soumis()->create();
 
     $this->actingAs($agent)->post(route('activites.valider', $activite))
@@ -274,7 +274,7 @@ test('un chef voit les activités de son sous-arbre (entité + entités en desso
     $horsArbre = Departement::factory()->direction()->create();
 
     $chef = User::factory()->dansDepartement($departement)->create();
-    $chef->assignRole('chef');
+    $chef->assignRole('responsable-programme');
 
     activiteNommee($exercice, $departement, 'ACTPROPRE');
     activiteNommee($exercice, $service, 'ACTSERVICE');
@@ -295,7 +295,7 @@ test('un agent ne voit que les activités qu\'il a lui-même saisies', function 
     $direction = Departement::factory()->direction()->create();
 
     $agent = User::factory()->dansDepartement($direction)->create();
-    $agent->assignRole('agent');
+    $agent->assignRole('chef-service');
     $collegue = User::factory()->dansDepartement($direction)->create();
 
     // Même entité, même exercice : seule la paternité de la saisie les sépare.
@@ -318,7 +318,7 @@ test("un chef voit les activités de sa direction et d'aucune autre", function (
     $autreDirection = Departement::factory()->direction()->create();
 
     $chef = User::factory()->dansDepartement($direction)->create();
-    $chef->assignRole('chef');
+    $chef->assignRole('responsable-programme');
 
     activiteNommee($exercice, $direction, 'ACTDIR');
     activiteNommee($exercice, $service, 'ACTSRV');
@@ -342,7 +342,7 @@ test('le dbcgoq ne voit pas les activités encore en brouillon', function () {
     $dbcgoq = User::factory()->create();
     $dbcgoq->assignRole('dbcgoq');
     $agent = User::factory()->dansDepartement($direction)->create();
-    $agent->assignRole('agent');
+    $agent->assignRole('chef-service');
 
     activiteNommee($exercice, $direction, 'ACTBROUILLON', $agent, ['statut' => 'brouillon']);
     activiteNommee($exercice, $direction, 'ACTSOUMISE', $agent, ['statut' => 'en_attente']);
@@ -379,7 +379,7 @@ test('un chef peut voir (policy) une activité d\'une entité en dessous', funct
     $departement = Departement::factory()->departement()->create();
     $service = Departement::factory()->service()->enfantDe($departement)->create();
     $chef = User::factory()->dansDepartement($departement)->create();
-    $chef->assignRole('chef');
+    $chef->assignRole('responsable-programme');
     $activite = Activite::factory()->pourDepartement($service)->create();
 
     expect($chef->can('view', $activite))->toBeTrue();
@@ -458,7 +458,7 @@ test('un chef de Direction Centrale voit sa DC et ses services dans le champ Str
     $horsPerimetre = Departement::factory()->departement()->create(['nom' => 'DC Etrangere']);
 
     $chef = User::factory()->dansDepartement($dc)->create();
-    $chef->assignRole('chef');
+    $chef->assignRole('responsable-programme');
 
     foreach ([route('activites.create'), route('activites.edit', Activite::factory()->pourDepartement($dc)->create(['statut' => 'brouillon']))] as $url) {
         $contenu = $this->actingAs($chef)->get($url)->assertOk()->getContent();
@@ -486,7 +486,7 @@ test('un chef peut rattacher une activité à un service de sa Direction Central
     $extrant = Extrant::factory()->create();
 
     $chef = User::factory()->dansDepartement($dc)->create();
-    $chef->assignRole('chef');
+    $chef->assignRole('responsable-programme');
 
     $this->actingAs($chef)->post(route('activites.store'), [
         'extrant_id' => $extrant->id,

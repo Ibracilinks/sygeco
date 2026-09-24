@@ -87,7 +87,7 @@ test('les nouveaux barèmes pilotent le calcul d\'une mission à l\'étranger', 
 });
 
 test('un chef ne peut pas réviser les barèmes', function () {
-    $chef = userWithRole('chef');
+    $chef = userWithRole('responsable-programme');
 
     $this->actingAs($chef)->get(route('mission-baremes.index'))->assertForbidden();
 });

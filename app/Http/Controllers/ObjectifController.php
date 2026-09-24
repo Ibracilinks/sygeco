@@ -33,7 +33,7 @@ class ObjectifController extends Controller
             ->with('exercices:id,annee,statut')
             ->withCount(['resultats', 'extrants']);
 
-        if ($this->isChefDepartement($user)) {
+        if ($this->isResponsableProgramme($user)) {
             $this->applyDepartmentScopeToObjectifQuery($query, (int) $user->departement_id);
         }
 
@@ -43,7 +43,7 @@ class ObjectifController extends Controller
         $objectifs = $query->paginate(15)->withQueryString();
 
         $summaryQuery = Objectif::query();
-        if ($this->isChefDepartement($user)) {
+        if ($this->isResponsableProgramme($user)) {
             $this->applyDepartmentScopeToObjectifQuery($summaryQuery, (int) $user->departement_id);
         }
         $this->applyFilters($summaryQuery, $filters);
@@ -102,7 +102,7 @@ class ObjectifController extends Controller
     {
         $user = Auth::user();
 
-        if ($this->isChefDepartement($user) && ! $this->objectifHasDepartmentActivities($objectif, (int) $user->departement_id)) {
+        if ($this->isResponsableProgramme($user) && ! $this->objectifHasDepartmentActivities($objectif, (int) $user->departement_id)) {
             abort(403);
         }
 
@@ -117,14 +117,14 @@ class ObjectifController extends Controller
                         $q->orderBy('ordre')->orderBy('code');
                         $q->with([
                             'activites' => function ($a) use ($user) {
-                                if ($this->isChefDepartement($user) && $user?->departement_id) {
+                                if ($this->isResponsableProgramme($user) && $user?->departement_id) {
                                     $a->where('departement_id', $user->departement_id);
                                 }
                                 $a->orderBy('created_at', 'desc');
                             },
                         ]);
                         $q->withCount(['activites' => function ($a) use ($user) {
-                            if ($this->isChefDepartement($user) && $user?->departement_id) {
+                            if ($this->isResponsableProgramme($user) && $user?->departement_id) {
                                 $a->where('departement_id', $user->departement_id);
                             }
                         }]);
@@ -263,9 +263,9 @@ class ObjectifController extends Controller
         $query->orderBy($sort, $direction)->orderBy('code', 'asc');
     }
 
-    private function isChefDepartement($user): bool
+    private function isResponsableProgramme($user): bool
     {
-        return $user?->hasRole('chef') && $user?->departement_id !== null;
+        return $user?->hasRole('responsable-programme') && $user?->departement_id !== null;
     }
 
     private function objectifHasDepartmentActivities(Objectif $objectif, int $departementId): bool

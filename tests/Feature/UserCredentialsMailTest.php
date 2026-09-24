@@ -19,7 +19,7 @@ uses(RefreshDatabase::class);
 test('la création d\'un utilisateur envoie un mail de bienvenue avec les identifiants', function () {
     Notification::fake();
     $admin = userWithRole('dbcgoq');
-    $roleId = Role::where('name', 'agent')->value('id');
+    $roleId = Role::where('name', 'chef-service')->value('id');
 
     $this->actingAs($admin)->post(route('users.store'), [
         'name' => 'Nouvel Agent',

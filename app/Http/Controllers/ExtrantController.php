@@ -27,7 +27,7 @@ class ExtrantController extends Controller
             $query->whereHas('objectif.exercices', fn ($q) => $q->where('exercices.id', $exerciceId));
         }
 
-        if ($this->isChefDepartement($user)) {
+        if ($this->isResponsableProgramme($user)) {
             $this->applyDepartmentScopeToExtrantQuery($query, (int) $user->departement_id);
         }
 
@@ -62,7 +62,7 @@ class ExtrantController extends Controller
             ->with('exercices:id,annee')
             ->where('statut', 'actif')
             ->forExercice($exerciceId)
-            ->when($this->isChefDepartement($user), fn ($q) => $q->whereHas('extrants.activites', fn (Builder $builder) => $builder->where('departement_id', $user->departement_id)))
+            ->when($this->isResponsableProgramme($user), fn ($q) => $q->whereHas('extrants.activites', fn (Builder $builder) => $builder->where('departement_id', $user->departement_id)))
             ->orderBy('annee', 'desc')
             ->get();
 
@@ -103,12 +103,12 @@ class ExtrantController extends Controller
     {
         $user = Auth::user();
 
-        if ($this->isChefDepartement($user) && ! $this->extrantHasDepartmentActivities($extrant, (int) $user->departement_id)) {
+        if ($this->isResponsableProgramme($user) && ! $this->extrantHasDepartmentActivities($extrant, (int) $user->departement_id)) {
             abort(403);
         }
 
         $extrant->load(['objectif', 'activites' => function ($query) use ($user) {
-            if ($this->isChefDepartement($user) && $user?->departement_id) {
+            if ($this->isResponsableProgramme($user) && $user?->departement_id) {
                 $query->where('departement_id', $user->departement_id);
             }
 
@@ -277,9 +277,9 @@ class ExtrantController extends Controller
             ->with('success', "Extrant {$extrant->code} {$status}.");
     }
 
-    private function isChefDepartement($user): bool
+    private function isResponsableProgramme($user): bool
     {
-        return $user?->hasRole('chef') && $user?->departement_id !== null;
+        return $user?->hasRole('responsable-programme') && $user?->departement_id !== null;
     }
 
     private function extrantHasDepartmentActivities(Extrant $extrant, int $departementId): bool

@@ -127,7 +127,7 @@ test('une activité créée hérite de l\'exercice actif, pas de celui de l\'obj
     $extrant = Extrant::factory()->forResultat($resultat)->create();
     $departement = Departement::factory()->create();
 
-    $chef = userWithRole('chef', ['departement_id' => $departement->id]);
+    $chef = userWithRole('responsable-programme', ['departement_id' => $departement->id]);
 
     $this->actingAs($chef)->post(route('activites.store'), [
         'extrant_id' => $extrant->id,

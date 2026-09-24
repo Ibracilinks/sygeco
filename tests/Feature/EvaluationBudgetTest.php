@@ -28,7 +28,7 @@ test("le champ budget utilisé n'est proposé qu'à l'administration", function 
             ->assertSee('Budget utilisé (FCFA)');
     }
 
-    $this->actingAs(userWithRole('chef'))
+    $this->actingAs(userWithRole('responsable-programme'))
         ->withSession([ActiveExercice::SESSION_KEY => $exercice->id])
         ->get(route('evaluations.index', 'mi-parcours'))
         ->assertOk()
@@ -58,7 +58,7 @@ test('un budget posté directement reste ignoré', function () {
     ]);
 
     $departement = Departement::factory()->create();
-    $chef = userWithRole('chef', ['departement_id' => $departement->id]);
+    $chef = userWithRole('responsable-programme', ['departement_id' => $departement->id]);
 
     $objectif = Objectif::factory()->pourExercice($exercice)->create(['annee' => $exercice->annee]);
     $resultat = Resultat::factory()->forObjectif($objectif)->create();

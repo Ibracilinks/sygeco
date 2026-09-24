@@ -11,7 +11,7 @@ test('un invité est redirigé vers la connexion', function () {
 });
 
 test('un agent (sans rôle dbcgoq) ne peut pas accéder aux exercices', function () {
-    $agent = userWithRole('agent');
+    $agent = userWithRole('chef-service');
 
     $this->actingAs($agent)->get(route('exercices.index'))->assertForbidden();
 });

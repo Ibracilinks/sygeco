@@ -33,7 +33,12 @@ class ActivitePolicy
             return true;
         }
 
-        return $user->hasAnyRole(['chef', 'agent-planification'])
+        // Le service contrôle de gestion met à jour le PTA de toutes les entités.
+        if ($user->isServiceControleGestion()) {
+            return $activite->peutEtreModifie();
+        }
+
+        return $user->hasAnyRole(['responsable-programme', 'agent-planification'])
             && (int) $user->departement_id === (int) $activite->departement_id
             && $activite->peutEtreModifie();
     }
@@ -48,7 +53,12 @@ class ActivitePolicy
             return true;
         }
 
-        return $user->hasAnyRole(['chef', 'agent-planification'])
+        // Le service contrôle de gestion met à jour le PTA de toutes les entités.
+        if ($user->isServiceControleGestion()) {
+            return $activite->peutEtreModifie();
+        }
+
+        return $user->hasAnyRole(['responsable-programme', 'agent-planification'])
             && (int) $user->departement_id === (int) $activite->departement_id
             && $activite->peutEtreModifie();
     }
@@ -59,7 +69,11 @@ class ActivitePolicy
             return $activite->peutEtreSoumis();
         }
 
-        return $user->hasAnyRole(['chef', 'agent-planification'])
+        if ($user->isServiceControleGestion()) {
+            return $activite->peutEtreSoumis();
+        }
+
+        return $user->hasAnyRole(['responsable-programme', 'agent-planification'])
             && (int) $user->departement_id === (int) $activite->departement_id
             && $activite->peutEtreSoumis();
     }

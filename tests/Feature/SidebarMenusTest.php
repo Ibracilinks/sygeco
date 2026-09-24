@@ -18,9 +18,10 @@ test('le menu Suivi & Évaluation suit les rôles autorisés sur la route', func
 })->with([
     ['superadmin', true],
     ['dbcgoq', true],
-    ['chef', true],
-    ['agent', true],
+    ['responsable-programme', true],
+    ['chef-service', true],
     ['suivi-evaluation', true],
+    ['service-controle-gestion', true],
     ['agent-planification', false],
 ]);
 

@@ -591,7 +591,7 @@ class ActiviteController extends Controller
     protected function notifierValidateurs(Activite $activite): void
     {
         $destinataires = User::query()
-            ->role('chef')
+            ->role('responsable-programme')
             ->where('departement_id', $activite->departement_id)
             ->where('id', '!=', Auth::id())
             ->get();

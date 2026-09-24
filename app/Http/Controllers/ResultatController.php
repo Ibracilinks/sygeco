@@ -38,7 +38,7 @@ class ResultatController extends Controller
             $query->whereHas('objectif.exercices', fn (Builder $builder) => $builder->where('exercices.id', $exerciceId));
         }
 
-        if ($this->isChefDepartement($user)) {
+        if ($this->isResponsableProgramme($user)) {
             $this->applyDepartmentScopeToResultatQuery($query, (int) $user->departement_id);
         }
 
@@ -51,7 +51,7 @@ class ResultatController extends Controller
         if ($exerciceId !== null) {
             $summaryQuery->whereHas('objectif.exercices', fn (Builder $builder) => $builder->where('exercices.id', $exerciceId));
         }
-        if ($this->isChefDepartement($user)) {
+        if ($this->isResponsableProgramme($user)) {
             $this->applyDepartmentScopeToResultatQuery($summaryQuery, (int) $user->departement_id);
         }
         $this->applyFilters($summaryQuery, $filters);
@@ -67,7 +67,7 @@ class ResultatController extends Controller
             ->with('exercices:id,annee')
             ->where('statut', 'actif')
             ->forExercice($exerciceId)
-            ->when($this->isChefDepartement($user), fn ($q) => $q->whereHas('resultats.extrants.activites', fn (Builder $builder) => $builder->where('departement_id', $user->departement_id)))
+            ->when($this->isResponsableProgramme($user), fn ($q) => $q->whereHas('resultats.extrants.activites', fn (Builder $builder) => $builder->where('departement_id', $user->departement_id)))
             ->orderBy('annee', 'desc')
             ->orderBy('code')
             ->get(['id', 'code', 'annee', 'libelle']);
@@ -113,19 +113,19 @@ class ResultatController extends Controller
     {
         $user = Auth::user();
 
-        if ($this->isChefDepartement($user) && ! $this->resultatHasDepartmentActivities($resultat, (int) $user->departement_id)) {
+        if ($this->isResponsableProgramme($user) && ! $this->resultatHasDepartmentActivities($resultat, (int) $user->departement_id)) {
             abort(403);
         }
 
         $resultat->load([
             'objectif',
             'extrants' => function ($query) use ($user) {
-                if ($this->isChefDepartement($user) && $user?->departement_id) {
+                if ($this->isResponsableProgramme($user) && $user?->departement_id) {
                     $query->whereHas('activites', fn (Builder $builder) => $builder->where('departement_id', $user->departement_id));
                 }
 
                 $query->with(['activites' => function ($activiteQuery) use ($user) {
-                    if ($this->isChefDepartement($user) && $user?->departement_id) {
+                    if ($this->isResponsableProgramme($user) && $user?->departement_id) {
                         $activiteQuery->where('departement_id', $user->departement_id);
                     }
 
@@ -310,9 +310,9 @@ class ResultatController extends Controller
         $query->orderBy($sort, $direction)->orderBy('code', 'asc');
     }
 
-    private function isChefDepartement($user): bool
+    private function isResponsableProgramme($user): bool
     {
-        return $user?->hasRole('chef') && $user?->departement_id !== null;
+        return $user?->hasRole('responsable-programme') && $user?->departement_id !== null;
     }
 
     private function resultatHasDepartmentActivities(Resultat $resultat, int $departementId): bool

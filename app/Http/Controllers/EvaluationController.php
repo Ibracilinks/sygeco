@@ -295,12 +295,14 @@ class EvaluationController extends Controller
 
     private function utilisateurVoitToutesLesActivitesEnEvaluation(): bool
     {
-        return Auth::user()?->isSuiviEvaluation() ?? false;
+        $user = Auth::user();
+
+        return $user !== null && ($user->isSuiviEvaluation() || $user->isServiceControleGestion());
     }
 
     private function peutEvaluerActivite($user, Activite $activite): bool
     {
-        if ($user?->isSuiviEvaluation()) {
+        if ($user?->isSuiviEvaluation() || $user?->isServiceControleGestion()) {
             return $activite->statut === 'valide';
         }
 

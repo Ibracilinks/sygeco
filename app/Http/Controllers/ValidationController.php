@@ -403,7 +403,7 @@ class ValidationController extends Controller
         // Le superadmin et le dbcgoq arbitrent l'ensemble des entités ; un chef ne voit
         // que les soumissions des entités qu'il chapeaute (flux montant).
         if ($user && ! $user->hasRole('superadmin') && ! $user->hasRole('dbcgoq')
-            && $user->isChef() && $user->departement_id) {
+            && $user->isResponsableProgramme() && $user->departement_id) {
             $query->whereIn('departement_id', $user->entitesSupervisees()->pluck('id'));
         }
 
@@ -439,7 +439,7 @@ class ValidationController extends Controller
             ? $activite->departement
             : $activite->departement()->first();
 
-        return $user->hasRole('chef')
+        return $user->hasRole('responsable-programme')
             && $user->departement_id !== null
             && $entite?->parent_id !== null
             && (int) $entite->parent_id === (int) $user->departement_id;

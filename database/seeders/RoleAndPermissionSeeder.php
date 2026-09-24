@@ -44,16 +44,19 @@ class RoleAndPermissionSeeder extends Seeder
         $roleSuperadmin = Role::firstOrCreate(['name' => 'superadmin']);
         // dbcgoq : gère toutes les données métier de l'application
         $roleDbcgoq = Role::firstOrCreate(['name' => 'dbcgoq']);
-        // chef : responsable d'une entité (direction, département ou service) ;
+        // responsable-programme : responsable d'une entité (direction, département ou service) ;
         // le niveau découle du type de l'entité rattachée à l'utilisateur
-        $roleChef = Role::firstOrCreate(['name' => 'chef']);
-        $roleAgent = Role::firstOrCreate(['name' => 'agent']);
+        $roleResponsableProgramme = Role::firstOrCreate(['name' => 'responsable-programme']);
+        $roleChefService = Role::firstOrCreate(['name' => 'chef-service']);
         // agent-planification : saisit et soumet la programmation de son entité.
         // Il ne voit ni l'évaluation, ni l'arbitrage, ni l'administration.
         $roleAgentPlanification = Role::firstOrCreate(['name' => 'agent-planification']);
         // suivi-evaluation : renseigne le suivi d'exécution et les évaluations
         // (mi-parcours / fin d'année) de son entité, en lecture seule sur le PTA.
         $roleSuiviEvaluation = Role::firstOrCreate(['name' => 'suivi-evaluation']);
+        // service-controle-gestion : cumule les cellules planification et suivi &
+        // évaluation, sur toutes les entités (met à jour le PTA tant qu'il est modifiable).
+        $roleServiceControleGestion = Role::firstOrCreate(['name' => 'service-controle-gestion']);
         // service-budget : chargé des missions. Il ne voit que le module Missions.
         $roleServiceBudget = Role::firstOrCreate(['name' => 'service-budget']);
 
@@ -61,11 +64,11 @@ class RoleAndPermissionSeeder extends Seeder
         $roleSuperadmin->syncPermissions(Permission::all());
         $roleDbcgoq->syncPermissions(Permission::all());
 
-        // Le chef valide les soumissions de ses entités enfants via le flux
-        // montant (middleware role:chef + ValidationController). La permission
+        // Le responsable-programme valide les soumissions de ses entités enfants via le flux
+        // montant (middleware role:responsable-programme + ValidationController). La permission
         // « validate_activites » reste réservée au validateur central (dbcgoq),
         // car elle conditionne aussi l'accès permanent au suivi d'exécution.
-        $roleChef->syncPermissions([
+        $roleResponsableProgramme->syncPermissions([
             'view_activites',
             'create_activites',
             'edit_activites',
@@ -76,7 +79,7 @@ class RoleAndPermissionSeeder extends Seeder
             'view_exercices'
         ]);
 
-        $roleAgent->syncPermissions(['view_activites']);
+        $roleChefService->syncPermissions(['view_activites']);
 
         // Cellule planification : chaîne « cadre logique » en lecture, activités en
         // écriture jusqu'à la soumission. Pas d'évaluation, pas de validation.
@@ -111,5 +114,10 @@ class RoleAndPermissionSeeder extends Seeder
             'edit_indicateurs',
             'view_exercices',
         ]);
+
+        // Service contrôle de gestion : union des deux cellules ci-dessus.
+        $roleServiceControleGestion->syncPermissions(
+            $roleAgentPlanification->permissions->merge($roleSuiviEvaluation->permissions)->unique('id')
+        );
     }
 }

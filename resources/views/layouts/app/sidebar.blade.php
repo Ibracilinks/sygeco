@@ -60,7 +60,7 @@
                 @endunless
                 {{-- Tableau de pilotage : réservé à l'encadrement, ni les agents ni la
                      cellule suivi & évaluation n'y ont affaire. --}}
-                @if ($currentUser->hasAnyRole(['superadmin', 'dbcgoq', 'chef']))
+                @if ($currentUser->hasAnyRole(['superadmin', 'dbcgoq', 'responsable-programme']))
                     <flux:sidebar.item icon="presentation-chart-line" href="{{ route('sap.analytics') }}" target="_blank">
                         SAP Cloud Analytics
                     </flux:sidebar.item>
@@ -131,7 +131,7 @@
                     </flux:sidebar.item>
                 @endif
 
-                @if ($currentUser->hasAnyRole(['superadmin', 'dbcgoq', 'chef', 'agent-planification']))
+                @if ($currentUser->hasAnyRole(['superadmin', 'dbcgoq', 'responsable-programme', 'agent-planification', 'service-controle-gestion']))
                     <flux:sidebar.item icon="chart-pie" href="{{ route('objectifs.index') }}"
                         :current="request()->routeIs('objectifs.*')">
                         {{ __('Objectifs') }}
@@ -186,7 +186,7 @@
             <!-- Suivi & Évaluation -->
             {{-- Mêmes rôles que la route evaluations.* : le menu et l'autorisation ne
                  doivent jamais diverger. Une liste noire s'inverse trop facilement. --}}
-            @if ($currentUser->hasAnyRole(['superadmin', 'dbcgoq', 'chef', 'agent', 'suivi-evaluation']))
+            @if ($currentUser->hasAnyRole(['superadmin', 'dbcgoq', 'responsable-programme', 'chef-service', 'suivi-evaluation', 'service-controle-gestion']))
                 <flux:sidebar.group expandable icon="chart-bar" :heading="__('Suivi & Évaluation')"
                     class="app-sidebar-group grid" data-groupe="evaluation">
                     <flux:sidebar.item icon="chart-bar" href="{{ route('evaluations.index', 'mi-parcours') }}"

@@ -62,7 +62,7 @@ test("le tableau de bord d'un chef se limite à son sous-arbre", function () {
     $creer($service);
     $creer($autreDirection);
 
-    $chef = userWithRole('chef', ['departement_id' => $direction->id]);
+    $chef = userWithRole('responsable-programme', ['departement_id' => $direction->id]);
     $this->actingAs($chef);
 
     $kpis = (new DashboardDataService)->getDashboardPayload()['kpis'];
@@ -87,6 +87,6 @@ test('le cache du tableau de bord ne mélange pas les périmètres', function ()
     $this->actingAs(userWithRole('superadmin'));
     expect((new DashboardDataService)->getDashboardPayload()['kpis']['activites'])->toBe(4);
 
-    $this->actingAs(userWithRole('chef', ['departement_id' => $direction->id]));
+    $this->actingAs(userWithRole('responsable-programme', ['departement_id' => $direction->id]));
     expect((new DashboardDataService)->getDashboardPayload()['kpis']['activites'])->toBe(1);
 });
