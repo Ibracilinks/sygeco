@@ -31,6 +31,17 @@ return new class extends Migration
      */
     private function redefinirType(array $valeurs): void
     {
+        // PostgreSQL : l'enum est un varchar + contrainte CHECK, que ->change()
+        // ne sait pas redéfinir. On remplace directement la contrainte.
+        if (Schema::getConnection()->getDriverName() === 'pgsql') {
+            $liste = implode(', ', array_map(fn (string $v) => "'{$v}'", $valeurs));
+
+            DB::statement('alter table departements drop constraint if exists departements_type_check');
+            DB::statement("alter table departements add constraint departements_type_check check (type in ({$liste}))");
+
+            return;
+        }
+
         Schema::table('departements', function (Blueprint $table) use ($valeurs) {
             $table->enum('type', $valeurs)->default('departement')->change();
         });

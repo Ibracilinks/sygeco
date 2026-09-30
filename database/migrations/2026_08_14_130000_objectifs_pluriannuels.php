@@ -116,15 +116,17 @@ return new class extends Migration
 
     private function supprimerIndex(string $table, string $index): void
     {
-        $existe = collect(Schema::getIndexes($table))
-            ->contains(fn (array $i) => $i['name'] === $index);
+        $existant = collect(Schema::getIndexes($table))
+            ->first(fn (array $i) => $i['name'] === $index);
 
-        if (! $existe) {
+        if ($existant === null) {
             return;
         }
 
-        Schema::table($table, function (Blueprint $blueprint) use ($index) {
-            $blueprint->dropIndex($index);
+        // PostgreSQL porte un `unique` comme une contrainte : `drop index` y est
+        // refusé, il faut `drop constraint` (ce que fait dropUnique).
+        Schema::table($table, function (Blueprint $blueprint) use ($index, $existant) {
+            $existant['unique'] ? $blueprint->dropUnique($index) : $blueprint->dropIndex($index);
         });
     }
 
