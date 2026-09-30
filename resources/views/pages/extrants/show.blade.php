@@ -4,9 +4,14 @@
             <div>
                 <h1 class="text-2xl font-semibold text-slate-900 dark:text-white">{{ $extrant->libelle }}</h1>
                 <p class="text-sm text-slate-500 dark:text-slate-400">Code: {{ $extrant->code }}</p>
-                <a href="{{ route('objectifs.show', $extrant->objectif) }}" class="mt-1 inline-flex items-center text-sm font-medium text-sky-700 hover:text-sky-600 dark:text-sky-300">
-                    Objectif: {{ $extrant->objectif->code }} - {{ Str::limit($extrant->objectif->libelle, 80) }}
-                </a>
+                @if ($extrant->resultat)
+                    <a href="{{ route('resultats.show', $extrant->resultat) }}" class="mt-1 inline-flex items-center text-sm font-medium text-sky-700 hover:text-sky-600 dark:text-sky-300">
+                        Résultat: {{ $extrant->resultat->code }} - {{ Str::limit($extrant->resultat->libelle, 80) }}
+                    </a>
+                @endif
+                @if ($extrant->objectif)
+                    <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">Objectif: {{ $extrant->objectif->code }} - {{ Str::limit($extrant->objectif->libelle, 80) }}</p>
+                @endif
             </div>
             <div class="flex flex-wrap gap-2">
                 @can('edit_extrants')
@@ -26,7 +31,7 @@
                 <p class="mt-2 text-3xl font-semibold text-slate-900 dark:text-white">{{ $stats['nb_activites'] }}</p>
             </div>
             <div class="rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-900">
-                <p class="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">Départements</p>
+                <p class="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">Structures</p>
                 <p class="mt-2 text-3xl font-semibold text-slate-900 dark:text-white">{{ $stats['nb_departements'] ?? 0 }}</p>
             </div>
             <div class="rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-900">
@@ -57,14 +62,14 @@
                                 <div class="flex flex-wrap items-start justify-between gap-3">
                                     <div>
                                         <p class="text-sm font-semibold text-slate-900 dark:text-white">{{ Str::limit($activite->nom_activite, 100) }}</p>
-                                        <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">Département: {{ $activite->departement->nom ?? '-' }}</p>
+                                        <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">Structure: {{ $activite->departement->nom ?? '-' }}</p>
                                     </div>
                                     <x-actions.view :href="route('activites.show', $activite)" />
                                 </div>
                                 <div class="mt-3 grid grid-cols-1 gap-2 text-xs text-slate-500 dark:text-slate-400 sm:grid-cols-3">
                                     <span>Statut: {{ $activite->statut_label }}</span>
                                     <span>Budget: {{ number_format($activite->cout, 0, ',', ' ') }}</span>
-                                    <span>Trimestres: {{ $activite->trimestres_selectionnes ?: '-' }}</span>
+                                    <span>Chronogramme : {{ $activite->trimestres_selectionnes ?: '-' }}</span>
                                 </div>
                             </div>
                         @endforeach
@@ -80,8 +85,8 @@
                         <dd class="font-medium text-slate-900 dark:text-white">{{ $activitesParStatut['valide'] ?? 0 }}</dd>
                     </div>
                     <div>
-                        <dt class="text-slate-500 dark:text-slate-400">Activités soumises</dt>
-                        <dd class="font-medium text-slate-900 dark:text-white">{{ $activitesParStatut['soumis'] ?? 0 }}</dd>
+                        <dt class="text-slate-500 dark:text-slate-400">Activités en attente</dt>
+                        <dd class="font-medium text-slate-900 dark:text-white">{{ $activitesParStatut['en_attente'] ?? 0 }}</dd>
                     </div>
                     <div>
                         <dt class="text-slate-500 dark:text-slate-400">Activités brouillon</dt>

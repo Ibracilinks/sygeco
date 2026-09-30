@@ -4,7 +4,7 @@
         <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
             <div>
                 <h1 class="text-2xl font-semibold text-slate-900 dark:text-white">Utilisateurs</h1>
-                <p class="text-sm text-slate-500 dark:text-slate-400">Gestion des comptes, rattachements départementaux et rôles applicatifs.</p>
+                <p class="text-sm text-slate-500 dark:text-slate-400">Gestion des comptes, rattachements de structure et rôles applicatifs.</p>
             </div>
             @can('create_users')
                 <a href="{{ route('users.create') }}"
@@ -24,7 +24,7 @@
                 <p class="mt-2 text-3xl font-semibold text-emerald-800 dark:text-emerald-100">{{ number_format($summary['verifies'] ?? 0) }}</p>
             </div>
             <div class="rounded-xl border border-amber-200 bg-amber-50 p-4 dark:border-amber-900/70 dark:bg-amber-950/30">
-                <p class="text-xs uppercase tracking-wide text-amber-700 dark:text-amber-300">Sans département</p>
+                <p class="text-xs uppercase tracking-wide text-amber-700 dark:text-amber-300">Sans structure</p>
                 <p class="mt-2 text-3xl font-semibold text-amber-800 dark:text-amber-100">{{ number_format($summary['sans_departement'] ?? 0) }}</p>
             </div>
             <div class="rounded-xl border border-sky-200 bg-sky-50 p-4 dark:border-sky-900/70 dark:bg-sky-950/30">
@@ -42,7 +42,7 @@
                 class="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 focus:border-slate-500 focus:outline-none dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
             >
             <select name="departement_id" class="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 focus:border-slate-500 focus:outline-none dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100">
-                <option value="">Tous départements</option>
+                <option value="">Toutes structures</option>
                 @foreach ($departements as $departement)
                     <option value="{{ $departement->id }}" @selected((string) ($filters['departement_id'] ?? '') === (string) $departement->id)>
                         {{ $departement->nom }}
@@ -104,7 +104,7 @@
                                 </div>
                             </td>
                             <td class="px-5 py-4 text-sm text-slate-700 dark:text-slate-200">
-                                <div>{{ $user->departement?->nom ?? 'Aucun département' }}</div>
+                                <div>{{ $user->departement?->nom ?? 'Aucune structure' }}</div>
                                 <div class="text-xs text-slate-500 dark:text-slate-400">{{ $user->poste ?: 'Poste non défini' }}</div>
                             </td>
                             <td class="px-5 py-4 text-sm text-slate-700 dark:text-slate-200">

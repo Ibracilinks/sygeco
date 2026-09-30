@@ -1,6 +1,6 @@
 @props([
     'action',
-    'label' => 'Refuser',
+    'label' => 'Rejeter',
     'iconOnly' => false,
     'confirm' => null,
 ])

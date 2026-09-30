@@ -31,12 +31,12 @@ class DatabaseSeeder extends Seeder
 
         $this->call([
             RoleAndPermissionSeeder::class,
-            DepartementSeeder::class,
+            // DepartementSeeder::class,
 
-            // Import des PTA réels par exercice (Exercice → Objectif → Résultat → Extrant → Activités).
-            Pta2024Seeder::class,
-            Pta2025Seeder::class,
-            Pta2026Seeder::class,
+            // // Import des PTA réels par exercice (Exercice → Objectif → Résultat → Extrant → Activités).
+            // Pta2024Seeder::class,
+            // Pta2025Seeder::class,
+            // Pta2026Seeder::class,
         ]);
 
         $admin->assignRole('dbcgoq');

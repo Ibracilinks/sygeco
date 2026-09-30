@@ -51,7 +51,7 @@
                 <option value="">Tous objectifs</option>
                 @foreach ($objectifs as $objectif)
                     <option value="{{ $objectif->id }}" @selected((string) ($filters['objectif_id'] ?? '') === (string) $objectif->id)>
-                        {{ $objectif->code }} - {{ $objectif->annee }}
+                        {{ $objectif->code }} - {{ $objectif->periode_libelle }}
                     </option>
                 @endforeach
             </select>
@@ -98,7 +98,7 @@
                             </td>
                             <td class="px-5 py-4 text-sm text-slate-700 dark:text-slate-200">
                                 <p class="font-medium">{{ $resultat->objectif?->code ?? '-' }}</p>
-                                <p class="text-xs text-slate-500 dark:text-slate-400">{{ $resultat->objectif?->annee ?? '-' }}</p>
+                                <p class="text-xs text-slate-500 dark:text-slate-400">{{ $resultat->objectif?->periode_libelle ?? '-' }}</p>
                             </td>
                             <td class="px-5 py-4 text-sm text-slate-700 dark:text-slate-200">{{ $resultat->extrants_count }}</td>
                             <td class="px-5 py-4">

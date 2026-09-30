@@ -6,6 +6,7 @@ use App\Concerns\LogsActivityWithDefaults;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 
 class Activite extends Model
@@ -14,13 +15,21 @@ class Activite extends Model
 
     protected $table = 'activites';
 
+    /**
+     * Montant maximum acceptable pour les colonnes monétaires (decimal(15,2)).
+     */
+    public const MONTANT_MAX = 9999999999999.99;
+
     protected $fillable = [
         'extrant_id',
+        'exercice_id',
+        'non_programmee',
         'departement_id',
         'nom_activite',
         'indicateur_objectivement_verifiable',
         'moyen_verification',
         'cout',
+        'pour_memoire',
         'trimestre_1',
         'trimestre_2',
         'trimestre_3',
@@ -28,6 +37,8 @@ class Activite extends Model
         'statut',
         'statut_execution',
         'execution_commentaire',
+        'montant_utilise',
+        'valeur_indicateur',
         'execution_maj_le',
         'execution_maj_par',
         'saisi_par',
@@ -43,6 +54,9 @@ class Activite extends Model
 
     protected $casts = [
         'cout' => 'decimal:2',
+        'montant_utilise' => 'decimal:2',
+        'non_programmee' => 'boolean',
+        'pour_memoire' => 'boolean',
         'date_saisie' => 'date',
         'date_soumission' => 'datetime',
         'date_validation' => 'datetime',
@@ -69,8 +83,22 @@ class Activite extends Model
         return match ($this->statut_execution) {
             'realise' => 'emerald',
             'en_cours' => 'amber',
+            'non_realise' => 'rose',
             default => 'slate',
         };
+    }
+
+    /**
+     * Écart entre le budget planifié (cout) et le montant réellement utilisé.
+     * Positif = économie, négatif = dépassement. Null si non renseigné.
+     */
+    public function getEcartBudgetaireAttribute(): ?float
+    {
+        if ($this->montant_utilise === null) {
+            return null;
+        }
+
+        return (float) $this->cout - (float) $this->montant_utilise;
     }
 
     public function executionMajPar()
@@ -79,11 +107,66 @@ class Activite extends Model
     }
 
     /**
+     * Évaluations de l'activité, une par période (mi-parcours / fin d'année).
+     */
+    public function evaluations()
+    {
+        return $this->hasMany(ActiviteEvaluation::class);
+    }
+
+    /**
+     * Évaluation d'une période donnée, si elle a été saisie.
+     */
+    public function evaluation(string $periode): ?ActiviteEvaluation
+    {
+        return $this->relationLoaded('evaluations')
+            ? $this->evaluations->firstWhere('periode', $periode)
+            : $this->evaluations()->where('periode', $periode)->first();
+    }
+
+    /**
      * Exercice rattaché à l'activité (via extrant → objectif).
      */
     public function exercice(): ?Exercice
     {
-        return $this->extrant?->objectif?->exercice;
+        // `exercice_id` fait foi pour toutes les activités : un objectif pouvant
+        // couvrir plusieurs exercices (plan stratégique), il ne permet plus de
+        // déduire l'année d'exécution d'une activité.
+        if ($this->exercice_id) {
+            return $this->exerciceDirect ?? Exercice::find($this->exercice_id);
+        }
+
+        // Filet pour les activités antérieures au backfill dont l'objectif
+        // ne couvre qu'un seul exercice.
+        $exercices = $this->extrant?->objectif?->exercices;
+
+        return $exercices?->count() === 1 ? $exercices->first() : null;
+    }
+
+    /**
+     * Rattachement direct à l'exercice (activités non programmées).
+     */
+    public function exerciceDirect()
+    {
+        return $this->belongsTo(Exercice::class, 'exercice_id');
+    }
+
+    /**
+     * Filtre sur l'état d'exécution évalué pour une période donnée. Une activité sans
+     * évaluation saisie n'est pas « non réalisée » : elle n'est pas encore évaluée
+     * (voir scopeSansEvaluation).
+     */
+    public function scopeParStatutEvaluation($query, string $periode, string $statut)
+    {
+        return $query->whereHas('evaluations', fn ($q) => $q->where('periode', $periode)->where('statut_execution', $statut));
+    }
+
+    /**
+     * Activités dont l'évaluation de la période n'a pas encore été renseignée.
+     */
+    public function scopeSansEvaluation($query, string $periode)
+    {
+        return $query->whereDoesntHave('evaluations', fn ($q) => $q->where('periode', $periode));
     }
 
     public function scopeByStatutExecution($query, $statut)
@@ -131,15 +214,17 @@ class Activite extends Model
         return $query->where('statut', $statut);
     }
 
+    /**
+     * Restreint aux activités d'un exercice. Le rattachement est porté par l'activité
+     * elle-même : un objectif pluriannuel ne permet plus de le déduire.
+     */
     public function scopeForExercice($query, ?int $exerciceId)
     {
         if ($exerciceId === null) {
             return $query;
         }
 
-        return $query->whereHas('extrant.objectif', function ($q) use ($exerciceId) {
-            $q->where('exercice_id', $exerciceId);
-        });
+        return $query->where('activites.exercice_id', $exerciceId);
     }
 
     public function scopeBrouillon($query)
@@ -149,7 +234,18 @@ class Activite extends Model
 
     public function scopeSoumis($query)
     {
-        return $query->where('statut', 'soumis');
+        // « Soumis » = en attente de validation (nom de scope conservé pour compatibilité).
+        return $query->where('statut', 'en_attente');
+    }
+
+    public function scopeEnAttente($query)
+    {
+        return $query->where('statut', 'en_attente');
+    }
+
+    public function scopeRejete($query)
+    {
+        return $query->where('statut', 'rejete');
     }
 
     public function scopeValide($query)
@@ -159,7 +255,8 @@ class Activite extends Model
 
     public function scopePourTrimestre($query, $trimestre)
     {
-        $field = 'trimestre_' . $trimestre;
+        $field = 'trimestre_'.$trimestre;
+
         return $query->where($field, 'oui');
     }
 
@@ -167,42 +264,45 @@ class Activite extends Model
     public function getTrimestresSelectionnesAttribute()
     {
         $trimestres = [];
-        if ($this->trimestre_1 == 'oui') $trimestres[] = 'T1';
-        if ($this->trimestre_2 == 'oui') $trimestres[] = 'T2';
-        if ($this->trimestre_3 == 'oui') $trimestres[] = 'T3';
-        if ($this->trimestre_4 == 'oui') $trimestres[] = 'T4';
+        if ($this->trimestre_1 == 'oui') {
+            $trimestres[] = 'T1';
+        }
+        if ($this->trimestre_2 == 'oui') {
+            $trimestres[] = 'T2';
+        }
+        if ($this->trimestre_3 == 'oui') {
+            $trimestres[] = 'T3';
+        }
+        if ($this->trimestre_4 == 'oui') {
+            $trimestres[] = 'T4';
+        }
+
         return implode(', ', $trimestres);
     }
 
     public function getCoutFormateAttribute()
     {
-        return number_format($this->cout, 0, ',', ' ') . ' FCFA';
+        return number_format($this->cout, 0, ',', ' ').' FCFA';
     }
 
     public function getStatutLabelAttribute()
     {
-        if ($this->statut === 'brouillon' && $this->motif_refus) {
-            return '❌ Refusé';
-        }
-
         return match ($this->statut) {
             'brouillon' => '📝 Brouillon',
-            'soumis' => '⏳ Soumis',
+            'en_attente', 'soumis' => '⏳ En attente de validation',
             'valide' => '✅ Validé',
+            'rejete' => '❌ Rejeté',
             default => $this->statut
         };
     }
 
     public function getStatutColorAttribute()
     {
-        if ($this->statut === 'brouillon' && $this->motif_refus) {
-            return 'red';
-        }
-
         return match ($this->statut) {
             'brouillon' => 'gray',
-            'soumis' => 'yellow',
+            'en_attente', 'soumis' => 'yellow',
             'valide' => 'green',
+            'rejete' => 'red',
             default => 'gray'
         };
     }
@@ -237,17 +337,18 @@ class Activite extends Model
 
     public function peutEtreModifie()
     {
-        return $this->statut === 'brouillon';
+        // Une activité rejetée peut être corrigée puis re-soumise.
+        return in_array($this->statut, ['brouillon', 'rejete'], true);
     }
 
     public function peutEtreSoumis()
     {
-        return $this->statut === 'brouillon';
+        return in_array($this->statut, ['brouillon', 'rejete'], true);
     }
 
     public function peutEtreValide()
     {
-        return $this->statut === 'soumis';
+        return $this->statut === 'en_attente';
     }
 
     public function soumettre()
@@ -256,15 +357,17 @@ class Activite extends Model
             return false;
         }
 
+        $ancienStatut = $this->statut;
+
         $this->update([
-            'statut' => 'soumis',
+            'statut' => 'en_attente',
             'date_soumission' => now(),
             'motif_refus' => null,
             'refuse_le' => null,
             'refuse_par' => null,
         ]);
 
-        $this->logHistorique('soumission', 'brouillon', 'soumis');
+        $this->logHistorique('soumission', $ancienStatut, 'en_attente');
 
         return true;
     }
@@ -281,7 +384,7 @@ class Activite extends Model
             'valide_par' => Auth::id(),
         ]);
 
-        $this->logHistorique('validation', 'soumis', 'valide', $commentaire);
+        $this->logHistorique('validation', 'en_attente', 'valide', $commentaire);
 
         return true;
     }
@@ -293,15 +396,51 @@ class Activite extends Model
         }
 
         $this->update([
-            'statut' => 'brouillon',
+            'statut' => 'rejete',
             'motif_refus' => $motif,
             'refuse_le' => now(),
             'refuse_par' => Auth::id(),
         ]);
 
-        $this->logHistorique('refus', 'soumis', 'brouillon', $motif);
+        $this->logHistorique('refus', 'en_attente', 'rejete', $motif);
 
         return true;
+    }
+
+    /**
+     * Destinataires à notifier lors d'un changement de budget (coût) de l'activité :
+     * le chef du service concerné (responsable de la structure de l'activité) et le
+     * directeur de la Direction Centrale de rattachement.
+     *
+     * @return Collection<int, User>
+     */
+    public function destinatairesChangementBudget(): Collection
+    {
+        $structure = $this->departement;
+
+        if (! $structure) {
+            return collect();
+        }
+
+        $destinataires = collect();
+
+        // Chef de service : responsable de la structure porteuse de l'activité.
+        if ($structure->responsable) {
+            $destinataires->push($structure->responsable);
+        }
+
+        // Responsable de l'entité rattachée à la DG (Direction Centrale, Agence
+        // Comptable ou Bureau Régional) : la structure elle-même si c'en est une,
+        // sinon la plus proche parmi ses ancêtres.
+        $entiteDg = $structure->estRattacheeDg()
+            ? $structure
+            : $structure->ancetres()->last(fn (Departement $ancetre) => $ancetre->estRattacheeDg());
+
+        if ($entiteDg && $entiteDg->responsable) {
+            $destinataires->push($entiteDg->responsable);
+        }
+
+        return $destinataires->filter()->unique('id')->values();
     }
 
     /**

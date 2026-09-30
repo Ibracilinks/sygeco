@@ -2,13 +2,17 @@
 
 use App\Models\Activite;
 use App\Models\Departement;
+use App\Models\Exercice;
 use App\Models\User;
+use App\Notifications\ActiviteArbitrageNotification;
 use App\Notifications\ActiviteRefusee;
 use App\Notifications\ActiviteSoumiseNotification;
 use App\Notifications\ActiviteValidee;
+use App\Notifications\MiParcoursOuvertNotification;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Notification;
 
-uses(\Illuminate\Foundation\Testing\RefreshDatabase::class);
+uses(RefreshDatabase::class);
 
 /*
 |--------------------------------------------------------------------------
@@ -24,11 +28,11 @@ test('la soumission notifie les chefs du même département, pas ceux des autres
     $autreDep = Departement::factory()->create();
 
     $chefAuteur = User::factory()->dansDepartement($dep)->create();
-    $chefAuteur->assignRole('chef_departement');
+    $chefAuteur->assignRole('responsable-programme');
     $coChef = User::factory()->dansDepartement($dep)->create();
-    $coChef->assignRole('chef_departement');
+    $coChef->assignRole('responsable-programme');
     $chefAutreDep = User::factory()->dansDepartement($autreDep)->create();
-    $chefAutreDep->assignRole('chef_departement');
+    $chefAutreDep->assignRole('responsable-programme');
 
     $activite = Activite::factory()->brouillon()->pourDepartement($dep)->create();
 
@@ -48,7 +52,7 @@ test('si le département n\'a pas d\'autre chef, le repli notifie les validateur
 
     $dep = Departement::factory()->create();
     $chef = User::factory()->dansDepartement($dep)->create();
-    $chef->assignRole('chef_departement');
+    $chef->assignRole('responsable-programme');
 
     $validateur = User::factory()->create();
     $validateur->assignRole('dbcgoq');
@@ -67,10 +71,10 @@ test('un agent ne reçoit pas la notification de soumission', function () {
 
     $dep = Departement::factory()->create();
     $chef = User::factory()->dansDepartement($dep)->create();
-    $chef->assignRole('chef_departement');
+    $chef->assignRole('responsable-programme');
 
     $agent = User::factory()->dansDepartement($dep)->create();
-    $agent->assignRole('agent');
+    $agent->assignRole('chef-service');
 
     $activite = Activite::factory()->brouillon()->pourDepartement($dep)->create();
 
@@ -89,14 +93,14 @@ test('la notification de soumission passe par mail et database', function () {
     $activite = Activite::factory()->create();
     $notification = new ActiviteSoumiseNotification($activite);
 
-    expect($notification->via(new User()))->toBe(['mail', 'database']);
+    expect($notification->via(new User))->toBe(['mail', 'database']);
 });
 
 test('ActiviteValidee et ActiviteRefusee passent par mail et database', function () {
     $activite = Activite::factory()->create();
 
-    expect((new ActiviteValidee($activite))->via(new User()))->toBe(['mail', 'database']);
-    expect((new ActiviteRefusee($activite, 'motif assez long'))->via(new User()))->toBe(['mail', 'database']);
+    expect((new ActiviteValidee($activite))->via(new User))->toBe(['mail', 'database']);
+    expect((new ActiviteRefusee($activite, 'motif assez long'))->via(new User))->toBe(['mail', 'database']);
 });
 
 test('le payload database contient un message et une url vers l\'entité', function () {
@@ -105,7 +109,7 @@ test('le payload database contient un message et une url vers l\'entité', funct
 
     // Un chef ouvre la fiche de l'activité...
     $chef = User::factory()->create();
-    $chef->assignRole('chef_departement');
+    $chef->assignRole('responsable-programme');
     $dataChef = (new ActiviteSoumiseNotification($activite))->toArray($chef);
 
     expect($dataChef)->toHaveKeys(['message', 'url', 'activite_id']);
@@ -121,9 +125,9 @@ test('le payload database contient un message et une url vers l\'entité', funct
 
 test('le lien de soumission reçu par le chef pointe vers une page accessible (pas 403)', function () {
     seedRolesAndPermissions();
-    $dep = \App\Models\Departement::factory()->create();
+    $dep = Departement::factory()->create();
     $chef = User::factory()->dansDepartement($dep)->create();
-    $chef->assignRole('chef_departement');
+    $chef->assignRole('responsable-programme');
     $activite = Activite::factory()->soumis()->pourDepartement($dep)->create();
 
     $url = (new ActiviteSoumiseNotification($activite))->toArray($chef)['url'];
@@ -134,34 +138,34 @@ test('le lien de soumission reçu par le chef pointe vers une page accessible (p
 
 test('le lien d\'arbitrage pointe vers l\'activité concernée', function () {
     seedRolesAndPermissions();
-    $dep = \App\Models\Departement::factory()->create();
+    $dep = Departement::factory()->create();
     $auteur = User::factory()->dansDepartement($dep)->create();
-    $auteur->assignRole('chef_departement');
+    $auteur->assignRole('responsable-programme');
     $activite = Activite::factory()->pourDepartement($dep)->create();
 
     // Cas « modifiée » : lien vers la fiche de l'activité (accessible à l'auteur).
-    $modif = (new \App\Notifications\ActiviteArbitrageNotification('modifiee', $activite->nom_activite, 'motif', null, $activite))->toArray($auteur);
+    $modif = (new ActiviteArbitrageNotification('modifiee', $activite->nom_activite, 'motif', null, $activite))->toArray($auteur);
     expect($modif['url'])->toContain('/activites/'.$activite->id);
 
     // Cas « supprimée » : l'entité n'existe plus -> repli sur la liste.
-    $suppr = (new \App\Notifications\ActiviteArbitrageNotification('supprimee', 'Nom snapshot', 'motif', null, null))->toArray($auteur);
+    $suppr = (new ActiviteArbitrageNotification('supprimee', 'Nom snapshot', 'motif', null, null))->toArray($auteur);
     expect($suppr['url'])->toContain('/activites');
     expect($suppr['url'])->not->toContain('/activites/');
 });
 
 test('le lien des notifications d\'exercice est adapté au rôle', function () {
     seedRolesAndPermissions();
-    $exercice = \App\Models\Exercice::factory()->create(['annee' => 2026]);
+    $exercice = Exercice::factory()->create(['annee' => 2026]);
 
     $admin = User::factory()->create();
     $admin->assignRole('dbcgoq');
     $chef = User::factory()->create();
-    $chef->assignRole('chef_departement');
+    $chef->assignRole('responsable-programme');
 
-    $notif = new \App\Notifications\MiParcoursOuvertNotification($exercice);
+    $notif = new MiParcoursOuvertNotification($exercice);
 
     expect($notif->toArray($admin)['url'])->toContain('/exercices/'.$exercice->id);
-    expect($notif->toArray($chef)['url'])->toContain('/activites/suivi');
+    expect($notif->toArray($chef)['url'])->toContain('/evaluations/');
 });
 
 /*

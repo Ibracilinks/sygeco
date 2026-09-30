@@ -110,10 +110,10 @@ class UserFactory extends Factory
     /**
      * Indicate that the user has the Chef Département role.
      */
-    public function chefDepartement(): static
+    public function responsableProgramme(): static
     {
         return $this->afterCreating(function (User $user) {
-            $role = Role::firstOrCreate(['name' => 'chef_departement']);
+            $role = Role::firstOrCreate(['name' => 'responsable-programme']);
             $user->assignRole($role);
         });
     }
@@ -121,10 +121,10 @@ class UserFactory extends Factory
     /**
      * Indicate that the user has the Agent role.
      */
-    public function agent(): static
+    public function chefService(): static
     {
         return $this->afterCreating(function (User $user) {
-            $role = Role::firstOrCreate(['name' => 'agent']);
+            $role = Role::firstOrCreate(['name' => 'chef-service']);
             $user->assignRole($role);
         });
     }

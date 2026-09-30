@@ -22,7 +22,7 @@
 <x-slot:footer>
 <x-mail::footer>
 Caisse Nationale d'Assurance Maladie (CANAM)<br>
-© {{ date('Y') }} {{ config('app.name') }} — Système de Gestion et de Coordination. Tous droits réservés.<br>
+© {{ date('Y') }} {{ config('app.name') }} — Logiciel d'évaluation des activités de la CANAM. Tous droits réservés.<br>
 <span style="color: #b0adc5; font-size: 11px;">Ce message est généré automatiquement, merci de ne pas y répondre.</span>
 </x-mail::footer>
 </x-slot:footer>

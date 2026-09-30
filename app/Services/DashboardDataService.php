@@ -2,16 +2,35 @@
 
 namespace App\Services;
 
+use App\Models\ActiviteEvaluation;
 use App\Models\Departement;
 use App\Models\Exercice;
+use App\Models\User;
 use App\Support\ActiveExercice;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Cache;
+use App\Support\VisibiliteActivites;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 
 class DashboardDataService
 {
     protected $annee;
+
+    /**
+     * Utilisateur dont on calcule le tableau de bord. Ses chiffres doivent être
+     * exactement ceux de la page Programmation, d'où le passage par les mêmes
+     * règles de visibilité.
+     */
+    protected ?User $utilisateur;
+
+    /**
+     * Structures à faire figurer dans les tableaux par entité, ou `null` si
+     * l'utilisateur n'est pas restreint.
+     *
+     * @var array<int, int>|null
+     */
+    protected ?array $perimetre;
 
     public function __construct()
     {
@@ -22,6 +41,29 @@ class DashboardDataService
             ?? Carbon::now()->year;
 
         $this->annee = (int) request()->query('annee', $defaut);
+        $this->utilisateur = Auth::user();
+        $this->perimetre = $this->utilisateur?->perimetreActivitesIds();
+    }
+
+    /**
+     * Clé de cache. Les chiffres dépendent de l'année ET de qui regarde : sans cette
+     * seconde dimension, le tableau de bord d'un chef servirait celui d'un autre.
+     */
+    protected function cleCache(string $nom): string
+    {
+        return "dashboard_{$nom}_{$this->annee}_".VisibiliteActivites::signature($this->utilisateur);
+    }
+
+    /**
+     * Restreint `activites` au périmètre de l'utilisateur. Appliqué via `tap()`,
+     * le filtre vaut aussi bien pour une requête que pour la condition ON d'une
+     * jointure — indispensable sur un LEFT JOIN, qu'un WHERE dégraderait en INNER.
+     */
+    protected function perimetreActivites(): \Closure
+    {
+        return function ($query) {
+            VisibiliteActivites::appliquer($query, $this->utilisateur);
+        };
     }
 
     /**
@@ -39,15 +81,29 @@ class DashboardDataService
     }
 
     /**
+     * Exercices correspondant à l'année affichée. Le rattachement des activités se
+     * fait par `activites.exercice_id` : un objectif pouvant couvrir plusieurs
+     * exercices, son année ne dit plus rien de l'année d'exécution des activités.
+     *
+     * @return array<int, int>
+     */
+    protected function exerciceIdsDeLAnnee(): array
+    {
+        return Exercice::query()->where('annee', $this->annee)->pluck('id')->all();
+    }
+
+    /**
      * Statistiques principales
      */
     public function getStats()
     {
-        return Cache::remember("dashboard_stats_{$this->annee}", 3600, function () {
+        return Cache::remember($this->cleCache('stats'), 3600, function () {
             $stats = DB::table('activites')
                 ->join('extrants', 'activites.extrant_id', '=', 'extrants.id')
                 ->join('objectifs', 'extrants.objectif_id', '=', 'objectifs.id')
-                ->where('objectifs.annee', $this->annee)
+                ->whereIn('activites.exercice_id', $this->exerciceIdsDeLAnnee())
+                ->whereNull('activites.deleted_at')
+                ->tap($this->perimetreActivites())
                 ->selectRaw('
                     COUNT(DISTINCT objectifs.id) as total_objectifs,
                     COUNT(DISTINCT extrants.id) as total_extrants,
@@ -74,11 +130,21 @@ class DashboardDataService
      */
     public function getBudgetParObjectif()
     {
-        return Cache::remember("dashboard_budget_objectif_{$this->annee}", 3600, function () {
+        return Cache::remember($this->cleCache('budget_objectif'), 3600, function () {
+            $exerciceIds = $this->exerciceIdsDeLAnnee();
+
             $result = DB::table('objectifs')
                 ->leftJoin('extrants', 'objectifs.id', '=', 'extrants.objectif_id')
-                ->leftJoin('activites', 'extrants.id', '=', 'activites.extrant_id')
-                ->where('objectifs.annee', $this->annee)
+                ->leftJoin('activites', function ($join) use ($exerciceIds) {
+                    $join->on('extrants.id', '=', 'activites.extrant_id')
+                        ->whereIn('activites.exercice_id', $exerciceIds)
+                        ->whereNull('activites.deleted_at')
+                        ->tap($this->perimetreActivites());
+                })
+                // L'objectif est retenu s'il couvre l'année, même pluriannuel.
+                ->whereExists(fn ($q) => $q->select(DB::raw(1))->from('exercice_objectif')
+                    ->whereColumn('exercice_objectif.objectif_id', 'objectifs.id')
+                    ->whereIn('exercice_objectif.exercice_id', $exerciceIds))
                 ->selectRaw('
                     objectifs.code,
                     objectifs.libelle,
@@ -102,15 +168,70 @@ class DashboardDataService
     }
 
     /**
+     * Résultats stratégiques de l'année : le niveau du cadre logique qui manquait
+     * entre les objectifs et les extrants. Nombre d'activités et budget par résultat.
+     *
+     * @return array<int, array{code: string, libelle: string, nb_activites: int, budget: float}>
+     */
+    public function getResultatsStrategiques(): array
+    {
+        return Cache::remember($this->cleCache('resultats_strategiques'), 3600, function () {
+            $exerciceIds = $this->exerciceIdsDeLAnnee();
+
+            return DB::table('resultats')
+                ->join('objectifs', 'resultats.objectif_id', '=', 'objectifs.id')
+                ->leftJoin('extrants', 'resultats.id', '=', 'extrants.resultat_id')
+                ->leftJoin('activites', function ($join) use ($exerciceIds) {
+                    $join->on('extrants.id', '=', 'activites.extrant_id')
+                        ->whereIn('activites.exercice_id', $exerciceIds)
+                        ->whereNull('activites.deleted_at')
+                        ->tap($this->perimetreActivites());
+                })
+                // Le résultat est retenu si son objectif couvre l'année, même pluriannuel.
+                ->whereExists(fn ($q) => $q->select(DB::raw(1))->from('exercice_objectif')
+                    ->whereColumn('exercice_objectif.objectif_id', 'objectifs.id')
+                    ->whereIn('exercice_objectif.exercice_id', $exerciceIds))
+                ->selectRaw('
+                    resultats.code,
+                    resultats.libelle,
+                    objectifs.code as objectif_code,
+                    COUNT(activites.id) as nb_activites,
+                    COALESCE(SUM(activites.cout), 0) as budget
+                ')
+                ->groupBy('resultats.id', 'resultats.code', 'resultats.libelle', 'resultats.ordre', 'objectifs.code')
+                ->orderBy('resultats.ordre')
+                ->orderBy('resultats.code')
+                ->get()
+                ->map(fn ($item) => [
+                    'code' => (string) $item->code,
+                    'libelle' => (string) $item->libelle,
+                    'objectif_code' => (string) $item->objectif_code,
+                    'nb_activites' => (int) $item->nb_activites,
+                    'budget' => (float) $item->budget,
+                ])
+                ->all();
+        });
+    }
+
+    /**
      * Top Extrants
      */
     public function getTopExtrants()
     {
-        return Cache::remember("dashboard_top_extrants_{$this->annee}", 3600, function () {
+        return Cache::remember($this->cleCache('top_extrants'), 3600, function () {
+            $exerciceIds = $this->exerciceIdsDeLAnnee();
+
             $result = DB::table('extrants')
                 ->join('objectifs', 'extrants.objectif_id', '=', 'objectifs.id')
-                ->leftJoin('activites', 'extrants.id', '=', 'activites.extrant_id')
-                ->where('objectifs.annee', $this->annee)
+                ->leftJoin('activites', function ($join) use ($exerciceIds) {
+                    $join->on('extrants.id', '=', 'activites.extrant_id')
+                        ->whereIn('activites.exercice_id', $exerciceIds)
+                        ->whereNull('activites.deleted_at')
+                        ->tap($this->perimetreActivites());
+                })
+                ->whereExists(fn ($q) => $q->select(DB::raw(1))->from('exercice_objectif')
+                    ->whereColumn('exercice_objectif.objectif_id', 'objectifs.id')
+                    ->whereIn('exercice_objectif.exercice_id', $exerciceIds))
                 ->selectRaw('
                     extrants.code,
                     extrants.libelle,
@@ -139,11 +260,13 @@ class DashboardDataService
      */
     public function getTopActivites()
     {
-        return Cache::remember("dashboard_top_activites_{$this->annee}", 3600, function () {
+        return Cache::remember($this->cleCache('top_activites'), 3600, function () {
             $activites = DB::table('activites')
                 ->join('extrants', 'activites.extrant_id', '=', 'extrants.id')
                 ->join('objectifs', 'extrants.objectif_id', '=', 'objectifs.id')
-                ->where('objectifs.annee', $this->annee)
+                ->whereIn('activites.exercice_id', $this->exerciceIdsDeLAnnee())
+                ->whereNull('activites.deleted_at')
+                ->tap($this->perimetreActivites())
                 ->select('activites.id', 'activites.nom_activite', 'activites.cout')
                 ->orderByDesc('activites.cout')
                 ->limit(10)
@@ -151,7 +274,7 @@ class DashboardDataService
                 ->map(function ($activite) {
                     return [
                         'id' => $activite->id,
-                        'code' => 'ACT-' . $activite->id,
+                        'code' => 'ACT-'.$activite->id,
                         'nom_activite' => $activite->nom_activite,
                         'cout' => $activite->cout,
                     ];
@@ -167,12 +290,16 @@ class DashboardDataService
      */
     public function getBudgetParDepartement()
     {
-        return Cache::remember("dashboard_budget_departement_{$this->annee}", 3600, function () {
+        return Cache::remember($this->cleCache('budget_departement'), 3600, function () {
+            $exerciceIds = $this->exerciceIdsDeLAnnee();
+
             $result = DB::table('departements')
-                ->leftJoin('activites', 'departements.id', '=', 'activites.departement_id')
-                ->leftJoin('extrants', 'activites.extrant_id', '=', 'extrants.id')
-                ->leftJoin('objectifs', 'extrants.objectif_id', '=', 'objectifs.id')
-                ->where('objectifs.annee', $this->annee)
+                ->leftJoin('activites', function ($join) use ($exerciceIds) {
+                    $join->on('departements.id', '=', 'activites.departement_id')
+                        ->whereIn('activites.exercice_id', $exerciceIds)
+                        ->whereNull('activites.deleted_at')
+                        ->tap($this->perimetreActivites());
+                })
                 ->selectRaw('
                     departements.nom,
                     COALESCE(SUM(activites.cout), 0) as budget
@@ -198,19 +325,23 @@ class DashboardDataService
      */
     public function getEvolutionMensuelle()
     {
-        return Cache::remember("dashboard_evolution_mensuelle_{$this->annee}", 3600, function () {
+        return Cache::remember($this->cleCache('evolution_mensuelle'), 3600, function () {
             $data = [];
 
-            for ($i = 11; $i >= 0; $i--) {
-                $date = Carbon::now()->subMonths($i);
-                $mois = $date->format('M Y');
+            // Les 12 mois calendaires de l'exercice sélectionné (janvier → décembre),
+            // afin que la courbe reste cohérente avec l'année d'exercice choisie
+            // (et ne déborde plus sur l'année suivante comme avec une fenêtre glissante).
+            for ($mois = 1; $mois <= 12; $mois++) {
+                $date = Carbon::create($this->annee, $mois, 1);
 
                 $stats = DB::table('activites')
                     ->join('extrants', 'activites.extrant_id', '=', 'extrants.id')
                     ->join('objectifs', 'extrants.objectif_id', '=', 'objectifs.id')
-                    ->where('objectifs.annee', $this->annee)
-                    ->whereMonth('activites.created_at', $date->month)
-                    ->whereYear('activites.created_at', $date->year)
+                    ->whereIn('activites.exercice_id', $this->exerciceIdsDeLAnnee())
+                    ->whereNull('activites.deleted_at')
+                    ->tap($this->perimetreActivites())
+                    ->whereMonth('activites.created_at', $mois)
+                    ->whereYear('activites.created_at', $this->annee)
                     ->selectRaw('
                         COUNT(activites.id) as nb_activites,
                         COALESCE(SUM(activites.cout), 0) as budget
@@ -218,9 +349,45 @@ class DashboardDataService
                     ->first();
 
                 $data[] = [
-                    'mois' => $mois,
-                    'nb_activites' => $stats->nb_activites,
-                    'budget' => $stats->budget,
+                    'mois' => $date->format('M Y'),
+                    'nb_activites' => (int) $stats->nb_activites,
+                    'budget' => (float) $stats->budget,
+                ];
+            }
+
+            return $data;
+        });
+    }
+
+    /**
+     * Évolution trimestrielle (T1 → T4) : nombre d'activités planifiées et budget associé,
+     * en s'appuyant sur les indicateurs de trimestre (trimestre_1..4 = "oui").
+     */
+    public function getEvolutionTrimestrielle()
+    {
+        return Cache::remember($this->cleCache('evolution_trimestrielle'), 3600, function () {
+            $data = [];
+
+            for ($t = 1; $t <= 4; $t++) {
+                $colonne = "trimestre_{$t}";
+
+                $stats = DB::table('activites')
+                    ->join('extrants', 'activites.extrant_id', '=', 'extrants.id')
+                    ->join('objectifs', 'extrants.objectif_id', '=', 'objectifs.id')
+                    ->whereIn('activites.exercice_id', $this->exerciceIdsDeLAnnee())
+                    ->whereNull('activites.deleted_at')
+                    ->tap($this->perimetreActivites())
+                    ->where("activites.{$colonne}", 'oui')
+                    ->selectRaw('
+                        COUNT(activites.id) as nb_activites,
+                        COALESCE(SUM(activites.cout), 0) as budget
+                    ')
+                    ->first();
+
+                $data[] = [
+                    'trimestre' => "T{$t}",
+                    'nb_activites' => (int) $stats->nb_activites,
+                    'budget' => (float) $stats->budget,
                 ];
             }
 
@@ -233,11 +400,13 @@ class DashboardDataService
      */
     public function getDistributionBudgetaire()
     {
-        return Cache::remember("dashboard_distribution_budgetaire_{$this->annee}", 3600, function () {
+        return Cache::remember($this->cleCache('distribution_budgetaire'), 3600, function () {
             $distribution = DB::table('activites')
                 ->join('extrants', 'activites.extrant_id', '=', 'extrants.id')
                 ->join('objectifs', 'extrants.objectif_id', '=', 'objectifs.id')
-                ->where('objectifs.annee', $this->annee)
+                ->whereIn('activites.exercice_id', $this->exerciceIdsDeLAnnee())
+                ->whereNull('activites.deleted_at')
+                ->tap($this->perimetreActivites())
                 ->selectRaw('
                     SUM(CASE WHEN activites.cout < 1000000 THEN 1 ELSE 0 END) as tranche_0_1m,
                     SUM(CASE WHEN activites.cout >= 1000000 AND activites.cout < 5000000 THEN 1 ELSE 0 END) as tranche_1_5m,
@@ -258,15 +427,52 @@ class DashboardDataService
     }
 
     /**
+     * Répartition de l'état d'exécution des activités validées, telle qu'évaluée
+     * en fin d'année. Les activités validées non encore évaluées forment une part
+     * distincte : elles ne sont pas assimilées à des activités non réalisées.
+     *
+     * @return array<string, int>
+     */
+    public function getExecutionActivitesValidees(): array
+    {
+        return Cache::remember($this->cleCache('execution_validees'), 3600, function () {
+            $comptes = DB::table('activites')
+                ->join('extrants', 'activites.extrant_id', '=', 'extrants.id')
+                ->join('objectifs', 'extrants.objectif_id', '=', 'objectifs.id')
+                ->leftJoin('activite_evaluations', function ($join) {
+                    $join->on('activite_evaluations.activite_id', '=', 'activites.id')
+                        ->where('activite_evaluations.periode', '=', ActiviteEvaluation::PERIODE_FIN_ANNEE);
+                })
+                ->whereIn('activites.exercice_id', $this->exerciceIdsDeLAnnee())
+                ->where('activites.statut', 'valide')
+                ->whereNull('activites.deleted_at')
+                ->tap($this->perimetreActivites())
+                ->selectRaw('activite_evaluations.statut_execution as statut, COUNT(activites.id) as total')
+                ->groupBy('activite_evaluations.statut_execution')
+                ->pluck('total', 'statut')
+                ->toArray();
+
+            return [
+                'Réalisée' => (int) ($comptes['realise'] ?? 0),
+                'En cours de réalisation' => (int) ($comptes['en_cours'] ?? 0),
+                'Non réalisée' => (int) ($comptes['non_realise'] ?? 0),
+                'Non évaluée' => (int) ($comptes[''] ?? 0),
+            ];
+        });
+    }
+
+    /**
      * Activités par statut
      */
     public function getActivitesParStatut()
     {
-        return Cache::remember("dashboard_activites_statut_{$this->annee}", 3600, function () {
+        return Cache::remember($this->cleCache('activites_statut'), 3600, function () {
             $result = DB::table('activites')
                 ->join('extrants', 'activites.extrant_id', '=', 'extrants.id')
                 ->join('objectifs', 'extrants.objectif_id', '=', 'objectifs.id')
-                ->where('objectifs.annee', $this->annee)
+                ->whereIn('activites.exercice_id', $this->exerciceIdsDeLAnnee())
+                ->whereNull('activites.deleted_at')
+                ->tap($this->perimetreActivites())
                 ->selectRaw('
                     activites.statut,
                     COUNT(activites.id) as count
@@ -276,7 +482,7 @@ class DashboardDataService
                 ->toArray();
 
             // Ensure all statuts are present
-            $statuts = ['brouillon' => 0, 'soumis' => 0, 'valide' => 0];
+            $statuts = ['brouillon' => 0, 'en_attente' => 0, 'valide' => 0, 'rejete' => 0];
             foreach ($result as $statut => $count) {
                 if (isset($statuts[$statut])) {
                     $statuts[$statut] = $count;
@@ -285,8 +491,9 @@ class DashboardDataService
 
             return [
                 'Brouillon' => $statuts['brouillon'],
-                'Soumis' => $statuts['soumis'],
-                'Valide' => $statuts['valide'],
+                'En attente' => $statuts['en_attente'],
+                'Validé' => $statuts['valide'],
+                'Rejeté' => $statuts['rejete'],
             ];
         });
     }
@@ -296,11 +503,13 @@ class DashboardDataService
      */
     public function getActivitesParTrimestre()
     {
-        return Cache::remember("dashboard_activites_trimestre_{$this->annee}", 3600, function () {
+        return Cache::remember($this->cleCache('activites_trimestre'), 3600, function () {
             $trimestres = DB::table('activites')
                 ->join('extrants', 'activites.extrant_id', '=', 'extrants.id')
                 ->join('objectifs', 'extrants.objectif_id', '=', 'objectifs.id')
-                ->where('objectifs.annee', $this->annee)
+                ->whereIn('activites.exercice_id', $this->exerciceIdsDeLAnnee())
+                ->whereNull('activites.deleted_at')
+                ->tap($this->perimetreActivites())
                 ->selectRaw('
                     SUM(CASE WHEN trimestre_1 = "oui" THEN 1 ELSE 0 END) as t1,
                     SUM(CASE WHEN trimestre_2 = "oui" THEN 1 ELSE 0 END) as t2,
@@ -318,22 +527,28 @@ class DashboardDataService
      */
     public function getTendanceActivites()
     {
-        return Cache::remember("dashboard_tendance_activites_{$this->annee}", 3600, function () {
+        return Cache::remember($this->cleCache('tendance_activites'), 3600, function () {
             $dernierTrimestre = DB::table('activites')
                 ->join('extrants', 'activites.extrant_id', '=', 'extrants.id')
                 ->join('objectifs', 'extrants.objectif_id', '=', 'objectifs.id')
-                ->where('objectifs.annee', $this->annee)
+                ->whereIn('activites.exercice_id', $this->exerciceIdsDeLAnnee())
+                ->whereNull('activites.deleted_at')
+                ->tap($this->perimetreActivites())
                 ->where('activites.created_at', '>=', Carbon::now()->subMonths(3))
                 ->count();
 
             $trimestrePrecedent = DB::table('activites')
                 ->join('extrants', 'activites.extrant_id', '=', 'extrants.id')
                 ->join('objectifs', 'extrants.objectif_id', '=', 'objectifs.id')
-                ->where('objectifs.annee', $this->annee)
+                ->whereIn('activites.exercice_id', $this->exerciceIdsDeLAnnee())
+                ->whereNull('activites.deleted_at')
+                ->tap($this->perimetreActivites())
                 ->whereBetween('activites.created_at', [Carbon::now()->subMonths(6), Carbon::now()->subMonths(3)])
                 ->count();
 
-            if ($trimestrePrecedent == 0) return 0;
+            if ($trimestrePrecedent == 0) {
+                return 0;
+            }
 
             return round((($dernierTrimestre - $trimestrePrecedent) / $trimestrePrecedent) * 100);
         });
@@ -344,11 +559,13 @@ class DashboardDataService
      */
     public function getBudgetMoyenMensuel()
     {
-        return Cache::remember("dashboard_budget_moyen_{$this->annee}", 3600, function () {
+        return Cache::remember($this->cleCache('budget_moyen'), 3600, function () {
             $stats = DB::table('activites')
                 ->join('extrants', 'activites.extrant_id', '=', 'extrants.id')
                 ->join('objectifs', 'extrants.objectif_id', '=', 'objectifs.id')
-                ->where('objectifs.annee', $this->annee)
+                ->whereIn('activites.exercice_id', $this->exerciceIdsDeLAnnee())
+                ->whereNull('activites.deleted_at')
+                ->tap($this->perimetreActivites())
                 ->whereYear('activites.created_at', $this->annee)
                 ->selectRaw('
                     COUNT(activites.id) as count,
@@ -376,9 +593,10 @@ class DashboardDataService
         return Departement::query()
             ->active()
             ->ordered()
+            ->when($this->perimetre !== null, fn ($q) => $q->whereIn('departements.id', $this->perimetre))
             ->withCount([
                 'activites as total_activites' => fn ($q) => $q->forExercice($exerciceId),
-                'activites as activites_soumises' => fn ($q) => $q->forExercice($exerciceId)->whereIn('statut', ['soumis', 'valide']),
+                'activites as activites_soumises' => fn ($q) => $q->forExercice($exerciceId)->whereIn('statut', ['en_attente', 'valide']),
             ])
             ->get()
             ->map(fn ($d) => [
@@ -409,6 +627,7 @@ class DashboardDataService
         return Departement::query()
             ->active()
             ->ordered()
+            ->when($this->perimetre !== null, fn ($q) => $q->whereIn('departements.id', $this->perimetre))
             ->withCount([
                 'activites as nb_brouillon' => fn ($q) => $q->forExercice($exerciceId)->where('statut', 'brouillon'),
             ])
@@ -435,14 +654,16 @@ class DashboardDataService
         $budgetParObjectif = collect($this->getBudgetParObjectif());
         $topExtrants = collect($this->getTopExtrants());
         $topActivites = collect($this->getTopActivites());
-        $evolutionMensuelle = collect($this->getEvolutionMensuelle());
+        $evolutionTrimestrielle = collect($this->getEvolutionTrimestrielle());
         $distributionBudgetaire = $this->getDistributionBudgetaire();
         $activitesParStatut = $this->getActivitesParStatut();
         $activitesParTrimestre = $this->getActivitesParTrimestre();
         $soumissionParDepartement = collect($this->getSoumissionParDepartement());
         $departementsEnRetard = collect($this->getDepartementsEnRetard());
         $budgetParDepartement = collect($this->getBudgetParDepartement());
+        $resultatsStrategiques = $this->getResultatsStrategiques();
 
+        $executionValidees = $this->getExecutionActivitesValidees();
         $maxActiviteCout = (float) max(1, (float) $topActivites->max('cout'));
         $yearOptions = $this->anneesExercices();
         $totalActivitesStatut = array_sum($activitesParStatut);
@@ -454,6 +675,7 @@ class DashboardDataService
             ],
             'kpis' => [
                 'objectifs' => (int) ($stats['total_objectifs'] ?? 0),
+                'resultats_strategiques' => count($resultatsStrategiques),
                 'extrants' => (int) ($stats['total_extrants'] ?? 0),
                 'activites' => (int) ($stats['total_activites'] ?? 0),
                 'budget_total' => (float) ($stats['budget_total'] ?? 0),
@@ -468,9 +690,9 @@ class DashboardDataService
             ],
             'charts' => [
                 'evolution' => [
-                    'labels' => $evolutionMensuelle->pluck('mois')->values()->all(),
-                    'activites' => $evolutionMensuelle->pluck('nb_activites')->values()->all(),
-                    'budget_millions' => $evolutionMensuelle
+                    'labels' => $evolutionTrimestrielle->pluck('trimestre')->values()->all(),
+                    'activites' => $evolutionTrimestrielle->pluck('nb_activites')->values()->all(),
+                    'budget_millions' => $evolutionTrimestrielle
                         ->map(fn ($row) => round(((float) ($row['budget'] ?? 0)) / 1000000, 1))
                         ->values()
                         ->all(),
@@ -491,12 +713,17 @@ class DashboardDataService
                     'labels' => array_keys($activitesParStatut),
                     'values' => array_values($activitesParStatut),
                 ],
+                'execution_validees' => [
+                    'labels' => array_keys($executionValidees),
+                    'values' => array_values($executionValidees),
+                ],
                 'activites_trimestre' => [
                     'labels' => ['T1', 'T2', 'T3', 'T4'],
                     'values' => $activitesParTrimestre,
                 ],
             ],
             'tables' => [
+                'resultats_strategiques' => $resultatsStrategiques,
                 'top_activites' => $topActivites
                     ->map(function ($activite) use ($maxActiviteCout) {
                         $cout = (float) ($activite['cout'] ?? 0);

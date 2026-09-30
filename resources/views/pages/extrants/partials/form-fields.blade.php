@@ -1,18 +1,19 @@
 <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
     <div>
-        <label for="objectif_id" class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-200">Objectif *</label>
-        <select id="objectif_id" name="objectif_id"
+        <label for="resultat_id" class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-200">Résultat *</label>
+        <select id="resultat_id" name="resultat_id"
             class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 focus:border-slate-500 focus:outline-none dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100">
-            <option value="">Selectionnez un objectif</option>
-            @foreach ($objectifs as $objectif)
-                <option value="{{ $objectif->id }}" @selected((string) old('objectif_id', $extrant->objectif_id ?? $selectedObjectif ?? '') === (string) $objectif->id)>
-                    {{ $objectif->code }} - {{ $objectif->annee }} - {{ Str::limit($objectif->libelle, 60) }}
+            <option value="">Sélectionnez un résultat</option>
+            @foreach ($resultats as $resultat)
+                <option value="{{ $resultat->id }}" @selected((string) old('resultat_id', $extrant->resultat_id ?? $selectedResultat ?? '') === (string) $resultat->id)>
+                    {{ $resultat->code }} — {{ Str::limit($resultat->libelle, 50) }}@if ($resultat->objectif) (Objectif {{ $resultat->objectif->code }})@endif
                 </option>
             @endforeach
         </select>
-        @error('objectif_id')
+        @error('resultat_id')
             <p class="mt-1 text-sm text-rose-600 dark:text-rose-400">{{ $message }}</p>
         @enderror
+        <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">L'objectif de rattachement est déterminé automatiquement par le résultat choisi.</p>
     </div>
 
     <div>

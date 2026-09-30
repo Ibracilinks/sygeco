@@ -44,7 +44,7 @@ class EvaluationOuverteNotification extends Notification
     {
         return $notifiable->hasRole('dbcgoq')
             ? route('exercices.show', $this->exercice)
-            : route('activites.suivi');
+            : route('evaluations.index', 'fin-annee');
     }
 
     public function toArray(object $notifiable): array

@@ -1,14 +1,14 @@
-<x-layouts::app title="Validation activité">
+<x-layouts::app title="Arbitrage / Validation">
     <div class="flex h-full w-full flex-1 flex-col gap-5 rounded-xl">
         <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
             <div>
-                <h1 class="text-2xl font-semibold text-slate-900 dark:text-white">Validation de l'activité</h1>
+                <h1 class="text-2xl font-semibold text-slate-900 dark:text-white">Arbitrage de l'activité</h1>
                 <p class="text-sm text-slate-500 dark:text-slate-400">ACT-{{ $activite->id }} • {{ Str::limit($activite->nom_activite, 90) }}</p>
             </div>
             <div class="flex flex-wrap gap-2">
                 <a href="{{ route('validations.index') }}" wire:navigate class="inline-flex items-center rounded-lg bg-slate-200 px-4 py-2 text-sm font-medium text-slate-800 transition hover:bg-slate-300 dark:bg-slate-700 dark:text-slate-100 dark:hover:bg-slate-600">Retour</a>
                 <button type="button" onclick="openValiderModal({{ $activite->id }}, '{{ addslashes($activite->nom_activite) }}', {{ json_encode($activite->validationHistoriques->sortByDesc('created_at')->take(5)->map(function ($item) {return ['action' => $item->action, 'commentaire' => $item->commentaire, 'utilisateur' => optional($item->utilisateur)->name, 'created_at' => optional($item->created_at)->format('d/m/Y H:i')];})) }})" class="inline-flex items-center rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-500">Valider</button>
-                <button type="button" onclick="openRefuserModal({{ $activite->id }}, '{{ addslashes($activite->nom_activite) }}', {{ json_encode($activite->validationHistoriques->sortByDesc('created_at')->take(5)->map(function ($item) {return ['action' => $item->action, 'commentaire' => $item->commentaire, 'utilisateur' => optional($item->utilisateur)->name, 'created_at' => optional($item->created_at)->format('d/m/Y H:i')];})) }})" class="inline-flex items-center rounded-lg bg-rose-600 px-4 py-2 text-sm font-medium text-white hover:bg-rose-500">Refuser</button>
+                <button type="button" onclick="openRefuserModal({{ $activite->id }}, '{{ addslashes($activite->nom_activite) }}', {{ json_encode($activite->validationHistoriques->sortByDesc('created_at')->take(5)->map(function ($item) {return ['action' => $item->action, 'commentaire' => $item->commentaire, 'utilisateur' => optional($item->utilisateur)->name, 'created_at' => optional($item->created_at)->format('d/m/Y H:i')];})) }})" class="inline-flex items-center rounded-lg bg-rose-600 px-4 py-2 text-sm font-medium text-white hover:bg-rose-500">Rejeter</button>
             </div>
         </div>
 
@@ -18,7 +18,7 @@
                 <dl class="mt-4 grid grid-cols-1 gap-4 text-sm md:grid-cols-2">
                     <div><dt class="text-slate-500 dark:text-slate-400">Nom</dt><dd class="font-medium text-slate-900 dark:text-white">{{ $activite->nom_activite }}</dd></div>
                     <div><dt class="text-slate-500 dark:text-slate-400">Coût</dt><dd class="font-medium text-slate-900 dark:text-white">{{ number_format($activite->cout, 0, ',', ' ') }} FCFA</dd></div>
-                    <div><dt class="text-slate-500 dark:text-slate-400">Département</dt><dd class="font-medium text-slate-900 dark:text-white">{{ $activite->departement->nom ?? '-' }}</dd></div>
+                    <div><dt class="text-slate-500 dark:text-slate-400">Structure</dt><dd class="font-medium text-slate-900 dark:text-white">{{ $activite->departement->nom ?? '-' }}</dd></div>
                     <div><dt class="text-slate-500 dark:text-slate-400">Extrant</dt><dd class="font-medium text-slate-900 dark:text-white">{{ $activite->extrant->code ?? '-' }}</dd></div>
                     <div><dt class="text-slate-500 dark:text-slate-400">Date de soumission</dt><dd class="font-medium text-slate-900 dark:text-white">{{ optional($activite->date_soumission)->format('d/m/Y H:i') ?? '-' }}</dd></div>
                     <div><dt class="text-slate-500 dark:text-slate-400">Saisi par</dt><dd class="font-medium text-slate-900 dark:text-white">{{ $activite->saisiePar->name ?? '-' }}</dd></div>

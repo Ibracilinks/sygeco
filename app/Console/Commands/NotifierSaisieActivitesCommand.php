@@ -5,10 +5,12 @@ namespace App\Console\Commands;
 use App\Models\Exercice;
 use App\Models\ExerciceRelance;
 use App\Models\User;
-use App\Notifications\OuvertureSaisieActivitesNotification;
+use App\Notifications\IdentifiantsExerciceNotification;
 use App\Notifications\RelanceSaisieActivitesNotification;
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Str;
 
 class NotifierSaisieActivitesCommand extends Command
 {
@@ -51,14 +53,25 @@ class NotifierSaisieActivitesCommand extends Command
             return;
         }
 
-        $count = User::query()->count();
-        $this->line("Ouverture de la saisie (exercice {$exercice->annee}) → {$count} compte(s).");
+        // Les administrateurs (dbcgoq) sont exclus : leur mot de passe n'est pas régénéré
+        // pour éviter qu'un échec d'envoi ne rende un compte d'administration inaccessible.
+        $cibles = User::query()->whereDoesntHave('roles', fn ($q) => $q->where('name', 'dbcgoq'));
+
+        $count = (clone $cibles)->count();
+        $this->line("Ouverture de l'exercice {$exercice->annee} → {$count} compte(s) non-admin : régénération du mot de passe et envoi des accès.");
 
         if ($dryRun) {
             return;
         }
 
-        $this->envoyerATous(new OuvertureSaisieActivitesNotification($exercice));
+        // À l'ouverture, chaque utilisateur (hors admin) reçoit un nouveau mot de passe + le lien de connexion.
+        $cibles->chunkById(200, function ($users) use ($exercice) {
+            foreach ($users as $user) {
+                $motDePasse = Str::password(12);
+                $user->forceFill(['password' => Hash::make($motDePasse)])->save();
+                $user->notify(new IdentifiantsExerciceNotification($exercice, $motDePasse));
+            }
+        });
 
         $exercice->forceFill(['ouverture_notifiee_le' => now()])->save();
     }

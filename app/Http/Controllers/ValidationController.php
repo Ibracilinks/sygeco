@@ -4,10 +4,12 @@ namespace App\Http\Controllers;
 
 use App\Models\Activite;
 use App\Models\Departement;
-use App\Models\Extrant;
 use App\Notifications\ActiviteArbitrageNotification;
+use App\Notifications\ActiviteCoutModifieNotification;
 use App\Notifications\ActiviteRefusee;
 use App\Notifications\ActiviteValidee;
+use App\Support\ActiveExercice;
+use App\Support\CadreLogique;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -17,17 +19,114 @@ class ValidationController extends Controller
 {
     public function index(Request $request)
     {
-        $query = $this->buildQuery($request);
-        $activites = $query->with(['extrant.objectif', 'departement', 'saisiePar', 'validationHistoriques.utilisateur'])
+        $activites = $this->buildQuery($request)
+            ->with(['extrant.objectif', 'departement.parent.parent', 'saisiePar', 'validationHistoriques.utilisateur'])
             ->orderBy('date_soumission', 'desc')
-            ->paginate(20)
-            ->withQueryString();
+            ->get();
 
-        $departements = $this->availableDepartements();
-        $extrants = Extrant::with('objectif')->actif()->ordered()->get();
-        $compteur = $this->buildQuery($request)->get()->count();
+        // Un service n'est jamais arbitré pour lui-même : ses activités sont concentrées
+        // dans l'entité qui le chapeaute (ex. SJC → DAGRH). Les autres entités sont
+        // arbitrées pour elles-mêmes.
+        $groupes = $activites
+            ->groupBy(fn ($activite) => $activite->departement?->entiteDeRattachement()?->id)
+            ->map(function ($groupe) {
+                $porteuse = $groupe->first()->departement;
+                $entite = $porteuse?->entiteDeRattachement();
 
-        return view('pages.validations.index', compact('activites', 'departements', 'extrants', 'compteur'));
+                return [
+                    'departement' => $entite,
+                    'activites' => $groupe->values(),
+                    'cout_total' => (float) $groupe->sum('cout'),
+                ];
+            })
+            ->sortBy(fn ($groupe) => $groupe['departement']->nom ?? '', SORT_NATURAL | SORT_FLAG_CASE)
+            ->values();
+
+        // Sections par niveau hiérarchique : Directions, Directions Centrales, Services.
+        $sections = collect(Departement::TYPES)
+            ->mapWithKeys(fn ($type) => [
+                $type => $groupes->filter(fn ($groupe) => ($groupe['departement']->type ?? null) === $type)->values(),
+            ])
+            ->put('autres', $groupes->filter(
+                fn ($groupe) => ! in_array($groupe['departement']->type ?? null, Departement::TYPES, true)
+            )->values())
+            ->filter(fn ($section) => $section->isNotEmpty());
+
+        $compteur = $activites->count();
+        $coutTotal = (float) $activites->sum('cout');
+
+        return view('pages.validations.index', compact('groupes', 'sections', 'compteur', 'coutTotal'));
+    }
+
+    /**
+     * Arbitrage détaillé d'une entité : toutes ses activités soumises, avec les
+     * actions groupées (fusion, validation par sélection) et l'export du cadre logique.
+     */
+    public function entite(Request $request, Departement $departement)
+    {
+        // Une Direction Centrale arbitre pour tout son sous-arbre : les activités de ses
+        // services y sont concentrées. Les activités déjà validées restent affichées afin
+        // que la date de validation soit consultable ; seules les activités en attente
+        // ouvrent les actions d'arbitrage.
+        $perimetre = $departement->sousArbreIds();
+
+        $activites = $this->appliquerPerimetre(
+            Activite::query()->whereIn('statut', ['en_attente', 'valide']),
+            $request
+        )
+            ->whereIn('departement_id', $perimetre)
+            ->with(['extrant.resultat', 'extrant.objectif', 'departement.responsable', 'departement.parent', 'saisiePar', 'validePar', 'validationHistoriques.utilisateur'])
+            ->orderBy('date_soumission', 'desc')
+            ->get();
+
+        // Présentation en cadre logique : Résultat stratégique → Extrant → activités,
+        // dans l'ordre défini sur les résultats puis les extrants.
+        $resultats = $activites
+            ->groupBy(fn ($activite) => optional($activite->extrant)->resultat_id)
+            ->map(function ($parResultat) {
+                $resultat = optional($parResultat->first()->extrant)->resultat;
+
+                $extrantsGroupes = $parResultat
+                    ->groupBy('extrant_id')
+                    ->map(fn ($parExtrant) => [
+                        'extrant' => $parExtrant->first()->extrant,
+                        // Au sein d'un extrant, les activités sont classées par service
+                        // porteur (ordre alphabétique) puis par identifiant. La clé de tri
+                        // est une chaîne unique : `sortBy` ne sait pas comparer des tableaux.
+                        'activites' => $parExtrant
+                            ->sortBy(fn ($activite) => mb_strtolower($activite->departement->nom ?? '')
+                                .'|'.str_pad((string) $activite->id, 12, '0', STR_PAD_LEFT))
+                            ->values(),
+                        'cout_total' => (float) $parExtrant->where('statut', 'en_attente')->sum('cout'),
+                    ])
+                    ->sortBy(fn ($bloc) => sprintf('%010d|%s', $bloc['extrant']->ordre ?? PHP_INT_MAX, $bloc['extrant']->code ?? ''))
+                    ->values();
+
+                return [
+                    'resultat' => $resultat,
+                    'extrants' => $extrantsGroupes,
+                    'cout_total' => (float) $parResultat->where('statut', 'en_attente')->sum('cout'),
+                    'nb_activites' => $parResultat->where('statut', 'en_attente')->count(),
+                ];
+            })
+            ->sortBy(fn ($bloc) => sprintf(
+                '%010d|%010d|%s',
+                $bloc['resultat']->objectif_id ?? PHP_INT_MAX,
+                $bloc['resultat']->ordre ?? PHP_INT_MAX,
+                $bloc['resultat']->code ?? ''
+            ))
+            ->values();
+
+        $departement->load('parent', 'responsable');
+
+        $enAttente = $activites->where('statut', 'en_attente');
+        $coutTotal = (float) $enAttente->sum('cout');
+        $nbEnAttente = $enAttente->count();
+        $nbValidees = $activites->where('statut', 'valide')->count();
+
+        return view('pages.validations.entite', compact(
+            'departement', 'activites', 'resultats', 'coutTotal', 'nbEnAttente', 'nbValidees'
+        ));
     }
 
     public function show(Activite $activite)
@@ -36,7 +135,7 @@ class ValidationController extends Controller
             abort(403);
         }
 
-        if ($activite->statut !== 'soumis') {
+        if ($activite->statut !== 'en_attente') {
             return redirect()->route('validations.index')
                 ->with('error', 'Cette activité n\'est pas en attente de validation.');
         }
@@ -66,7 +165,7 @@ class ValidationController extends Controller
             $activite->saisiePar->notify(new ActiviteValidee($activite, $request->input('commentaire')));
         }
 
-        return redirect()->route('validations.index')
+        return redirect()->route('validations.entite', $activite->departement_id)
             ->with('success', 'Activité validée avec succès.');
     }
 
@@ -91,7 +190,7 @@ class ValidationController extends Controller
             $activite->saisiePar->notify(new ActiviteRefusee($activite, $validated['motif_refus']));
         }
 
-        return redirect()->route('validations.index')
+        return redirect()->route('validations.entite', $activite->departement_id)
             ->with('success', 'Activité refusée avec succès.');
     }
 
@@ -106,8 +205,7 @@ class ValidationController extends Controller
             ->filter(fn (Activite $activite) => $this->canValidate($activite));
 
         if ($activites->isEmpty()) {
-            return redirect()->route('validations.index')
-                ->with('error', 'Aucune activité sélectionnée ne peut être validée par votre profil.');
+            return back()->with('error', 'Aucune activité sélectionnée ne peut être validée par votre profil.');
         }
 
         foreach ($activites as $activite) {
@@ -117,8 +215,7 @@ class ValidationController extends Controller
             }
         }
 
-        return redirect()->route('validations.index')
-            ->with('success', 'Sélection des activités validée avec succès.');
+        return back()->with('success', 'Sélection des activités validée avec succès.');
     }
 
     /**
@@ -126,13 +223,15 @@ class ValidationController extends Controller
      */
     public function arbitrerModifier(Request $request, Activite $activite)
     {
-        if (! $this->canValidate($activite) || $activite->statut !== 'soumis') {
+        if (! $this->canValidate($activite) || $activite->statut !== 'en_attente') {
             abort(403);
         }
 
         $validated = $request->validate($this->reglesArbitrage() + [
             'motif' => 'nullable|string|max:1000',
         ]);
+
+        $ancienCout = (float) $activite->cout;
 
         $activite->arbitrerModification(
             collect($validated)->except('motif')->all(),
@@ -141,7 +240,16 @@ class ValidationController extends Controller
 
         $this->notifierArbitrage($activite->saisiePar, 'modifiee', $activite->nom_activite, $validated['motif'] ?? null, null, $activite);
 
-        return redirect()->route('validations.index')
+        // Le directeur de la Direction Centrale et le chef de service sont informés
+        // de tout changement de budget décidé lors de l'arbitrage.
+        $nouveauCout = (float) $activite->fresh()->cout;
+        if ($ancienCout !== $nouveauCout) {
+            foreach ($activite->destinatairesChangementBudget() as $destinataire) {
+                $destinataire->notify(new ActiviteCoutModifieNotification($activite, $ancienCout, $nouveauCout, 'arbitrage', $validated['motif'] ?? null));
+            }
+        }
+
+        return redirect()->route('validations.entite', $activite->departement_id)
             ->with('success', 'Activité modifiée et l\'auteur a été notifié.');
     }
 
@@ -150,7 +258,7 @@ class ValidationController extends Controller
      */
     public function arbitrerSupprimer(Request $request, Activite $activite)
     {
-        if (! $this->canValidate($activite) || $activite->statut !== 'soumis') {
+        if (! $this->canValidate($activite) || $activite->statut !== 'en_attente') {
             abort(403);
         }
 
@@ -165,7 +273,7 @@ class ValidationController extends Controller
 
         $this->notifierArbitrage($saisiPar, 'supprimee', $nom, $validated['motif']);
 
-        return redirect()->route('validations.index')
+        return redirect()->route('validations.entite', $activite->departement_id)
             ->with('success', 'Activité supprimée et l\'auteur a été notifié.');
     }
 
@@ -186,8 +294,7 @@ class ValidationController extends Controller
             ->filter(fn (Activite $a) => $this->canValidate($a));
 
         if ($sources->count() < 2) {
-            return redirect()->route('validations.index')
-                ->with('error', 'Sélectionnez au moins deux activités fusionnables de votre périmètre.');
+            return back()->with('error', 'Sélectionnez au moins deux activités fusionnables de votre périmètre.');
         }
 
         $consolidee = DB::transaction(function () use ($validated, $sources) {
@@ -204,7 +311,7 @@ class ValidationController extends Controller
                 'trimestre_2' => $validated['trimestre_2'],
                 'trimestre_3' => $validated['trimestre_3'],
                 'trimestre_4' => $validated['trimestre_4'],
-                'statut' => 'soumis',
+                'statut' => 'en_attente',
                 'saisi_par' => $premiere->saisi_par,
                 'date_saisie' => now(),
                 'date_soumission' => now(),
@@ -227,8 +334,7 @@ class ValidationController extends Controller
             }
         });
 
-        return redirect()->route('validations.index')
-            ->with('success', $sources->count().' activités fusionnées et les auteurs ont été notifiés.');
+        return back()->with('success', $sources->count().' activités fusionnées et les auteurs ont été notifiés.');
     }
 
     private function reglesArbitrage(): array
@@ -237,7 +343,7 @@ class ValidationController extends Controller
             'nom_activite' => 'required|string|max:1000',
             'indicateur_objectivement_verifiable' => 'required|string|max:1000',
             'moyen_verification' => 'required|string|max:1000',
-            'cout' => 'required|numeric|min:0',
+            'cout' => 'required|numeric|min:0|max:'.Activite::MONTANT_MAX,
             'trimestre_1' => ['required', Rule::in(['oui', 'non'])],
             'trimestre_2' => ['required', Rule::in(['oui', 'non'])],
             'trimestre_3' => ['required', Rule::in(['oui', 'non'])],
@@ -254,7 +360,11 @@ class ValidationController extends Controller
 
     public function exporter(Request $request)
     {
-        $activites = $this->buildQuery($request)
+        // L'export couvre toutes les activités de l'exercice en cours (tous statuts),
+        // pas seulement celles en attente d'arbitrage.
+        $query = Activite::query()->forExercice(ActiveExercice::id());
+
+        $activites = $this->appliquerPerimetre($query, $request)
             ->with([
                 'extrant.resultat.objectif',
                 'departement:id,code,nom',
@@ -262,49 +372,39 @@ class ValidationController extends Controller
             ])
             ->get();
 
-        // Regroupe les activités selon le cadre logique : Objectif → Résultat stratégique → Extrant.
-        $objectifs = $activites
-            ->groupBy(fn ($a) => optional(optional($a->extrant)->resultat)->objectif_id)
-            ->map(function ($parObjectif) {
-                $objectif = optional(optional($parObjectif->first()->extrant)->resultat)->objectif;
+        // Cadre logique d'arbitrage : Objectif → Résultat stratégique → Extrant.
+        $objectifs = CadreLogique::grouper($activites);
 
-                $resultats = $parObjectif
-                    ->groupBy(fn ($a) => optional($a->extrant)->resultat_id)
-                    ->map(function ($parResultat) {
-                        $resultat = optional($parResultat->first()->extrant)->resultat;
+        $html = view('pages.validations.export-arbitrage', compact('objectifs'))->render();
 
-                        $extrants = $parResultat
-                            ->groupBy(fn ($a) => $a->extrant_id)
-                            ->map(fn ($parExtrant) => [
-                                'extrant' => $parExtrant->first()->extrant,
-                                'activites' => $parExtrant->values(),
-                            ])
-                            ->values();
-
-                        return ['resultat' => $resultat, 'extrants' => $extrants];
-                    })
-                    ->values();
-
-                return ['objectif' => $objectif, 'resultats' => $resultats];
-            })
-            ->values();
-
-        $html = view('pages.validations.export', compact('objectifs'))->render();
-
-        $filename = 'cadre-logique-activites-' . now()->format('Ymd_His') . '.xls';
+        $filename = 'cadre-logique-arbitrage-'.now()->format('Ymd_His').'.xls';
 
         return response($html, 200, [
             'Content-Type' => 'application/vnd.ms-excel; charset=UTF-8',
-            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+            'Content-Disposition' => 'attachment; filename="'.$filename.'"',
         ]);
     }
 
     private function buildQuery(Request $request)
     {
-        $query = Activite::query()->soumis();
+        // Volontairement sans filtre d'exercice : les activités en attente ne sont pas
+        // toutes rattachées à l'exercice actif, et le filtre vidait la file d'arbitrage.
+        return $this->appliquerPerimetre(Activite::query()->soumis(), $request);
+    }
 
-        if (Auth::user()?->hasRole('chef_departement') && Auth::user()?->departement_id) {
-            $query->where('departement_id', Auth::user()->departement_id);
+    /**
+     * Restreint une requête au périmètre d'arbitrage de l'utilisateur, puis applique
+     * les filtres de la requête HTTP.
+     */
+    private function appliquerPerimetre($query, Request $request)
+    {
+        $user = Auth::user();
+
+        // Le superadmin et le dbcgoq arbitrent l'ensemble des entités ; un chef ne voit
+        // que les soumissions des entités qu'il chapeaute (flux montant).
+        if ($user && ! $user->hasRole('superadmin') && ! $user->hasRole('dbcgoq')
+            && $user->isResponsableProgramme() && $user->departement_id) {
+            $query->whereIn('departement_id', $user->entitesSupervisees()->pluck('id'));
         }
 
         if ($request->filled('departement_id')) {
@@ -319,26 +419,7 @@ class ValidationController extends Controller
             $query->pourTrimestre($request->trimestre);
         }
 
-        if ($request->filled('date_from')) {
-            $query->where('date_soumission', '>=', $request->date_from);
-        }
-
-        if ($request->filled('date_to')) {
-            $query->where('date_soumission', '<=', $request->date_to);
-        }
-
         return $query;
-    }
-
-    private function availableDepartements()
-    {
-        $query = Departement::active()->ordered();
-
-        if (Auth::user()?->hasRole('chef_departement') && Auth::user()?->departement_id) {
-            $query->whereKey(Auth::user()->departement_id);
-        }
-
-        return $query->get();
     }
 
     private function canValidate(Activite $activite): bool
@@ -349,12 +430,18 @@ class ValidationController extends Controller
             return false;
         }
 
-        if ($user->hasRole('dbcgoq')) {
+        if ($user->hasRole('superadmin') || $user->hasRole('dbcgoq')) {
             return true;
         }
 
-        return $user->hasRole('chef_departement')
+        // Flux montant : le chef valide les activités des entités enfants de la sienne.
+        $entite = $activite->relationLoaded('departement')
+            ? $activite->departement
+            : $activite->departement()->first();
+
+        return $user->hasRole('responsable-programme')
             && $user->departement_id !== null
-            && (int) $user->departement_id === (int) $activite->departement_id;
+            && $entite?->parent_id !== null
+            && (int) $entite->parent_id === (int) $user->departement_id;
     }
 }

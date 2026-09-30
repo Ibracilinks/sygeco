@@ -19,7 +19,7 @@ class NotifierSuiviExecutionCommand extends Command
     /**
      * Rôles destinataires : ce sont eux qui renseignent l'état d'exécution des activités.
      */
-    private const ROLES_CIBLES = ['chef_departement', 'dbcgoq'];
+    private const ROLES_CIBLES = ['responsable-programme', 'dbcgoq'];
 
     public function handle(): int
     {

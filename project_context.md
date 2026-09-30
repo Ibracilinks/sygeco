@@ -1,7 +1,7 @@
-# Project Context - SYGECO
+# Project Context - LEAC
 
 ## 1. Contexte du projet
-SYGECO est une application Laravel destinee a la planification, au suivi, a la validation et au reporting des activites, avec une logique par exercice, objectif, resultat, extrant, departement et indicateur.
+LEAC (Logiciel d'évaluation des activités de la CANAM) est une application Laravel destinee a la planification, au suivi, a la validation et au reporting des activites, avec une logique par exercice, objectif, resultat, extrant, departement et indicateur.
 
 Le projet s'inscrit dans un besoin de pilotage de la performance et de gestion budgetaire pour la CANAM, avec des workflows metier et des capacites de tracabilite/audit.
 

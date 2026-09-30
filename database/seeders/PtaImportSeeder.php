@@ -10,6 +10,7 @@ use App\Models\Objectif;
 use App\Models\Resultat;
 use App\Models\User;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 
 /**
@@ -28,7 +29,7 @@ abstract class PtaImportSeeder extends Seeder
     public function run(): void
     {
         $annee = $this->annee();
-        $path = database_path('data/' . $this->fichier());
+        $path = database_path('data/'.$this->fichier());
 
         if (! is_file($path)) {
             $this->command->warn("Fichier introuvable : {$path}. Déposez le PTA {$annee} puis relancez.");
@@ -76,16 +77,7 @@ abstract class PtaImportSeeder extends Seeder
             // Bannière objectif
             if (Str::startsWith($joined, 'Objectif stratégique')) {
                 $description = trim(Str::after($joined, ':'));
-                $objectif = Objectif::updateOrCreate(
-                    ['exercice_id' => $exercice->id, 'code' => 'OG'],
-                    [
-                        'libelle' => 'Objectif global',
-                        'description' => $description,
-                        'annee' => $exercice->annee,
-                        'statut' => 'actif',
-                        'ordre' => 1,
-                    ]
-                );
+                $objectif = $this->objectifGlobal($exercice, $description);
                 $resultat = null;
                 $extrant = null;
 
@@ -99,9 +91,9 @@ abstract class PtaImportSeeder extends Seeder
                 }
                 $roman = strtoupper($m[1]);
                 $resultat = Resultat::updateOrCreate(
-                    ['objectif_id' => $objectif->id, 'code' => 'RS.' . $roman],
+                    ['objectif_id' => $objectif->id, 'code' => 'RS.'.$roman],
                     [
-                        'libelle' => trim($m[2]) !== '' ? trim($m[2]) : 'RS. ' . $roman,
+                        'libelle' => trim($m[2]) !== '' ? trim($m[2]) : 'RS. '.$roman,
                         'ordre' => $this->romanToInt($roman),
                         'is_active' => true,
                     ]
@@ -145,6 +137,7 @@ abstract class PtaImportSeeder extends Seeder
                         'nom_activite' => $nom,
                     ],
                     [
+                        'exercice_id' => $exercice->id,
                         'departement_id' => $departements->first()?->id,
                         'indicateur_objectivement_verifiable' => $cells[2] ?? '',
                         'moyen_verification' => $cells[3] ?? '',
@@ -242,9 +235,9 @@ abstract class PtaImportSeeder extends Seeder
     /**
      * Découpe la colonne RESPONSABLES (« AC/DSI/DAGRH/ DBCGOQ ») en départements atomiques.
      *
-     * @return \Illuminate\Support\Collection<int, \App\Models\Departement>
+     * @return Collection<int, Departement>
      */
-    protected function departementsPour(string $responsables): \Illuminate\Support\Collection
+    protected function departementsPour(string $responsables): Collection
     {
         $noms = collect(preg_split('#/#u', $responsables))
             ->map(fn ($c) => trim(preg_replace('/\s+/u', ' ', (string) $c)))
@@ -274,7 +267,7 @@ abstract class PtaImportSeeder extends Seeder
      */
     protected function deriverDepartements(Exercice $exercice): void
     {
-        $objectifs = Objectif::where('exercice_id', $exercice->id)
+        $objectifs = Objectif::forExercice($exercice->id)
             ->with('resultats.extrants.activites.departements')
             ->get();
 
@@ -322,14 +315,38 @@ abstract class PtaImportSeeder extends Seeder
 
     protected function fallbackObjectif(Exercice $exercice): Objectif
     {
-        return Objectif::firstOrCreate(
-            ['exercice_id' => $exercice->id, 'code' => 'OG'],
-            [
-                'libelle' => 'Objectif global',
-                'annee' => $exercice->annee,
-                'statut' => 'actif',
-                'ordre' => 1,
-            ]
-        );
+        return $this->objectifGlobal($exercice);
+    }
+
+    /**
+     * Objectif global de l'exercice. Le rattachement passe par le pivot
+     * `exercice_objectif` : un objectif peut couvrir plusieurs exercices, on ne
+     * peut donc plus l'identifier par une colonne `exercice_id`.
+     */
+    protected function objectifGlobal(Exercice $exercice, ?string $description = null): Objectif
+    {
+        $objectif = Objectif::forExercice($exercice->id)->where('code', 'OG')->first();
+
+        $attributs = [
+            'libelle' => 'Objectif global',
+            'annee' => $exercice->annee,
+            'statut' => 'actif',
+            'ordre' => 1,
+        ];
+
+        if ($description !== null) {
+            $attributs['description'] = $description;
+        }
+
+        if ($objectif) {
+            $objectif->update($attributs);
+
+            return $objectif;
+        }
+
+        $objectif = Objectif::create($attributs + ['code' => 'OG']);
+        $objectif->exercices()->syncWithoutDetaching([$exercice->id]);
+
+        return $objectif;
     }
 }

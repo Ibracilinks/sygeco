@@ -27,36 +27,34 @@
             </div>
         </section>
 
-        <section class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <section class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-5">
             <x-charts.kpi-card title="Objectifs" :value="$kpis['objectifs']" trend="up" color="blue" icon="document-text" />
+            <x-charts.kpi-card title="Resultats strategiques" :value="$kpis['resultats_strategiques']" trend="up" color="purple" icon="chart-bar" />
             <x-charts.kpi-card title="Extrants" :value="$kpis['extrants']" trend="up" color="green" icon="folder" />
             <x-charts.kpi-card title="Activites" :value="$kpis['activites']" trend="up" color="purple" icon="clipboard-document-list" />
-            <x-charts.kpi-card title="Budget total" :value="$kpis['budget_total']" unit="M FCFA" trend="up" color="yellow" icon="currency-dollar" divisor="1000000" decimals="1" />
+            <x-charts.kpi-card title="Budget total" :value="$kpis['budget_total']" unit="FCFA" trend="up" color="yellow" icon="banknotes" />
         </section>
 
-        <section class="grid grid-cols-1 gap-4 xl:grid-cols-3">
-            <div class="rounded-xl border border-emerald-200 bg-emerald-50/90 p-5 dark:border-emerald-900/60 dark:bg-emerald-950/25">
-                <p class="text-xs font-semibold uppercase tracking-wide text-emerald-700 dark:text-emerald-300">Qualite execution</p>
-                <p class="mt-2 text-3xl font-semibold text-emerald-800 dark:text-emerald-200">{{ number_format($kpis['taux_realisation'], 1, ',', ' ') }}%</p>
-                <p class="mt-1 text-sm text-emerald-700/90 dark:text-emerald-300/90">Taux de realisation global</p>
+        <section class="grid grid-cols-1 gap-4 xl:grid-cols-2">
+            <div class="group relative overflow-hidden rounded-xl border border-emerald-200 bg-emerald-50/90 p-5 shadow-sm transition-shadow duration-200 hover:shadow-md dark:border-emerald-900/60 dark:bg-emerald-950/25">
+                <div class="absolute -top-6 -right-6 h-24 w-24 rounded-full bg-emerald-500/10 transition-transform duration-300 group-hover:scale-110 dark:bg-emerald-400/10"></div>
+                <p class="relative text-xs font-semibold uppercase tracking-wide text-emerald-700 dark:text-emerald-300">Qualite execution</p>
+                <p class="relative mt-2 text-3xl font-semibold text-emerald-800 dark:text-emerald-200">{{ number_format($kpis['taux_realisation'], 1, ',', ' ') }}%</p>
+                <p class="relative mt-1 text-sm text-emerald-700/90 dark:text-emerald-300/90">Taux de realisation global</p>
             </div>
-            <div class="rounded-xl border border-amber-200 bg-amber-50/90 p-5 dark:border-amber-900/60 dark:bg-amber-950/25">
-                <p class="text-xs font-semibold uppercase tracking-wide text-amber-700 dark:text-amber-300">Backlog</p>
-                <p class="mt-2 text-3xl font-semibold text-amber-800 dark:text-amber-200">{{ number_format($kpis['en_attente'], 0, ',', ' ') }}</p>
-                <p class="mt-1 text-sm text-amber-700/90 dark:text-amber-300/90">Activites en brouillon ou soumises</p>
-            </div>
-            <div class="rounded-xl border border-sky-200 bg-sky-50/90 p-5 dark:border-sky-900/60 dark:bg-sky-950/25">
-                <p class="text-xs font-semibold uppercase tracking-wide text-sky-700 dark:text-sky-300">Soumission moyenne</p>
-                <p class="mt-2 text-3xl font-semibold text-sky-800 dark:text-sky-200">{{ number_format($insights['soumission_moyenne'], 1, ',', ' ') }}%</p>
-                <p class="mt-1 text-sm text-sky-700/90 dark:text-sky-300/90">Par departement sur l'exercice actif</p>
+            <div class="group relative overflow-hidden rounded-xl border border-sky-200 bg-sky-50/90 p-5 shadow-sm transition-shadow duration-200 hover:shadow-md dark:border-sky-900/60 dark:bg-sky-950/25">
+                <div class="absolute -top-6 -right-6 h-24 w-24 rounded-full bg-sky-500/10 transition-transform duration-300 group-hover:scale-110 dark:bg-sky-400/10"></div>
+                <p class="relative text-xs font-semibold uppercase tracking-wide text-sky-700 dark:text-sky-300">Soumission moyenne</p>
+                <p class="relative mt-2 text-3xl font-semibold text-sky-800 dark:text-sky-200">{{ number_format($insights['soumission_moyenne'], 1, ',', ' ') }}%</p>
+                <p class="relative mt-1 text-sm text-sky-700/90 dark:text-sky-300/90">Par departement sur l'exercice actif</p>
             </div>
         </section>
 
         <section class="grid grid-cols-1 gap-6 lg:grid-cols-3">
-            <article class="lg:col-span-2 rounded-xl border border-slate-200 bg-white p-6 dark:border-slate-700 dark:bg-slate-900">
+            <article class="lg:col-span-2 rounded-xl border border-slate-200 bg-white p-6 shadow-sm transition-shadow duration-200 hover:shadow-md dark:border-slate-700 dark:bg-slate-900 dark:shadow-black/20">
                 <div class="mb-4 border-b border-slate-200 pb-4 dark:border-slate-700">
-                    <h2 class="text-lg font-semibold text-slate-900 dark:text-white">Evolution mensuelle</h2>
-                    <p class="text-sm text-slate-500 dark:text-slate-400">Volume des activites creees et dynamique budgetaire</p>
+                    <h2 class="text-lg font-semibold text-slate-900 dark:text-white">Evolution du chronogramme</h2>
+                    <p class="text-sm text-slate-500 dark:text-slate-400">Volume des activites planifiees et dynamique budgetaire par periode du chronogramme (T1 - T4)</p>
                 </div>
                 <div id="dash-chart-evolution">
                 <x-charts.line-chart :labels="$charts['evolution']['labels']" :datasets="[
@@ -80,17 +78,19 @@
                 </div>
             </article>
 
-            <article class="rounded-xl border border-slate-200 bg-white p-6 dark:border-slate-700 dark:bg-slate-900">
+            <article class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm transition-shadow duration-200 hover:shadow-md dark:border-slate-700 dark:bg-slate-900 dark:shadow-black/20">
                 <div class="mb-4 border-b border-slate-200 pb-4 dark:border-slate-700">
-                    <h2 class="text-lg font-semibold text-slate-900 dark:text-white">Realisation</h2>
-                    <p class="text-sm text-slate-500 dark:text-slate-400">Part des activites validees</p>
+                    <h2 class="text-lg font-semibold text-slate-900 dark:text-white">Execution des activites validees</h2>
+                    <p class="text-sm text-slate-500 dark:text-slate-400">Etat d'execution evalue en fin d'annee</p>
                 </div>
-                <x-charts.gauge-chart :value="$kpis['taux_realisation']" title="Taux de completion" unit="%" :size="210" />
+                <div id="dash-chart-execution-validees">
+                <x-charts.pie-chart :labels="$charts['execution_validees']['labels']" :data="$charts['execution_validees']['values']" :colors="['#10b981', '#f59e0b', '#f43f5e', '#94a3b8']" type="pie" :height="300" />
+                </div>
             </article>
         </section>
 
         <section class="grid grid-cols-1 gap-6 xl:grid-cols-2">
-            <article class="rounded-xl border border-slate-200 bg-white p-6 dark:border-slate-700 dark:bg-slate-900">
+            <article class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm transition-shadow duration-200 hover:shadow-md dark:border-slate-700 dark:bg-slate-900 dark:shadow-black/20">
                 <div class="mb-4 border-b border-slate-200 pb-4 dark:border-slate-700">
                     <h2 class="text-lg font-semibold text-slate-900 dark:text-white">Budget par objectif</h2>
                     <p class="text-sm text-slate-500 dark:text-slate-400">Montants en millions FCFA</p>
@@ -107,7 +107,7 @@
                 </div>
             </article>
 
-            <article class="rounded-xl border border-slate-200 bg-white p-6 dark:border-slate-700 dark:bg-slate-900">
+            <article class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm transition-shadow duration-200 hover:shadow-md dark:border-slate-700 dark:bg-slate-900 dark:shadow-black/20">
                 <div class="mb-4 border-b border-slate-200 pb-4 dark:border-slate-700">
                     <h2 class="text-lg font-semibold text-slate-900 dark:text-white">Top extrants</h2>
                     <p class="text-sm text-slate-500 dark:text-slate-400">Distribution des activites par extrant</p>
@@ -118,8 +118,44 @@
             </article>
         </section>
 
+        {{-- Résultats stratégiques : le niveau du cadre logique entre objectifs et extrants. --}}
+        <section>
+            <article class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm transition-shadow duration-200 hover:shadow-md dark:border-slate-700 dark:bg-slate-900 dark:shadow-black/20">
+                <div class="mb-4 border-b border-slate-200 pb-4 dark:border-slate-700">
+                    <h2 class="text-lg font-semibold text-slate-900 dark:text-white">Resultats strategiques</h2>
+                    <p class="text-sm text-slate-500 dark:text-slate-400">Activites programmees et budget par resultat, dans l'ordre du cadre logique</p>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full min-w-[40rem] text-left text-sm">
+                        <thead class="border-b border-slate-200 text-xs uppercase tracking-wide text-slate-500 dark:border-slate-700 dark:text-slate-400">
+                            <tr>
+                                <th class="py-2 pr-4 font-medium">Code</th>
+                                <th class="py-2 pr-4 font-medium">Resultat</th>
+                                <th class="py-2 pr-4 text-right font-medium">Activites</th>
+                                <th class="py-2 text-right font-medium">Budget (FCFA)</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+                            @forelse ($tables['resultats_strategiques'] as $resultat)
+                                <tr>
+                                    <td class="py-2 pr-4 font-semibold text-slate-900 dark:text-white">{{ $resultat['code'] }}</td>
+                                    <td class="py-2 pr-4 text-slate-700 dark:text-slate-200">{{ $resultat['libelle'] }}</td>
+                                    <td class="py-2 pr-4 text-right tabular-nums text-slate-700 dark:text-slate-200">{{ number_format($resultat['nb_activites'], 0, ',', ' ') }}</td>
+                                    <td class="py-2 text-right tabular-nums text-slate-700 dark:text-slate-200">{{ number_format($resultat['budget'], 0, ',', ' ') }}</td>
+                                </tr>
+                            @empty
+                                <tr>
+                                    <td colspan="4" class="py-4 text-center text-slate-500 dark:text-slate-400">Aucun resultat strategique pour cet exercice.</td>
+                                </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
+            </article>
+        </section>
+
         <section class="grid grid-cols-1 gap-6 xl:grid-cols-2">
-            <article class="rounded-xl border border-slate-200 bg-white p-6 dark:border-slate-700 dark:bg-slate-900">
+            <article class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm transition-shadow duration-200 hover:shadow-md dark:border-slate-700 dark:bg-slate-900 dark:shadow-black/20">
                 <div class="mb-4 border-b border-slate-200 pb-4 dark:border-slate-700">
                     <h2 class="text-lg font-semibold text-slate-900 dark:text-white">Top activites par cout</h2>
                     <p class="text-sm text-slate-500 dark:text-slate-400">Les activites les plus consommatrices du budget</p>
@@ -143,7 +179,7 @@
                 </div>
             </article>
 
-            <article class="rounded-xl border border-slate-200 bg-white p-6 dark:border-slate-700 dark:bg-slate-900">
+            <article class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm transition-shadow duration-200 hover:shadow-md dark:border-slate-700 dark:bg-slate-900 dark:shadow-black/20">
                 <div class="mb-4 border-b border-slate-200 pb-4 dark:border-slate-700">
                     <h2 class="text-lg font-semibold text-slate-900 dark:text-white">Distribution budgetaire</h2>
                     <p class="text-sm text-slate-500 dark:text-slate-400">Nombre d'activites par tranche de cout</p>
@@ -155,7 +191,7 @@
         </section>
 
         <section class="grid grid-cols-1 gap-6 xl:grid-cols-2">
-            <article class="rounded-xl border border-slate-200 bg-white p-6 dark:border-slate-700 dark:bg-slate-900">
+            <article class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm transition-shadow duration-200 hover:shadow-md dark:border-slate-700 dark:bg-slate-900 dark:shadow-black/20">
                 <div class="mb-4 border-b border-slate-200 pb-4 dark:border-slate-700">
                     <h2 class="text-lg font-semibold text-slate-900 dark:text-white">Activites par statut</h2>
                     <p class="text-sm text-slate-500 dark:text-slate-400">Distribution de l'etat d'avancement</p>
@@ -172,10 +208,10 @@
                 </div>
             </article>
 
-            <article class="rounded-xl border border-slate-200 bg-white p-6 dark:border-slate-700 dark:bg-slate-900">
+            <article class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm transition-shadow duration-200 hover:shadow-md dark:border-slate-700 dark:bg-slate-900 dark:shadow-black/20">
                 <div class="mb-4 border-b border-slate-200 pb-4 dark:border-slate-700">
-                    <h2 class="text-lg font-semibold text-slate-900 dark:text-white">Activites par trimestre</h2>
-                    <p class="text-sm text-slate-500 dark:text-slate-400">Planification trimestrielle declaree</p>
+                    <h2 class="text-lg font-semibold text-slate-900 dark:text-white">Chronogramme des activites</h2>
+                    <p class="text-sm text-slate-500 dark:text-slate-400">Chronogramme declare</p>
                 </div>
                 <div id="dash-chart-trimestre">
                 <x-charts.bar-chart :labels="$charts['activites_trimestre']['labels']" :datasets="[
@@ -191,7 +227,7 @@
         </section>
 
         <section class="grid grid-cols-1 gap-6 xl:grid-cols-3">
-            <article class="xl:col-span-2 rounded-xl border border-slate-200 bg-white p-6 dark:border-slate-700 dark:bg-slate-900">
+            <article class="xl:col-span-2 rounded-xl border border-slate-200 bg-white p-6 shadow-sm transition-shadow duration-200 hover:shadow-md dark:border-slate-700 dark:bg-slate-900 dark:shadow-black/20">
                 <div class="mb-4 border-b border-slate-200 pb-4 dark:border-slate-700">
                     <h2 class="text-lg font-semibold text-slate-900 dark:text-white">Soumission par departement</h2>
                     <p class="text-sm text-slate-500 dark:text-slate-400">Progression des activites soumises ou validees</p>
@@ -213,7 +249,7 @@
                 </div>
             </article>
 
-            <article class="rounded-xl border border-slate-200 bg-white p-6 dark:border-slate-700 dark:bg-slate-900">
+            <article class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm transition-shadow duration-200 hover:shadow-md dark:border-slate-700 dark:bg-slate-900 dark:shadow-black/20">
                 <div class="mb-4 border-b border-slate-200 pb-4 dark:border-slate-700">
                     <h2 class="text-lg font-semibold text-slate-900 dark:text-white">Departements en retard</h2>
                     <p class="text-sm text-slate-500 dark:text-slate-400">{{ $insights['departements_en_retard'] }} departement(s) a suivre</p>
@@ -238,6 +274,7 @@
             'footer' => 'CANAM',
             'kpis' => [
                 ['label' => 'Objectifs', 'value' => number_format($kpis['objectifs'], 0, ',', ' ')],
+                ['label' => 'Résultats stratégiques', 'value' => number_format($kpis['resultats_strategiques'], 0, ',', ' ')],
                 ['label' => 'Extrants', 'value' => number_format($kpis['extrants'], 0, ',', ' ')],
                 ['label' => 'Activités', 'value' => number_format($kpis['activites'], 0, ',', ' ')],
                 ['label' => 'Budget total', 'value' => number_format($kpis['budget_total'] / 1000000, 1, ',', ' ') . ' M FCFA'],
@@ -246,12 +283,13 @@
                 ['label' => 'Soumission moyenne', 'value' => number_format($insights['soumission_moyenne'], 1, ',', ' ') . ' %'],
             ],
             'charts' => [
-                ['containerId' => 'dash-chart-evolution', 'title' => 'Évolution mensuelle'],
+                ['containerId' => 'dash-chart-evolution', 'title' => 'Évolution du chronogramme'],
+                ['containerId' => 'dash-chart-execution-validees', 'title' => 'Exécution des activités validées'],
                 ['containerId' => 'dash-chart-budget-objectif', 'title' => 'Budget par objectif'],
                 ['containerId' => 'dash-chart-top-extrants', 'title' => 'Top extrants'],
                 ['containerId' => 'dash-chart-distribution', 'title' => 'Distribution budgétaire'],
                 ['containerId' => 'dash-chart-statut', 'title' => 'Activités par statut'],
-                ['containerId' => 'dash-chart-trimestre', 'title' => 'Activités par trimestre'],
+                ['containerId' => 'dash-chart-trimestre', 'title' => 'Chronogramme des activités'],
             ],
             'tables' => [
                 [
@@ -263,7 +301,7 @@
                     ], $tables['top_activites']),
                 ],
                 [
-                    'title' => 'Soumission par département',
+                    'title' => 'Soumission par structure',
                     'empty' => 'Aucune donnée de soumission disponible.',
                     'rows' => array_map(fn ($row) => [
                         'label' => $row['nom'],
@@ -271,8 +309,8 @@
                     ], $tables['soumission_departements']),
                 ],
                 [
-                    'title' => 'Départements en retard',
-                    'empty' => 'Aucun département en retard sur cet exercice.',
+                    'title' => 'Structures en retard',
+                    'empty' => 'Aucune structure en retard sur cet exercice.',
                     'rows' => array_map(fn ($r) => [
                         'label' => $r['nom'],
                         'value' => $r['nb_brouillon'] . ' brouillon(s)',

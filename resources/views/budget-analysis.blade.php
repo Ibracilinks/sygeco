@@ -31,7 +31,7 @@
         <!-- Section 1: Vue d'ensemble budgétaire -->
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <x-charts.kpi-card title="Budget Total" :value="$budgetOverview['total_budget']" unit="M FCFA" trend="up" color="blue"
-                icon="currency-dollar" divisor="1000000" decimals="1" />
+                icon="banknotes" divisor="1000000" decimals="1" />
 
             <x-charts.kpi-card title="Coût Moyen par Activité" :value="$budgetOverview['average_cost_per_activity']" unit="FCFA" trend="neutral"
                 color="green" icon="calculator" decimals="0" />
@@ -94,12 +94,12 @@
             </div>
         </div>
 
-        <!-- Section 3: Analyse par Département -->
+        <!-- Section 3: Analyse par structure -->
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <!-- Dépenses par Département -->
+            <!-- Dépenses par structure -->
             <div class="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-6">
                 <div class="border-b border-slate-200 dark:border-slate-700 pb-4 mb-4">
-                    <h2 class="text-lg font-semibold dark:text-white">Dépenses par Département</h2>
+                    <h2 class="text-lg font-semibold dark:text-white">Dépenses par structure</h2>
                     <p class="text-sm text-slate-500 dark:text-slate-400">Répartition budgétaire</p>
                 </div>
                 <div id="chart-depenses-departement">
@@ -116,10 +116,10 @@
                 </div>
             </div>
 
-            <!-- Efficacité par Département -->
+            <!-- Efficacité par structure -->
             <div class="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-6">
                 <div class="border-b border-slate-200 dark:border-slate-700 pb-4 mb-4">
-                    <h2 class="text-lg font-semibold dark:text-white">Efficacité par Département</h2>
+                    <h2 class="text-lg font-semibold dark:text-white">Efficacité par structure</h2>
                     <p class="text-sm text-slate-500 dark:text-slate-400">Taux d'efficacité budgétaire</p>
                 </div>
                 <div id="chart-efficacite-departement">
@@ -135,23 +135,23 @@
             </div>
         </div>
 
-        <!-- Section 4: Planification Trimestrielle -->
+        <!-- Section 4: Planification du chronogramme -->
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <!-- Répartition Trimestrielle -->
+            <!-- Répartition par chronogramme -->
             <div class="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-6">
                 <div class="border-b border-slate-200 dark:border-slate-700 pb-4 mb-4">
-                    <h2 class="text-lg font-semibold dark:text-white">Répartition Trimestrielle</h2>
-                    <p class="text-sm text-slate-500 dark:text-slate-400">Activités par trimestre</p>
+                    <h2 class="text-lg font-semibold dark:text-white">Répartition par chronogramme</h2>
+                    <p class="text-sm text-slate-500 dark:text-slate-400">Activités par période du chronogramme</p>
                 </div>
                 <div id="chart-repartition-trimestre">
-                <x-charts.pie-chart :labels="['Trimestre 1', 'Trimestre 2', 'Trimestre 3', 'Trimestre 4']" :data="$quarterlyBudgetPlanning['quarterly_distribution']" type="pie" :height="300" />
+                <x-charts.pie-chart :labels="['T1', 'T2', 'T3', 'T4']" :data="$quarterlyBudgetPlanning['quarterly_distribution']" type="pie" :height="300" />
                 </div>
             </div>
 
-            <!-- Performance Trimestrielle -->
+            <!-- Performance par chronogramme -->
             <div class="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-6">
                 <div class="border-b border-slate-200 dark:border-slate-700 pb-4 mb-4">
-                    <h2 class="text-lg font-semibold dark:text-white">Performance Trimestrielle</h2>
+                    <h2 class="text-lg font-semibold dark:text-white">Performance par chronogramme</h2>
                     <p class="text-sm text-slate-500 dark:text-slate-400">Budget vs Réalisé</p>
                 </div>
                 <div id="chart-performance-trimestre">
@@ -181,7 +181,7 @@
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <!-- Départements en dépassement -->
+                <!-- Structures en dépassement -->
                 <div>
                     <h3 class="text-sm font-medium text-red-600 dark:text-red-400 mb-3">🚨 Dépassements Budgetaires</h3>
                     <div class="space-y-2">
@@ -223,12 +223,14 @@
                     </h3>
                     <div class="space-y-2">
                         @forelse(array_slice($budgetAlerts['high_cost_activities'], 0, 3) as $activity)
-                            <div class="p-2 bg-purple-50 dark:bg-purple-900/20 rounded">
-                                <p class="text-sm dark:text-white truncate">{{ $activity['nom_activite'] }}</p>
+                            <a href="{{ route('activites.show', $activity['id']) }}" wire:navigate
+                                title="{{ $activity['nom_activite'] }}"
+                                class="group block p-2 bg-purple-50 dark:bg-purple-900/20 rounded transition hover:bg-purple-100 dark:hover:bg-purple-900/40 hover:ring-1 hover:ring-purple-300 dark:hover:ring-purple-700">
+                                <p class="text-sm dark:text-white truncate group-hover:whitespace-normal group-hover:overflow-visible">{{ $activity['nom_activite'] }}</p>
                                 <p class="text-sm font-medium text-purple-600">
                                     {{ number_format($activity['cout'] / 1000000, 1) }}M FCFA
                                 </p>
-                            </div>
+                            </a>
                         @empty
                             <p class="text-sm text-slate-500">Aucune activité coûteuse détectée</p>
                         @endforelse
@@ -328,10 +330,10 @@
             'charts' => [
                 ['containerId' => 'chart-budget-objectif', 'title' => 'Budget vs Réel par Objectif'],
                 ['containerId' => 'chart-evolution-mensuelle', 'title' => 'Évolution Mensuelle des Dépenses'],
-                ['containerId' => 'chart-depenses-departement', 'title' => 'Dépenses par Département'],
-                ['containerId' => 'chart-efficacite-departement', 'title' => 'Efficacité par Département'],
-                ['containerId' => 'chart-repartition-trimestre', 'title' => 'Répartition Trimestrielle'],
-                ['containerId' => 'chart-performance-trimestre', 'title' => 'Performance Trimestrielle'],
+                ['containerId' => 'chart-depenses-departement', 'title' => 'Dépenses par structure'],
+                ['containerId' => 'chart-efficacite-departement', 'title' => 'Efficacité par structure'],
+                ['containerId' => 'chart-repartition-trimestre', 'title' => 'Répartition par chronogramme'],
+                ['containerId' => 'chart-performance-trimestre', 'title' => 'Performance par chronogramme'],
                 ['containerId' => 'chart-tendances-annuelles', 'title' => 'Tendances Annuelles'],
             ],
             'alerts' => [

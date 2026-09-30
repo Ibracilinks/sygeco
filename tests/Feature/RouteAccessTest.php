@@ -1,6 +1,8 @@
 <?php
 
-uses(\Illuminate\Foundation\Testing\RefreshDatabase::class);
+use Illuminate\Foundation\Testing\RefreshDatabase;
+
+uses(RefreshDatabase::class);
 
 /*
 |--------------------------------------------------------------------------
@@ -8,7 +10,7 @@ uses(\Illuminate\Foundation\Testing\RefreshDatabase::class);
 |--------------------------------------------------------------------------
 | Ces routes de référentiel (objectifs, résultats, extrants, départements,
 | utilisateurs, exercices, budget, journal) sont réservées au rôle dbcgoq
-| (ou chef_departement en lecture pour certaines).
+| (ou responsable-programme en lecture pour certaines).
 */
 
 $routesDbcgoqOnly = [
@@ -24,7 +26,7 @@ test('les invités sont redirigés vers la connexion', function (string $name) {
 })->with($routesDbcgoqOnly);
 
 test('un agent est interdit sur les routes réservées au dbcgoq', function (string $name) {
-    $agent = userWithRole('agent');
+    $agent = userWithRole('chef-service');
 
     $this->actingAs($agent)->get(route($name))->assertForbidden();
 })->with($routesDbcgoqOnly);
@@ -36,7 +38,7 @@ test('le dbcgoq accède aux routes réservées', function (string $name) {
 })->with($routesDbcgoqOnly);
 
 test('un chef de département peut lister objectifs, résultats et extrants', function (string $name) {
-    $chef = userWithRole('chef_departement');
+    $chef = userWithRole('responsable-programme');
 
     $this->actingAs($chef)->get(route($name))->assertOk();
 })->with([

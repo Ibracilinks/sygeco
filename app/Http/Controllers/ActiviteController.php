@@ -7,20 +7,28 @@ use App\Models\ActivitePieceJointe;
 use App\Models\Departement;
 use App\Models\Extrant;
 use App\Models\User;
+use App\Notifications\ActiviteCoutModifieNotification;
 use App\Notifications\ActiviteRefusee;
 use App\Notifications\ActiviteSoumiseNotification;
 use App\Notifications\ActiviteValidee;
 use App\Support\ActiveExercice;
+use App\Support\VisibiliteActivites;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
 
 class ActiviteController extends Controller
 {
     use AuthorizesRequests;
+
+    private const MESSAGES_VALIDATION = [
+        'nom_activite.unique' => 'Une activité portant ce nom est déjà programmée pour cet exercice.',
+    ];
 
     public function __construct()
     {
@@ -34,7 +42,7 @@ class ActiviteController extends Controller
      */
     public function index(Request $request)
     {
-        $query = Activite::with(['extrant.objectif', 'departement', 'saisiePar']);
+        $query = Activite::with(['extrant.objectif', 'extrant.resultat', 'departement', 'departements', 'saisiePar']);
 
         $exerciceId = ActiveExercice::id();
         $query->forExercice($exerciceId);
@@ -56,10 +64,6 @@ class ActiviteController extends Controller
             $query->pourTrimestre($request->trimestre);
         }
 
-        if ($request->filled('statut_execution')) {
-            $query->where('statut_execution', $request->statut_execution);
-        }
-
         if ($request->filled('search')) {
             $query->where(function ($q) use ($request) {
                 $q->where('nom_activite', 'like', "%{$request->search}%")
@@ -67,90 +71,49 @@ class ActiviteController extends Controller
             });
         }
 
-        // Si l'utilisateur est chef de département, filtrer par son département
-        if ((Auth::user()->hasRole('chef_departement') || Auth::user()->hasRole('agent')) && Auth::user()->departement_id) {
-            $query->where('departement_id', Auth::user()->departement_id);
-        }
+        VisibiliteActivites::appliquer($query, Auth::user());
 
         $summaryQuery = clone $query;
         $summary = [
             'total' => (clone $summaryQuery)->count(),
             'brouillon' => (clone $summaryQuery)->where('statut', 'brouillon')->count(),
-            'soumis' => (clone $summaryQuery)->where('statut', 'soumis')->count(),
+            'en_attente' => (clone $summaryQuery)->where('statut', 'en_attente')->count(),
             'valide' => (clone $summaryQuery)->where('statut', 'valide')->count(),
+            'rejete' => (clone $summaryQuery)->where('statut', 'rejete')->count(),
         ];
 
-        $activites = $query->orderBy('date_saisie', 'desc')->paginate(15)->withQueryString();
+        // Présentation en cadre logique : Résultat → Extrant → activités. L'ordre SQL
+        // suit la même hiérarchie pour qu'une page de pagination donne des blocs cohérents.
+        $activites = $query
+            ->leftJoin('extrants', 'extrants.id', '=', 'activites.extrant_id')
+            ->leftJoin('resultats', 'resultats.id', '=', 'extrants.resultat_id')
+            ->leftJoin('departements', 'departements.id', '=', 'activites.departement_id')
+            ->orderBy('resultats.ordre')
+            ->orderBy('resultats.code')
+            ->orderBy('extrants.ordre')
+            ->orderBy('extrants.code')
+            // Au sein d'un extrant, les activités se lisent par structure porteuse, de A à Z.
+            // Le tri porte sur le code, seule valeur affichée dans la colonne Structure.
+            ->orderBy('departements.code')
+            ->orderBy('activites.date_saisie', 'desc')
+            ->select('activites.*')
+            ->paginate(15)
+            ->withQueryString();
+
+        $groupes = $this->grouperParCadreLogique($activites->getCollection());
 
         $extrants = Extrant::query()
             ->with('objectif')
             ->actif()
-            ->when($exerciceId !== null, fn ($q) => $q->whereHas('objectif', fn ($oq) => $oq->where('exercice_id', $exerciceId)))
+            ->when($exerciceId !== null, fn ($q) => $q->whereHas('objectif.exercices', fn ($oq) => $oq->where('exercices.id', $exerciceId)))
             ->ordered()
             ->get();
-        $departements = Departement::active()->ordered()->get();
-        $statuts = ['brouillon', 'soumis', 'valide'];
-        $filters = $request->only(['search', 'extrant_id', 'departement_id', 'statut', 'trimestre', 'statut_execution']);
+        $departements = $this->departementsVisibles();
+        $departementsGroupes = Departement::grouperParDirectionCentrale($departements);
+        $statuts = ['brouillon', 'en_attente', 'valide', 'rejete'];
+        $filters = $request->only(['search', 'extrant_id', 'departement_id', 'statut', 'trimestre']);
 
-        return view('pages.activites.index', compact('activites', 'extrants', 'departements', 'statuts', 'summary', 'filters'));
-    }
-
-    /**
-     * Suivi de l'exécution des activités (réalisé / en cours / non réalisé) avec observations.
-     */
-    public function suivi(Request $request)
-    {
-        $exerciceId = ActiveExercice::id();
-
-        $query = Activite::with(['extrant', 'departement'])->forExercice($exerciceId);
-
-        if ((Auth::user()->hasRole('chef_departement') || Auth::user()->hasRole('agent')) && Auth::user()->departement_id) {
-            $query->where('departement_id', Auth::user()->departement_id);
-        }
-
-        if ($request->filled('extrant_id')) {
-            $query->where('extrant_id', $request->extrant_id);
-        }
-        if ($request->filled('departement_id')) {
-            $query->where('departement_id', $request->departement_id);
-        }
-        if ($request->filled('statut_execution')) {
-            $query->where('statut_execution', $request->statut_execution);
-        }
-        if ($request->filled('search')) {
-            $query->where('nom_activite', 'like', "%{$request->search}%");
-        }
-
-        $base = (clone $query);
-        $summary = [
-            'total' => (clone $base)->count(),
-            'non_realise' => (clone $base)->where('statut_execution', 'non_realise')->count(),
-            'en_cours' => (clone $base)->where('statut_execution', 'en_cours')->count(),
-            'realise' => (clone $base)->where('statut_execution', 'realise')->count(),
-        ];
-        $summary['taux_realisation'] = $summary['total'] > 0
-            ? round($summary['realise'] / $summary['total'] * 100, 1)
-            : 0.0;
-
-        $activites = $query->orderBy('extrant_id')->orderBy('id')->paginate(20)->withQueryString();
-
-        $extrants = Extrant::query()
-            ->with('objectif')
-            ->actif()
-            ->when($exerciceId !== null, fn ($q) => $q->whereHas('objectif', fn ($oq) => $oq->where('exercice_id', $exerciceId)))
-            ->ordered()
-            ->get();
-        $departements = Departement::active()->ordered()->get();
-        $filters = $request->only(['search', 'extrant_id', 'departement_id', 'statut_execution']);
-
-        // Fenêtre de saisie de l'exécution : ouverte pour le dbcgoq en permanence,
-        // sinon uniquement pendant le mi-parcours ou l'évaluation de l'exercice actif.
-        $exercice = ActiveExercice::model();
-        $periodeSuivi = $exercice?->periodeSuiviCourante();
-        $peutSaisirExecution = Auth::user()->can('validate_activites')
-            || ($exercice?->enPeriodeSuiviExecution() ?? false);
-
-        return view('pages.activites.suivi', compact('activites', 'extrants', 'departements', 'summary', 'filters', 'exercice', 'periodeSuivi', 'peutSaisirExecution'));
+        return view('pages.activites.index', compact('activites', 'groupes', 'extrants', 'departements', 'departementsGroupes', 'statuts', 'summary', 'filters'));
     }
 
     /**
@@ -162,16 +125,18 @@ class ActiviteController extends Controller
         $extrants = Extrant::query()
             ->with('objectif')
             ->actif()
-            ->when($exerciceId !== null, fn ($q) => $q->whereHas('objectif', fn ($oq) => $oq->where('exercice_id', $exerciceId)))
+            ->when($exerciceId !== null, fn ($q) => $q->whereHas('objectif.exercices', fn ($oq) => $oq->where('exercices.id', $exerciceId)))
             ->ordered()
             ->get();
-        $departements = Departement::active()->ordered()->get();
+        $departements = $this->departementsVisibles();
+        $departementsGroupes = Departement::grouperParDirectionCentrale($departements);
 
         $departementId = Auth::user()->departement_id ?? $departements->first()?->id;
 
         $selectedExtrant = $request->get('extrant_id');
+        $structuresGroupes = $this->structuresIntervenantesGroupes();
 
-        return view('pages.activites.create', compact('extrants', 'departements', 'departementId', 'selectedExtrant'));
+        return view('pages.activites.create', compact('extrants', 'departements', 'departementsGroupes', 'structuresGroupes', 'departementId', 'selectedExtrant'));
     }
 
     /**
@@ -179,13 +144,18 @@ class ActiviteController extends Controller
      */
     public function store(Request $request)
     {
-        $validated = $request->validate([
+        $validated = $this->validerProgrammation($request, [
             'extrant_id' => 'required|exists:extrants,id',
             'departement_id' => 'required|exists:departements,id',
-            'nom_activite' => 'required|string',
+            'structures_intervenantes' => 'nullable|array',
+            'structures_intervenantes.*' => 'integer|exists:departements,id',
+            'nom_activite' => $this->regleNomUnique(),
             'indicateur_objectivement_verifiable' => 'required|string',
             'moyen_verification' => 'required|string',
-            'cout' => 'required|numeric|min:0',
+            // « Pour mémoire » : le coût est déjà porté par une autre activité,
+            // on ne le redemande pas et l'activité ne pèse rien au budget.
+            'pour_memoire' => 'nullable|in:on,oui',
+            'cout' => 'exclude_if:pour_memoire,on|required|numeric|min:0|max:'.Activite::MONTANT_MAX,
             'trimestre_1' => 'nullable|in:on,oui',
             'trimestre_2' => 'nullable|in:on,oui',
             'trimestre_3' => 'nullable|in:on,oui',
@@ -193,17 +163,19 @@ class ActiviteController extends Controller
             'commentaires' => 'nullable|string',
         ]);
 
-        if (Auth::user()->hasRole('chef_departement') && Auth::user()->departement_id) {
-            $validated['departement_id'] = Auth::user()->departement_id;
-        }
+        $validated['departement_id'] = $this->departementAutorise($validated['departement_id']);
 
-        $activite = new Activite();
+        $activite = new Activite;
         $activite->extrant_id = $validated['extrant_id'];
+        // L'activité porte son propre exercice : l'objectif peut être pluriannuel
+        // et ne permet donc plus de déduire l'année d'exécution.
+        $activite->exercice_id = ActiveExercice::id();
         $activite->departement_id = $validated['departement_id'];
         $activite->nom_activite = $validated['nom_activite'];
         $activite->indicateur_objectivement_verifiable = $validated['indicateur_objectivement_verifiable'];
         $activite->moyen_verification = $validated['moyen_verification'];
-        $activite->cout = $validated['cout'];
+        $activite->pour_memoire = $request->boolean('pour_memoire');
+        $activite->cout = $activite->pour_memoire ? 0 : $validated['cout'];
         $activite->trimestre_1 = isset($validated['trimestre_1']) ? 'oui' : 'non';
         $activite->trimestre_2 = isset($validated['trimestre_2']) ? 'oui' : 'non';
         $activite->trimestre_3 = isset($validated['trimestre_3']) ? 'oui' : 'non';
@@ -213,8 +185,71 @@ class ActiviteController extends Controller
         $activite->commentaires = $validated['commentaires'] ?? null;
         $activite->save();
 
+        $activite->departements()->sync($this->structuresIntervenantes($validated));
+
         return redirect()->route('activites.index')
             ->with('success', 'Activité créée avec succès.');
+    }
+
+    /**
+     * Enregistrement d'une activité NON PROGRAMMÉE depuis le suivi-évaluation.
+     * Formulaire allégé : pas d'extrant, rattachement direct à l'exercice actif.
+     */
+    public function storeNonProgrammee(Request $request)
+    {
+        if (! Auth::user()->can('edit_activites')) {
+            abort(403);
+        }
+
+        $exerciceId = ActiveExercice::id();
+
+        if (! $exerciceId) {
+            return back()->with('error', "Aucun exercice actif : impossible d'enregistrer une activité non programmée.");
+        }
+
+        $validated = $this->validerAvecMessages($request, [
+            'departement_id' => 'required|exists:departements,id',
+            'nom_activite' => $this->regleNomUnique(),
+            // « Pour mémoire » : le coût est déjà porté par une autre activité,
+            // on ne le redemande pas et l'activité ne pèse rien au budget.
+            'pour_memoire' => 'nullable|in:on,oui',
+            'cout' => 'exclude_if:pour_memoire,on|required|numeric|min:0|max:'.Activite::MONTANT_MAX,
+            'indicateur_objectivement_verifiable' => 'nullable|string',
+            'moyen_verification' => 'nullable|string',
+            'statut_execution' => ['nullable', Rule::in(array_keys(Activite::STATUTS_EXECUTION))],
+            'trimestre_1' => 'nullable|in:on,oui',
+            'trimestre_2' => 'nullable|in:on,oui',
+            'trimestre_3' => 'nullable|in:on,oui',
+            'trimestre_4' => 'nullable|in:on,oui',
+            'commentaires' => 'nullable|string',
+        ]);
+
+        $validated['departement_id'] = $this->departementAutorise($validated['departement_id']);
+
+        $activite = new Activite;
+        $activite->extrant_id = null;
+        $activite->exercice_id = $exerciceId;
+        $activite->non_programmee = true;
+        $activite->departement_id = $validated['departement_id'];
+        $activite->nom_activite = $validated['nom_activite'];
+        $activite->indicateur_objectivement_verifiable = $validated['indicateur_objectivement_verifiable'] ?? 'Non spécifié (activité non programmée)';
+        $activite->moyen_verification = $validated['moyen_verification'] ?? 'Non spécifié (activité non programmée)';
+        $activite->pour_memoire = $request->boolean('pour_memoire');
+        $activite->cout = $activite->pour_memoire ? 0 : $validated['cout'];
+        $activite->trimestre_1 = isset($validated['trimestre_1']) ? 'oui' : 'non';
+        $activite->trimestre_2 = isset($validated['trimestre_2']) ? 'oui' : 'non';
+        $activite->trimestre_3 = isset($validated['trimestre_3']) ? 'oui' : 'non';
+        $activite->trimestre_4 = isset($validated['trimestre_4']) ? 'oui' : 'non';
+        // Recorded post-hoc : validée directement si l'utilisateur peut valider, sinon soumise au circuit.
+        $activite->statut = Auth::user()->can('validate_activites') ? 'valide' : 'en_attente';
+        $activite->statut_execution = $validated['statut_execution'] ?? 'realise';
+        $activite->saisi_par = Auth::id();
+        $activite->date_saisie = now();
+        $activite->commentaires = $validated['commentaires'] ?? null;
+        $activite->save();
+
+        return redirect()->route('evaluations.index', 'mi-parcours')
+            ->with('success', 'Activité non programmée enregistrée dans le suivi.');
     }
 
     /**
@@ -224,7 +259,9 @@ class ActiviteController extends Controller
     {
         $activite->load([
             'extrant.objectif',
+            'extrant.resultat',
             'departement.responsable',
+            'departement.parent.parent',
             'departements',
             'executionMajPar',
             'piecesJointes.auteur',
@@ -246,12 +283,16 @@ class ActiviteController extends Controller
         $extrants = Extrant::query()
             ->with('objectif')
             ->actif()
-            ->when($exerciceId !== null, fn ($q) => $q->whereHas('objectif', fn ($oq) => $oq->where('exercice_id', $exerciceId)))
+            ->when($exerciceId !== null, fn ($q) => $q->whereHas('objectif.exercices', fn ($oq) => $oq->where('exercices.id', $exerciceId)))
             ->ordered()
             ->get();
-        $departements = Departement::active()->ordered()->get();
+        $departements = $this->departementsVisibles();
+        $departementsGroupes = Departement::grouperParDirectionCentrale($departements);
+        $structuresGroupes = $this->structuresIntervenantesGroupes();
 
-        return view('pages.activites.edit', compact('activite', 'extrants', 'departements'));
+        $activite->load('departements');
+
+        return view('pages.activites.edit', compact('activite', 'extrants', 'departements', 'departementsGroupes', 'structuresGroupes'));
     }
 
     /**
@@ -259,13 +300,18 @@ class ActiviteController extends Controller
      */
     public function update(Request $request, Activite $activite)
     {
-        $validated = $request->validate([
+        $validated = $this->validerProgrammation($request, [
             'extrant_id' => 'required|exists:extrants,id',
             'departement_id' => 'required|exists:departements,id',
-            'nom_activite' => 'required|string',
+            'structures_intervenantes' => 'nullable|array',
+            'structures_intervenantes.*' => 'integer|exists:departements,id',
+            'nom_activite' => $this->regleNomUnique($activite),
             'indicateur_objectivement_verifiable' => 'required|string',
             'moyen_verification' => 'required|string',
-            'cout' => 'required|numeric|min:0',
+            // « Pour mémoire » : le coût est déjà porté par une autre activité,
+            // on ne le redemande pas et l'activité ne pèse rien au budget.
+            'pour_memoire' => 'nullable|in:on,oui',
+            'cout' => 'exclude_if:pour_memoire,on|required|numeric|min:0|max:'.Activite::MONTANT_MAX,
             'trimestre_1' => 'nullable|in:on,oui',
             'trimestre_2' => 'nullable|in:on,oui',
             'trimestre_3' => 'nullable|in:on,oui',
@@ -273,9 +319,9 @@ class ActiviteController extends Controller
             'commentaires' => 'nullable|string',
         ]);
 
-        if (Auth::user()->hasRole('chef_departement') && Auth::user()->departement_id) {
-            $validated['departement_id'] = Auth::user()->departement_id;
-        }
+        $validated['departement_id'] = $this->departementAutorise($validated['departement_id']);
+
+        $ancienCout = (float) $activite->cout;
 
         $activite->update([
             'extrant_id' => $validated['extrant_id'],
@@ -283,7 +329,8 @@ class ActiviteController extends Controller
             'nom_activite' => $validated['nom_activite'],
             'indicateur_objectivement_verifiable' => $validated['indicateur_objectivement_verifiable'],
             'moyen_verification' => $validated['moyen_verification'],
-            'cout' => $validated['cout'],
+            'pour_memoire' => $request->boolean('pour_memoire'),
+            'cout' => $request->boolean('pour_memoire') ? 0 : $validated['cout'],
             'trimestre_1' => isset($validated['trimestre_1']) ? 'oui' : 'non',
             'trimestre_2' => isset($validated['trimestre_2']) ? 'oui' : 'non',
             'trimestre_3' => isset($validated['trimestre_3']) ? 'oui' : 'non',
@@ -291,8 +338,27 @@ class ActiviteController extends Controller
             'commentaires' => $validated['commentaires'] ?? null,
         ]);
 
+        $activite->departements()->sync($this->structuresIntervenantes($validated));
+
+        $this->notifierChangementCout($activite, $ancienCout, (float) $validated['cout'], 'edition');
+
         return redirect()->route('activites.index')
             ->with('success', 'Activité mise à jour.');
+    }
+
+    /**
+     * Notifie le directeur de la Direction Centrale et le chef de service concernés
+     * lorsqu'un coût d'activité change réellement.
+     */
+    private function notifierChangementCout(Activite $activite, float $ancienCout, float $nouveauCout, string $contexte, ?string $motif = null): void
+    {
+        if ($ancienCout === $nouveauCout) {
+            return;
+        }
+
+        foreach ($activite->destinatairesChangementBudget() as $destinataire) {
+            $destinataire->notify(new ActiviteCoutModifieNotification($activite, $ancienCout, $nouveauCout, $contexte, $motif));
+        }
     }
 
     /**
@@ -329,7 +395,7 @@ class ActiviteController extends Controller
      */
     public function valider(Activite $activite)
     {
-        if (!Auth::user()->can('validate_activites')) {
+        if (! Auth::user()->can('validate_activites')) {
             return redirect()->route('activites.index')
                 ->with('error', 'Vous ne pouvez pas valider cette activité.');
         }
@@ -352,7 +418,7 @@ class ActiviteController extends Controller
      */
     public function refuser(Request $request, Activite $activite)
     {
-        if (!Auth::user()->can('validate_activites')) {
+        if (! Auth::user()->can('validate_activites')) {
             return redirect()->route('activites.show', $activite)
                 ->with('error', 'Vous ne pouvez pas refuser cette activité.');
         }
@@ -381,10 +447,151 @@ class ActiviteController extends Controller
      * de la soumission). Si le département n'a pas de chef, on prévient les validateurs
      * centraux (permission validate_activites) pour que la soumission ne passe pas inaperçue.
      */
+    /**
+     * Départements proposés dans les filtres, restreints au périmètre de
+     * l'utilisateur (sous-arbre pour un chef, entité propre pour un agent).
+     *
+     * @return Collection<int, Departement>
+     */
+    /**
+     * Valide une saisie de programmation en exigeant, en plus des règles fournies,
+     * au moins une période cochée dans le chronogramme.
+     *
+     * @param  array<string, mixed>  $regles
+     * @return array<string, mixed>
+     */
+    /**
+     * Un même intitulé ne peut être programmé deux fois dans le même exercice.
+     * La corbeille est écartée : un nom libéré par une suppression redevient
+     * disponible.
+     */
+    private function regleNomUnique(?Activite $activite = null): array
+    {
+        $exerciceId = $activite?->exercice_id ?? ActiveExercice::id();
+
+        return [
+            'required',
+            'string',
+            Rule::unique('activites', 'nom_activite')
+                ->where(fn ($q) => $q->where('exercice_id', $exerciceId)->whereNull('deleted_at'))
+                ->ignore($activite?->getKey()),
+        ];
+    }
+
+    private function validerAvecMessages(Request $request, array $regles): array
+    {
+        return Validator::make($request->all(), $regles, self::MESSAGES_VALIDATION)->validate();
+    }
+
+    private function validerProgrammation(Request $request, array $regles): array
+    {
+        $validator = Validator::make($request->all(), $regles, self::MESSAGES_VALIDATION);
+
+        $validator->after(function ($validator) use ($request) {
+            $trimestres = ['trimestre_1', 'trimestre_2', 'trimestre_3', 'trimestre_4'];
+
+            if (! collect($trimestres)->contains(fn ($trimestre) => $request->filled($trimestre))) {
+                $validator->errors()->add(
+                    'chronogramme',
+                    'Le chronogramme est obligatoire : sélectionnez au moins une période.'
+                );
+            }
+        });
+
+        return $validator->validate();
+    }
+
+    /**
+     * Regroupe une page d'activités en cadre logique : Résultat → Extrant → activités.
+     * L'ordre des blocs suit celui de la collection reçue (déjà trié en SQL).
+     *
+     * @param  Collection<int, Activite>  $activites
+     * @return Collection<int, array<string, mixed>>
+     */
+    private function grouperParCadreLogique($activites): Collection
+    {
+        return $activites
+            ->groupBy(fn (Activite $activite) => $activite->extrant?->resultat_id ?? 'sans-resultat')
+            ->map(fn ($parResultat) => [
+                'resultat' => $parResultat->first()->extrant?->resultat,
+                'cout_total' => (float) $parResultat->sum('cout'),
+                'nb_activites' => $parResultat->count(),
+                'extrants' => $parResultat
+                    ->groupBy(fn (Activite $activite) => $activite->extrant_id ?? 'sans-extrant')
+                    ->map(fn ($parExtrant) => [
+                        'extrant' => $parExtrant->first()->extrant,
+                        'activites' => $parExtrant->values(),
+                        'cout_total' => (float) $parExtrant->sum('cout'),
+                    ])
+                    ->values(),
+            ])
+            ->values();
+    }
+
+    /**
+     * Structures intervenantes retenues : entités participantes distinctes de la
+     * structure porteuse (elle est déjà portée par `departement_id`).
+     *
+     * @param  array<string, mixed>  $validated
+     * @return array<int, int>
+     */
+    private function structuresIntervenantes(array $validated): array
+    {
+        return collect($validated['structures_intervenantes'] ?? [])
+            ->map(fn ($id) => (int) $id)
+            ->reject(fn ($id) => $id === (int) $validated['departement_id'])
+            ->unique()
+            ->values()
+            ->all();
+    }
+
+    /**
+     * Entités proposées comme structures intervenantes : toute l'organisation,
+     * une activité pouvant mobiliser des entités hors du périmètre de son porteur.
+     *
+     * @return array<string, array<int, Departement>>
+     */
+    private function structuresIntervenantesGroupes(): array
+    {
+        return Departement::grouperParDirectionCentrale(Departement::active()->ordered()->get());
+    }
+
+    /**
+     * Structure retenue pour l'activité, ramenée au périmètre de l'utilisateur.
+     *
+     * Un chef choisit librement parmi les entités de son sous-arbre (sa Direction
+     * Centrale et les services qu'elle chapeaute) ; une structure hors périmètre
+     * est ramenée à son entité de rattachement plutôt qu'acceptée telle quelle.
+     * Les profils non restreints (superadmin, dbcgoq) gardent leur choix.
+     */
+    private function departementAutorise($departementId): int
+    {
+        $perimetre = Auth::user()?->perimetreActivitesIds();
+
+        if ($perimetre === null || in_array((int) $departementId, $perimetre, true)) {
+            return (int) $departementId;
+        }
+
+        return (int) (Auth::user()->departement_id ?? $departementId);
+    }
+
+    private function departementsVisibles()
+    {
+        // La Direction Générale ne formule pas d'activités : elle reçoit celles des
+        // entités qui lui sont rattachées.
+        $query = Departement::active()->formulatrices()->ordered();
+
+        if ($perimetre = Auth::user()?->perimetreActivitesIds()) {
+            $query->whereIn('id', $perimetre);
+        }
+
+        return $query->get();
+    }
+
     protected function notifierValidateurs(Activite $activite): void
     {
         $destinataires = User::query()
-            ->role('chef_departement')
+            ->role('responsable-programme')
             ->where('departement_id', $activite->departement_id)
             ->where('id', '!=', Auth::id())
             ->get();
@@ -398,47 +605,13 @@ class ActiviteController extends Controller
         }
     }
 
-    /**
-     * Mettre à jour le suivi d'exécution (Track Activité : réalisé / en cours / non réalisé).
-     */
-    public function updateExecution(Request $request, Activite $activite)
-    {
-        $user = Auth::user();
-
-        if (! $user->can('edit_activites') && ! $user->can('validate_activites')) {
-            return back()->with('error', "Vous n'êtes pas autorisé à mettre à jour le suivi d'exécution.");
-        }
-
-        // Les chefs de département ne peuvent renseigner l'exécution que pendant une fenêtre
-        // ouverte (mi-parcours ou évaluation). Le dbcgoq (validate_activites) garde l'accès permanent.
-        if (! $user->can('validate_activites')) {
-            $exercice = $activite->exercice();
-
-            if (! $exercice || ! $exercice->enPeriodeSuiviExecution()) {
-                return back()->with('error', "La saisie de l'exécution n'est ouverte que pendant les périodes de mi-parcours ou d'évaluation.");
-            }
-        }
-
-        $validated = $request->validate([
-            'statut_execution' => ['required', Rule::in(array_keys(Activite::STATUTS_EXECUTION))],
-            'execution_commentaire' => ['nullable', 'string', 'max:1000'],
-        ]);
-
-        $activite->update([
-            'statut_execution' => $validated['statut_execution'],
-            'execution_commentaire' => $validated['execution_commentaire'] ?? null,
-            'execution_maj_le' => now(),
-            'execution_maj_par' => Auth::id(),
-        ]);
-
-        return back()->with('success', "Suivi d'exécution mis à jour.");
-    }
-
     public function storePieceJointe(Request $request, Activite $activite)
     {
         $this->authorize('view', $activite);
 
-        if (! Auth::user()->can('edit_activites') && ! Auth::user()->can('validate_activites')) {
+        // La cellule suivi & évaluation joint les justificatifs d'exécution sans
+        // avoir le droit de modifier l'activité elle-même.
+        if (! Auth::user()->canAny(['edit_activites', 'validate_activites', 'evaluate_activites'])) {
             return back()->with('error', "Vous n'êtes pas autorisé à ajouter des fichiers.");
         }
 

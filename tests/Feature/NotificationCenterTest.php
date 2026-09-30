@@ -3,8 +3,9 @@
 use App\Models\Activite;
 use App\Models\User;
 use App\Notifications\ActiviteValidee;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 
-uses(\Illuminate\Foundation\Testing\RefreshDatabase::class);
+uses(RefreshDatabase::class);
 
 /**
  * Crée une notification en base pour un utilisateur donné.

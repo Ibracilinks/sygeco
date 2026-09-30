@@ -8,43 +8,72 @@
 <body class="app-shell min-h-screen bg-white dark:bg-zinc-950">
     @php
         $currentUser = auth()->user();
+        // Exercice de travail courant (session), et non l'année de l'URL.
+        $exerciceCourant = \App\Support\ActiveExercice::model();
     @endphp
 
-    <flux:sidebar sticky collapsible="mobile"
-        class="app-sidebar border-e border-zinc-200 bg-zinc-50/95 dark:border-zinc-800 dark:bg-zinc-900/95">
+    {{-- w-72 remplace le w-64 par défaut de Flux ; l'état replié (w-14) reste prioritaire. --}}
+    <flux:sidebar sticky collapsible
+        class="app-sidebar w-72 border-e border-zinc-200 bg-zinc-50/95 dark:border-zinc-800 dark:bg-zinc-900/95">
         <flux:sidebar.header class="app-sidebar-header">
             <x-app-logo :sidebar="true" href="{{ route('dashboard') }}" wire:navigate />
-            <flux:sidebar.collapse class="lg:hidden" />
+            {{-- Réduction de la sidebar : en panneau sur mobile, en bande d'icônes sur desktop. --}}
+            <flux:sidebar.collapse />
         </flux:sidebar.header>
 
-        <div class="app-sidebar-intro hidden lg:block">
+        <div class="app-sidebar-intro hidden lg:block in-data-flux-sidebar-collapsed-desktop:lg:hidden">
             <p class="app-sidebar-intro-kicker">CANAM</p>
             <p class="app-sidebar-intro-title">Centre de pilotage</p>
             <div class="app-sidebar-intro-chip">
                 <span>{{ __('Exercice') }}</span>
-                <span>{{ request()->get('annee', now()->year) }}</span>
+                <span>{{ $exerciceCourant?->annee ?? now()->year }}</span>
             </div>
         </div>
 
         <flux:sidebar.nav class="app-sidebar-nav">
 
+            {{-- Le chargé des missions (service-budget) n'a que le module Missions :
+                 le reste du menu suit les rôles autorisés sur les routes. --}}
+            @php
+                $voitPlanification = (bool) $currentUser?->suitLePta();
+                $nbNonLues = $currentUser?->unreadNotifications()->count() ?? 0;
+            @endphp
+
             <!-- Dashboard -->
-            <flux:sidebar.group :heading="__('Navigation')" class="app-sidebar-group grid">
-                <flux:sidebar.item icon="home" :href="route('dashboard')" :current="request()->routeIs('dashboard')"
-                    wire:navigate>
-                    {{ __('Dashboard') }}
-                </flux:sidebar.item>
-                <flux:sidebar.item icon="presentation-chart-line" href="{{ route('sap.analytics') }}" target="_blank">
-                    SAP Cloud Analytics
-                </flux:sidebar.item>
+            <flux:sidebar.group expandable icon="squares-2x2" :heading="__('Navigation')"
+                class="app-sidebar-group grid" data-groupe="navigation">
+                @if ($voitPlanification)
+                    <flux:sidebar.item icon="home" :href="route('dashboard')" :current="request()->routeIs('dashboard')"
+                        wire:navigate>
+                        {{ __('Dashboard') }}
+                    </flux:sidebar.item>
+                @endif
+
+                {{-- Sans le groupe « Planification Stratégique », les notifications
+                     restent accessibles depuis la navigation. --}}
+                @unless ($voitPlanification)
+                    <flux:sidebar.item icon="bell" href="{{ route('notifications.index') }}"
+                        :badge="$nbNonLues > 0 ? $nbNonLues : null"
+                        :current="request()->routeIs('notifications.*')">
+                        {{ __('Notifications') }}
+                    </flux:sidebar.item>
+                @endunless
+                {{-- Tableau de pilotage : réservé à l'encadrement, ni les agents ni la
+                     cellule suivi & évaluation n'y ont affaire. --}}
+                @if ($currentUser->hasAnyRole(['superadmin', 'dbcgoq', 'responsable-programme']))
+                    <flux:sidebar.item icon="presentation-chart-line" href="{{ route('sap.analytics') }}" target="_blank">
+                        SAP Cloud Analytics
+                    </flux:sidebar.item>
+                @endif
             </flux:sidebar.group>
 
             <!-- Organisation -->
-            @if ($currentUser->hasRole('dbcgoq'))
-                <flux:sidebar.group :heading="__('Organisation')" class="app-sidebar-group grid">
+            @if ($currentUser->hasAnyRole(['superadmin', 'dbcgoq']))
+                <flux:sidebar.group expandable icon="building-office-2" :heading="__('Organisation')"
+                    class="app-sidebar-group grid" data-groupe="organisation">
                     <flux:sidebar.item icon="building-office" href="{{ route('departements.index') }}"
                         :current="request()->routeIs('departements.*')">
-                        {{ __('Départements') }}
+                        {{ __('Directions Centrales') }}
                     </flux:sidebar.item>
 
                     <flux:sidebar.item icon="users" href="{{ route('users.index') }}"
@@ -54,16 +83,55 @@
                 </flux:sidebar.group>
             @endif
 
+            @can('view_missions')
+                <flux:sidebar.group expandable icon="document-duplicate" :heading="__('Missions')"
+                    class="app-sidebar-group grid" data-groupe="missions">
+                    {{-- Un accès direct par type de mission : chaque entrée filtre la liste. --}}
+                    @php
+                        $typeMissionCourant = request()->routeIs('missions.index') ? (string) request('type') : null;
+                    @endphp
+
+                    <flux:sidebar.item icon="building-office" href="{{ route('missions.index', ['type' => \App\Models\Mission::TYPE_MEME_VILLE]) }}"
+                        :current="$typeMissionCourant === \App\Models\Mission::TYPE_MEME_VILLE">
+                        {{ __('Missions même ville') }}
+                    </flux:sidebar.item>
+
+                    <flux:sidebar.item icon="globe-alt" href="{{ route('missions.index', ['type' => \App\Models\Mission::TYPE_EXTERIEURE]) }}"
+                        :current="$typeMissionCourant === \App\Models\Mission::TYPE_EXTERIEURE">
+                        {{ __('Missions à l\'étranger') }}
+                    </flux:sidebar.item>
+
+                    <flux:sidebar.item icon="map" href="{{ route('missions.index', ['type' => \App\Models\Mission::TYPE_REGION]) }}"
+                        :current="$typeMissionCourant === \App\Models\Mission::TYPE_REGION">
+                        {{ __('Missions intérieur du pays') }}
+                    </flux:sidebar.item>
+
+                    <flux:sidebar.item icon="document-duplicate" href="{{ route('missions.index') }}"
+                        :current="request()->routeIs('missions.*') && $typeMissionCourant === null">
+                        {{ __('Toutes les missions') }}
+                    </flux:sidebar.item>
+
+                    @if ($currentUser->hasAnyRole(['superadmin', 'dbcgoq']))
+                        <flux:sidebar.item icon="adjustments-horizontal" href="{{ route('mission-baremes.index') }}"
+                            :current="request()->routeIs('mission-baremes.*')">
+                            {{ __('Barèmes des missions') }}
+                        </flux:sidebar.item>
+                    @endif
+                </flux:sidebar.group>
+            @endcan
+
             <!-- Planification Stratégique -->
-            <flux:sidebar.group :heading="__('Planification Stratégique')" class="app-sidebar-group grid">
-                @if ($currentUser->hasRole('dbcgoq'))
+            @if ($voitPlanification)
+            <flux:sidebar.group expandable icon="chart-bar-square" :heading="__('Planification Stratégique')"
+                class="app-sidebar-group grid" data-groupe="planification">
+                @if ($currentUser->hasAnyRole(['superadmin', 'dbcgoq']))
                     <flux:sidebar.item icon="calendar-days" href="{{ route('exercices.index') }}"
                         :current="request()->routeIs('exercices.*')">
                         {{ __('Exercices') }}
                     </flux:sidebar.item>
                 @endif
 
-                @if ($currentUser->hasAnyRole(['dbcgoq', 'chef_departement']))
+                @if ($currentUser->hasAnyRole(['superadmin', 'dbcgoq', 'responsable-programme', 'agent-planification', 'service-controle-gestion']))
                     <flux:sidebar.item icon="chart-pie" href="{{ route('objectifs.index') }}"
                         :current="request()->routeIs('objectifs.*')">
                         {{ __('Objectifs') }}
@@ -80,44 +148,58 @@
                     </flux:sidebar.item>
                 @endif
 
-                @if ($currentUser->hasRole('dbcgoq'))
+                <flux:sidebar.item icon="clipboard-document-list" href="{{ route('activites.index') }}"
+                    :current="request()->routeIs('activites.index') || request()->routeIs('activites.create') || request()->routeIs('activites.edit') || request()->routeIs('activites.show')">
+                    {{ __('Programmation / Planification') }}
+                </flux:sidebar.item>
+
+                @if ($currentUser->hasAnyRole(['superadmin', 'dbcgoq']))
                     <flux:sidebar.item icon="chart-pie" href="{{ route('budget.analysis') }}"
                         :current="request()->routeIs('budget.analysis')">
                         {{ __('Analyse Budgétaire') }}
+                    </flux:sidebar.item>
+
+                    <flux:sidebar.item icon="check-badge" href="{{ route('validations.index') }}"
+                        :current="request()->routeIs('validations.*')">
+                        {{ __('Arbitrage / Validation') }}
+                        {{-- Le badge compte ce que la page d'arbitrage affiche réellement : l'exercice en cours. --}}
+                        @php $nbEnAttente = App\Models\Activite::where('statut', 'en_attente')->count(); @endphp
+                        @if ($nbEnAttente > 0)
+                            <flux:badge class="ml-auto">{{ $nbEnAttente }}</flux:badge>
+                        @endif
                     </flux:sidebar.item>
 
                     <flux:sidebar.item icon="book-open-text" href="{{ route('journal.index') }}"
                         :current="request()->routeIs('journal.*')">
                         {{ __('Journal') }}
                     </flux:sidebar.item>
-
-                    <flux:sidebar.item icon="check-badge" href="{{ route('validations.index') }}"
-                        :current="request()->routeIs('validations.*')">
-                        {{ __('Validations') }}
-                        @php $nbEnAttente = App\Models\Activite::where('statut', 'soumis')->count(); @endphp
-                        @if ($nbEnAttente > 0)
-                            <flux:badge class="ml-auto">{{ $nbEnAttente }}</flux:badge>
-                        @endif
-                    </flux:sidebar.item>
                 @endif
 
-                <flux:sidebar.item icon="clipboard-document-list" href="{{ route('activites.index') }}"
-                    :current="request()->routeIs('activites.index') || request()->routeIs('activites.create') || request()->routeIs('activites.edit') || request()->routeIs('activites.show')">
-                    {{ __('Activités') }}
-                </flux:sidebar.item>
-
-                <flux:sidebar.item icon="chart-bar" href="{{ route('activites.suivi') }}"
-                    :current="request()->routeIs('activites.suivi')">
-                    {{ __('Suivi des activités') }}
-                </flux:sidebar.item>
-
-                @php($nbNonLues = auth()->user()?->unreadNotifications()->count() ?? 0)
                 <flux:sidebar.item icon="bell" href="{{ route('notifications.index') }}"
                     :badge="$nbNonLues > 0 ? $nbNonLues : null"
                     :current="request()->routeIs('notifications.*')">
                     {{ __('Notifications') }}
                 </flux:sidebar.item>
             </flux:sidebar.group>
+            @endif
+
+            <!-- Suivi & Évaluation -->
+            {{-- Mêmes rôles que la route evaluations.* : le menu et l'autorisation ne
+                 doivent jamais diverger. Une liste noire s'inverse trop facilement. --}}
+            @if ($currentUser->hasAnyRole(['superadmin', 'dbcgoq', 'responsable-programme', 'chef-service', 'suivi-evaluation', 'service-controle-gestion']))
+                <flux:sidebar.group expandable icon="chart-bar" :heading="__('Suivi & Évaluation')"
+                    class="app-sidebar-group grid" data-groupe="evaluation">
+                    <flux:sidebar.item icon="chart-bar" href="{{ route('evaluations.index', 'mi-parcours') }}"
+                        :current="request()->fullUrlIs(route('evaluations.index', 'mi-parcours').'*')">
+                        {{ __('Mi-parcours') }}
+                    </flux:sidebar.item>
+
+                    <flux:sidebar.item icon="chart-bar-square" href="{{ route('evaluations.index', 'fin-annee') }}"
+                        :current="request()->fullUrlIs(route('evaluations.index', 'fin-annee').'*')">
+                        {{ __("Fin d'année") }}
+                    </flux:sidebar.item>
+                </flux:sidebar.group>
+            @endif
         </flux:sidebar.nav>
 
         <flux:spacer />
@@ -172,6 +254,48 @@
     </flux:header>
 
     {{ $slot }}
+
+    <script>
+        // Mémorise l'état plié/déplié de chaque groupe de la sidebar d'une page à l'autre.
+        // Les groupes sont des <ui-disclosure> Flux : l'attribut `open` porte leur état.
+        (function () {
+            const CLE = 'sygeco.sidebar.groupes';
+
+            const lire = () => {
+                try {
+                    return JSON.parse(localStorage.getItem(CLE)) || {};
+                } catch (e) {
+                    return {};
+                }
+            };
+
+            const appliquer = () => {
+                const etats = lire();
+
+                document.querySelectorAll('[data-groupe]').forEach((groupe) => {
+                    const nom = groupe.dataset.groupe;
+
+                    // Aucun état mémorisé : on conserve celui rendu par le serveur.
+                    if (etats[nom] !== undefined) {
+                        groupe.toggleAttribute('open', etats[nom]);
+                    }
+
+                    if (groupe.dataset.groupeObserve) return;
+                    groupe.dataset.groupeObserve = '1';
+
+                    new MutationObserver(() => {
+                        const courant = lire();
+                        courant[nom] = groupe.hasAttribute('open');
+                        localStorage.setItem(CLE, JSON.stringify(courant));
+                    }).observe(groupe, { attributes: true, attributeFilter: ['open'] });
+                });
+            };
+
+            document.addEventListener('DOMContentLoaded', appliquer);
+            // Navigations Livewire : la sidebar est re-rendue sans rechargement.
+            document.addEventListener('livewire:navigated', appliquer);
+        })();
+    </script>
 
     @stack('scripts')
     @fluxScripts

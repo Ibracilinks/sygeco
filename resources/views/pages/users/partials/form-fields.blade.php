@@ -61,7 +61,7 @@
     </div>
 
     <div>
-        <label class="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-200">Département</label>
+        <label class="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-200">Structure</label>
         <select
             name="departement_id"
             class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-800 focus:border-slate-500 focus:outline-none dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"

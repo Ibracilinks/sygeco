@@ -76,7 +76,7 @@
                 <h2 class="text-lg font-semibold text-slate-900 dark:text-white">Indicateurs clés</h2>
                 <dl class="mt-4 space-y-3 text-sm">
                     <div>
-                        <dt class="text-slate-500 dark:text-slate-400">Départements impliqués</dt>
+                        <dt class="text-slate-500 dark:text-slate-400">Structures impliqués</dt>
                         <dd class="font-medium text-slate-900 dark:text-white">{{ $stats['nb_departements'] }}</dd>
                     </div>
                     <div>
@@ -84,8 +84,8 @@
                         <dd class="font-medium text-slate-900 dark:text-white">{{ $activitesParStatut['valide'] ?? 0 }}</dd>
                     </div>
                     <div>
-                        <dt class="text-slate-500 dark:text-slate-400">Activités soumises</dt>
-                        <dd class="font-medium text-slate-900 dark:text-white">{{ $activitesParStatut['soumis'] ?? 0 }}</dd>
+                        <dt class="text-slate-500 dark:text-slate-400">Activités en attente</dt>
+                        <dd class="font-medium text-slate-900 dark:text-white">{{ $activitesParStatut['en_attente'] ?? 0 }}</dd>
                     </div>
                     <div>
                         <dt class="text-slate-500 dark:text-slate-400">Activités brouillon</dt>

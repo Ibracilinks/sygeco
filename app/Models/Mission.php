@@ -1,0 +1,857 @@
+<?php
+
+namespace App\Models;
+
+use App\Concerns\LogsActivityWithDefaults;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Carbon;
+use NumberFormatter;
+
+class Mission extends Model
+{
+    use HasFactory, LogsActivityWithDefaults, SoftDeletes;
+
+    public const TYPE_MEME_VILLE = 'meme_ville';
+
+    public const TYPE_EXTERIEURE = 'exterieure';
+
+    public const TYPE_REGION = 'region';
+
+    public const TYPES = [
+        self::TYPE_MEME_VILLE => 'Même ville',
+        self::TYPE_EXTERIEURE => "À l'étranger",
+        self::TYPE_REGION => 'Intérieur du pays',
+    ];
+
+    public const STATUTS = [
+        'brouillon' => 'Brouillon',
+        'finalise' => 'Finalisé',
+    ];
+
+    public const REFERENCE_SUFFIXE_DEFAUT = 'MSDS-CANAM-DAGRH';
+
+    public const CATEGORIES_EXTERIEURES = [
+        'cat_1' => [
+            'label' => 'Catégorie I',
+            'description' => 'Ministère de Tutelle, PCA, Directeur Général',
+            'frais_mission' => 75000,
+            'indemnites' => 400000,
+        ],
+        'cat_2' => [
+            'label' => 'Catégorie II',
+            'description' => 'Autres Administrateurs, DGA, Agent Comptable',
+            'frais_mission' => 50000,
+            'indemnites' => 300000,
+        ],
+        'cat_3' => [
+            'label' => 'Catégorie III',
+            'description' => 'Directeurs Centraux et assimilés, Conseillers Techniques, Contrôleur Financier',
+            'frais_mission' => 50000,
+            'indemnites' => 250000,
+        ],
+        'cat_4' => [
+            'label' => 'Catégorie IV',
+            'description' => 'Chefs de Service, Cadres Supérieurs, Chefs de Service Rattachés, Chargés de Missions',
+            'frais_mission' => 50000,
+            'indemnites' => 200000,
+        ],
+        'cat_5' => [
+            'label' => 'Catégorie V',
+            'description' => 'Autres cadres, autres missionnaires, CSA, Médecins Contrôleurs',
+            'frais_mission' => 50000,
+            'indemnites' => 150000,
+        ],
+        'cat_6' => [
+            'label' => 'Catégorie VI',
+            'description' => 'Autres cadres',
+            'frais_mission' => 50000,
+            'indemnites' => 100000,
+        ],
+        'cat_7' => [
+            'label' => 'Catégorie VII',
+            'description' => "Personnel d'appui",
+            'frais_mission' => 50000,
+            'indemnites' => 50000,
+        ],
+    ];
+
+    public const CATEGORIES_NATIONALES = [
+        'cat_1' => [
+            'label' => 'Catégorie I',
+            'description' => 'Ministère de Tutelle, PCA, Directeur Général',
+            'frais_mission' => 35000,
+            'indemnites' => 150000,
+        ],
+        'cat_2' => [
+            'label' => 'Catégorie II',
+            'description' => 'Autres Administrateurs, DGA, Agent Comptable',
+            'frais_mission' => 25000,
+            'indemnites' => 80000,
+        ],
+        'cat_3' => [
+            'label' => 'Catégorie III',
+            'description' => 'Directeurs Centraux et assimilés, Conseillers Techniques, Contrôleur Financier',
+            'frais_mission' => 25000,
+            'indemnites' => 70000,
+        ],
+        'cat_4' => [
+            'label' => 'Catégorie IV',
+            'description' => 'Chefs de Service, Cadres Supérieurs, Chefs de Service Rattachés, Chargés de Missions',
+            'frais_mission' => 25000,
+            'indemnites' => 60000,
+        ],
+        'cat_5' => [
+            'label' => 'Catégorie V',
+            'description' => 'Autres Cadres, autres missionnaires, Chefs de Services Adjoints, Médecins Contrôleurs',
+            'frais_mission' => 25000,
+            'indemnites' => 50000,
+        ],
+        'cat_6' => [
+            'label' => 'Catégorie VI',
+            'description' => 'Autres cadres',
+            'frais_mission' => 25000,
+            'indemnites' => 40000,
+        ],
+        'cat_7' => [
+            'label' => 'Catégorie VII',
+            'description' => "Chauffeurs, Personnel d'appui",
+            'frais_mission' => 15000,
+            'indemnites' => 30000,
+        ],
+    ];
+
+    public const BAREMES_REGIONAUX = [
+        'national' => [
+            'label' => 'Barème national par catégorie',
+        ],
+        'meme_region' => [
+            'label' => 'Mission à l’intérieur d’une même région',
+            'frais_mission' => 7500,
+            'indemnites' => 10000,
+        ],
+        'meme_cercle' => [
+            'label' => 'Mission à l’intérieur d’un même cercle',
+            'frais_mission' => 7500,
+            'indemnites' => 10000,
+        ],
+    ];
+
+    public const TYPES_ETAPES_REGIONALES = [
+        'region' => 'Chef-lieu de région',
+        'cercle' => 'Cercle',
+        'commune' => 'Commune',
+        'autre_localite' => 'Autre localité',
+    ];
+
+    /**
+     * Régions administratives du Mali, telles que retenues pour les missions à
+     * l'intérieur du pays : point de départ et régions de destination.
+     *
+     * @var array<string, string>
+     */
+    public const REGIONS = [
+        '00' => 'District de Bamako',
+        '01' => 'Kayes',
+        '02' => 'Koulikoro',
+        '03' => 'Sikasso',
+        '04' => 'Ségou',
+        '05' => 'Mopti',
+        '06' => 'Tombouctou',
+        '07' => 'Gao',
+        '08' => 'Kidal',
+        '09' => 'Taoudénit',
+        '10' => 'Ménaka',
+        '11' => 'Nioro',
+        '12' => 'Kita',
+        '13' => 'Dioïla',
+        '14' => 'Nara',
+        '15' => 'Bougouni',
+        '16' => 'Koutiala',
+        '17' => 'San',
+        '18' => 'Douentza',
+        '19' => 'Bandiagara',
+    ];
+
+    /**
+     * Codes budgétaires proposés à la saisie. Liste provisoire : les cinq lignes
+     * seront remplacées par la nomenclature définitive de la DBCGOQ.
+     *
+     * @var array<int, string>
+     */
+    public const CODES_BUDGETAIRES = [
+        'Code budgétaire 1',
+        'Code budgétaire 2',
+        'Code budgétaire 3',
+        'Code budgétaire 4',
+        'Code budgétaire 5',
+    ];
+
+    /**
+     * Postes budgétaires facultatifs à l'écran : laissés vides, ils arrivent à null
+     * alors que les colonnes correspondantes sont NOT NULL. Un champ vide vaut zéro
+     * dans les calculs, on le fige donc à zéro avant l'enregistrement.
+     *
+     * @var array<int, string>
+     */
+    public const CHAMPS_MONTANTS_FACULTATIFS = [
+        'nombre_vehicules',
+        'distance_totale_km',
+        'consommation_aux_cent',
+        'litres_par_jour_ville',
+        'prix_litre_carburant',
+        'location_vehicule_jours',
+        'location_vehicule_tarif',
+        'montant_peages',
+        'montant_par_jour',
+        'montant_ticket_carburant',
+        'frais_participation_unitaire',
+        'frais_visa_unitaire',
+        'billets_affaire_unitaire',
+        'billets_economique_unitaire',
+    ];
+
+    public const ZONES_EXTERIEURES = [
+        'exceptionnelle_amerique' => ['label' => 'Exceptionnelle — Pays du continent américain', 'taux' => 50],
+        'exceptionnelle_asie' => ['label' => 'Exceptionnelle — Pays du continent asiatique', 'taux' => 50],
+        'exceptionnelle_europe' => ['label' => 'Exceptionnelle — Pays du continent européen', 'taux' => 50],
+        'exceptionnelle_oceanie' => ['label' => 'Exceptionnelle — Pays du continent océanique', 'taux' => 50],
+        'exceptionnelle_afrique_sud' => ['label' => 'Exceptionnelle — Afrique du Sud', 'taux' => 50],
+        'exceptionnelle_angola' => ['label' => 'Exceptionnelle — Angola', 'taux' => 50],
+        'zone_a_australe' => ['label' => 'A — Pays de l’Afrique Australe', 'taux' => 40],
+        'zone_a_centrale' => ['label' => 'A — Pays de l’Afrique Centrale', 'taux' => 40],
+        'zone_a_est' => ['label' => 'A — Pays de l’Afrique de l’Est', 'taux' => 40],
+        'zone_a_nord' => ['label' => 'A — Pays de l’Afrique du Nord', 'taux' => 40],
+        'zone_b_ouest_hors_cfa' => ['label' => 'B — Zones hors CFA de l’Afrique de l’Ouest', 'taux' => 30],
+        'zone_c_ouest_cfa' => ['label' => 'C — Zones CFA de l’Afrique de l’Ouest', 'taux' => 25],
+    ];
+
+    protected $fillable = [
+        'reference',
+        'type',
+        'departement_id',
+        'objet',
+        'code_budgetaire',
+        'point_depart',
+        'destination',
+        'zone_code',
+        'zone_label',
+        'zone_taux',
+        'date_document',
+        'date_depart',
+        'date_retour',
+        'nombre_personnes',
+        'nombre_jours',
+        'tickets_carburant_par_jour',
+        'nombre_vehicules',
+        'distance_totale_km',
+        'consommation_aux_cent',
+        'litres_par_jour_ville',
+        'prix_litre_carburant',
+        'location_vehicule_jours',
+        'location_vehicule_tarif',
+        'montant_peages',
+        'nombre_tickets_carburant',
+        'montant_par_jour',
+        'montant_ticket_carburant',
+        'montant_indemnites',
+        'montant_majoration',
+        'montant_autres_frais',
+        'montant_billets',
+        'montant_carburant',
+        'montant_total',
+        'frais_participation_nombre',
+        'frais_participation_unitaire',
+        'frais_participation_total',
+        'frais_visa_nombre',
+        'frais_visa_unitaire',
+        'frais_visa_total',
+        'billets_affaire_nombre',
+        'billets_affaire_unitaire',
+        'billets_affaire_total',
+        'billets_economique_nombre',
+        'billets_economique_unitaire',
+        'billets_economique_total',
+        'lieu_signature',
+        'statut',
+        'cree_par',
+        'maj_par',
+    ];
+
+    protected $casts = [
+        'date_document' => 'date',
+        'date_depart' => 'date',
+        'date_retour' => 'date',
+        'zone_taux' => 'decimal:2',
+        'distance_totale_km' => 'decimal:2',
+        'consommation_aux_cent' => 'decimal:2',
+        'litres_par_jour_ville' => 'decimal:2',
+        'prix_litre_carburant' => 'decimal:2',
+        'location_vehicule_tarif' => 'decimal:2',
+        'montant_carburant_trajet' => 'decimal:2',
+        'montant_carburant_ville' => 'decimal:2',
+        'montant_location_vehicule' => 'decimal:2',
+        'montant_peages' => 'decimal:2',
+        'montant_par_jour' => 'decimal:2',
+        'montant_ticket_carburant' => 'decimal:2',
+        'montant_indemnites' => 'decimal:2',
+        'montant_majoration' => 'decimal:2',
+        'montant_autres_frais' => 'decimal:2',
+        'montant_billets' => 'decimal:2',
+        'montant_carburant' => 'decimal:2',
+        'montant_total' => 'decimal:2',
+        'frais_participation_unitaire' => 'decimal:2',
+        'frais_participation_total' => 'decimal:2',
+        'frais_visa_unitaire' => 'decimal:2',
+        'frais_visa_total' => 'decimal:2',
+        'billets_affaire_unitaire' => 'decimal:2',
+        'billets_affaire_total' => 'decimal:2',
+        'billets_economique_unitaire' => 'decimal:2',
+        'billets_economique_total' => 'decimal:2',
+    ];
+
+    public function departement()
+    {
+        return $this->belongsTo(Departement::class);
+    }
+
+    /**
+     * Services demandeurs (plusieurs par mission). `departement_id` conserve le
+     * premier d'entre eux, qui sert de structure principale sur les documents.
+     */
+    public function departements()
+    {
+        return $this->belongsToMany(Departement::class, 'departement_mission')->withTimestamps();
+    }
+
+    public function createur()
+    {
+        return $this->belongsTo(User::class, 'cree_par');
+    }
+
+    public function miseAJourPar()
+    {
+        return $this->belongsTo(User::class, 'maj_par');
+    }
+
+    /**
+     * Répartition du budget régional par nature d'étape, telle que l'exige le
+     * document officiel : un bloc « indemnités cercles », un bloc « indemnités
+     * régions », et le cas échéant les autres localités. Les montants sont
+     * recalculés étape par étape à partir de la catégorie du participant.
+     *
+     * @return array<int, array{libelle: string, lignes: array<int, array<string, mixed>>, sous_total: float}>
+     */
+    public function repartitionRegionale(): array
+    {
+        $groupes = [
+            'cercle' => ['libelle' => 'Indemnités cercles', 'types' => ['cercle']],
+            'region' => ['libelle' => 'Indemnités régions', 'types' => ['region']],
+            'autre' => ['libelle' => 'Autres localités', 'types' => ['commune', 'autre_localite']],
+        ];
+
+        $etapes = $this->etapes;
+        $resultat = [];
+
+        foreach ($groupes as $groupe) {
+            $etapesDuGroupe = $etapes->filter(fn (MissionEtape $etape) => in_array($etape->type_etape, $groupe['types'], true));
+
+            if ($etapesDuGroupe->isEmpty()) {
+                continue;
+            }
+
+            $lignes = [];
+
+            foreach ($this->participants as $participant) {
+                $categorie = self::categoriesNationales()[$participant->categorie ?? ''] ?? null;
+                $totalFrais = 0.0;
+                $totalIndemnites = 0.0;
+                $jours = 0;
+                $nuitees = 0;
+
+                foreach ($etapesDuGroupe as $etape) {
+                    $bareme = (string) ($etape->bareme ?? 'national');
+                    $joursEtape = max(0, (int) $etape->nombre_jours);
+                    $nuiteesEtape = max(0, (int) $etape->nombre_nuitees);
+
+                    $bonifie = $bareme !== 'national' && isset(self::BAREMES_REGIONAUX[$bareme]['frais_mission']);
+                    $fraisMission = $bonifie
+                        ? (float) self::BAREMES_REGIONAUX[$bareme]['frais_mission']
+                        : (float) ($categorie['frais_mission'] ?? 0);
+                    $indemnites = $bonifie
+                        ? (float) self::BAREMES_REGIONAUX[$bareme]['indemnites']
+                        : (float) ($categorie['indemnites'] ?? 0);
+
+                    $totalFrais += $fraisMission * $joursEtape;
+                    $totalIndemnites += $indemnites * $nuiteesEtape;
+                    $jours += $joursEtape;
+                    $nuitees += $nuiteesEtape;
+                }
+
+                $lignes[] = [
+                    'nom' => $participant->nom_complet,
+                    'montant_par_jour' => $jours > 0 ? round($totalFrais / $jours, 2) : 0.0,
+                    'jours' => $jours,
+                    'frais_mission' => round($totalFrais, 2),
+                    'montant_par_nuitee' => $nuitees > 0 ? round($totalIndemnites / $nuitees, 2) : 0.0,
+                    'nuitees' => $nuitees,
+                    'indemnites' => round($totalIndemnites, 2),
+                    'total' => round($totalFrais + $totalIndemnites, 2),
+                ];
+            }
+
+            $resultat[] = [
+                'libelle' => $groupe['libelle'],
+                'lignes' => $lignes,
+                'sous_total' => round(collect($lignes)->sum('total'), 2),
+            ];
+        }
+
+        return $resultat;
+    }
+
+    /**
+     * Barèmes en vigueur. Les constantes ci-dessus restent la référence d'origine :
+     * elles alimentent la table `mission_baremes` et servent de secours si elle est vide.
+     *
+     * @return array<string, array<string, mixed>>
+     */
+    public static function categoriesExterieures(): array
+    {
+        return MissionBareme::categories(MissionBareme::GROUPE_CATEGORIE_EXTERIEURE, self::CATEGORIES_EXTERIEURES);
+    }
+
+    /**
+     * @return array<string, array<string, mixed>>
+     */
+    public static function categoriesNationales(): array
+    {
+        return MissionBareme::categories(MissionBareme::GROUPE_CATEGORIE_NATIONALE, self::CATEGORIES_NATIONALES);
+    }
+
+    /**
+     * @return array<string, array<string, mixed>>
+     */
+    public static function zonesExterieures(): array
+    {
+        return MissionBareme::zones(self::ZONES_EXTERIEURES);
+    }
+
+    public function participants()
+    {
+        return $this->hasMany(MissionParticipant::class)->orderBy('ordre');
+    }
+
+    public function signataires()
+    {
+        return $this->hasMany(MissionSignataire::class)->orderBy('ordre');
+    }
+
+    public function etapes()
+    {
+        return $this->hasMany(MissionEtape::class)->orderBy('ordre');
+    }
+
+    public function estMemeVille(): bool
+    {
+        return $this->type === self::TYPE_MEME_VILLE;
+    }
+
+    public function estExterieure(): bool
+    {
+        return $this->type === self::TYPE_EXTERIEURE;
+    }
+
+    public function estRegionale(): bool
+    {
+        return $this->type === self::TYPE_REGION;
+    }
+
+    /**
+     * @param  array<int, array<string, mixed>>  $participants
+     * @return array<int, array<string, mixed>>
+     */
+    public function appliquerCalculs(array $participants, array $etapes = []): array
+    {
+        // Le nombre de jours reste ajustable : on ne recalcule que s'il n'a pas été saisi.
+        $this->nombre_jours = self::resoudreNombreJours(
+            $this->type,
+            $this->nombre_jours,
+            $this->date_depart,
+            $this->date_retour
+        );
+
+        if ($this->estExterieure()) {
+            return $this->appliquerCalculsExterieurs($participants);
+        }
+
+        if ($this->estRegionale()) {
+            return $this->appliquerCalculsRegionaux($participants, $etapes);
+        }
+
+        return $this->appliquerCalculsMemeVille($participants);
+    }
+
+    /**
+     * @param  array<int, array<string, mixed>>  $participants
+     * @return array<int, array<string, mixed>>
+     */
+    private function appliquerCalculsMemeVille(array $participants): array
+    {
+        // Une mission dans la même ville ne donne lieu à aucune indemnité : elle
+        // ouvre droit à des tickets de carburant, dénombrés et non valorisés.
+        $this->nombre_personnes = count($participants);
+        $this->nombre_tickets_carburant = $this->nombre_jours * $this->tickets_carburant_par_jour;
+        $this->montant_par_jour = 0;
+        $this->montant_ticket_carburant = 0;
+        $this->montant_indemnites = 0;
+        $this->montant_majoration = 0;
+        $this->montant_carburant = 0;
+        $this->montant_autres_frais = 0;
+        $this->montant_billets = 0;
+        $this->frais_participation_total = 0;
+        $this->frais_visa_total = 0;
+        $this->billets_affaire_total = 0;
+        $this->billets_economique_total = 0;
+        $this->montant_total = 0;
+
+        return array_map(function (array $participant): array {
+            return array_merge($participant, [
+                'categorie' => null,
+                'montant_par_jour' => 0,
+                'montant_par_nuitee' => 0,
+                'nombre_nuitees' => 0,
+                'sous_total' => 0,
+                'majoration_taux' => 0,
+                'majoration_montant' => 0,
+                'total_general' => 0,
+            ]);
+        }, $participants);
+    }
+
+    /**
+     * @param  array<int, array<string, mixed>>  $participants
+     * @return array<int, array<string, mixed>>
+     */
+    private function appliquerCalculsExterieurs(array $participants): array
+    {
+        $zone = self::zonesExterieures()[$this->zone_code] ?? ['label' => null, 'taux' => 0];
+        $this->zone_label = $zone['label'];
+        $this->zone_taux = (float) $zone['taux'];
+        $this->nombre_personnes = count($participants);
+        $this->tickets_carburant_par_jour = 0;
+        $this->nombre_tickets_carburant = 0;
+        $this->montant_par_jour = 0;
+        $this->montant_ticket_carburant = 0;
+        $this->montant_carburant = 0;
+
+        $montantBase = 0;
+        $montantMajoration = 0;
+        $jours = max(1, (int) $this->nombre_jours);
+        $defaultNuitees = max(0, $jours - 1);
+
+        $participants = array_map(function (array $participant) use ($jours, $defaultNuitees): array {
+            $categorie = self::categoriesExterieures()[$participant['categorie'] ?? ''] ?? null;
+            $fraisMission = (float) ($categorie['frais_mission'] ?? 0);
+            $indemnites = (float) ($categorie['indemnites'] ?? 0);
+            // Les nuitées d'une mission à l'étranger découlent de la durée : jours − 1.
+            $nuites = $defaultNuitees;
+            $sousTotal = round(($fraisMission * $jours) + ($indemnites * $nuites), 2);
+            $majoration = round($sousTotal * ((float) $this->zone_taux / 100), 2);
+            $total = round($sousTotal + $majoration, 2);
+
+            return array_merge($participant, [
+                'montant_par_jour' => $fraisMission,
+                'montant_par_nuitee' => $indemnites,
+                'nombre_nuitees' => $nuites,
+                'sous_total' => $sousTotal,
+                'majoration_taux' => (float) $this->zone_taux,
+                'majoration_montant' => $majoration,
+                'total_general' => $total,
+            ]);
+        }, $participants);
+
+        foreach ($participants as $participant) {
+            $montantBase += (float) $participant['sous_total'];
+            $montantMajoration += (float) $participant['majoration_montant'];
+        }
+
+        $this->montant_indemnites = round($montantBase, 2);
+        $this->montant_majoration = round($montantMajoration, 2);
+
+        $this->frais_participation_total = round((int) $this->frais_participation_nombre * (float) $this->frais_participation_unitaire, 2);
+        $this->frais_visa_total = round((int) $this->frais_visa_nombre * (float) $this->frais_visa_unitaire, 2);
+        $this->billets_affaire_total = round((int) $this->billets_affaire_nombre * (float) $this->billets_affaire_unitaire, 2);
+        $this->billets_economique_total = round((int) $this->billets_economique_nombre * (float) $this->billets_economique_unitaire, 2);
+        $this->montant_autres_frais = round((float) $this->frais_participation_total + (float) $this->frais_visa_total, 2);
+        $this->montant_billets = round((float) $this->billets_affaire_total + (float) $this->billets_economique_total, 2);
+        $this->montant_total = round(
+            (float) $this->montant_indemnites
+            + (float) $this->montant_majoration
+            + (float) $this->montant_autres_frais
+            + (float) $this->montant_billets,
+            2
+        );
+
+        return $participants;
+    }
+
+    /**
+     * @param  array<int, array<string, mixed>>  $participants
+     * @param  array<int, array<string, mixed>>  $etapes
+     * @return array<int, array<string, mixed>>
+     */
+    private function appliquerCalculsRegionaux(array $participants, array $etapes): array
+    {
+        $this->nombre_personnes = count($participants);
+        $this->tickets_carburant_par_jour = 0;
+        $this->nombre_tickets_carburant = 0;
+        $this->montant_par_jour = 0;
+        $this->montant_ticket_carburant = 0;
+        $this->montant_majoration = 0;
+        $this->frais_participation_total = 0;
+        $this->frais_visa_total = 0;
+        $this->billets_affaire_total = 0;
+
+        $participants = array_map(function (array $participant) use ($etapes): array {
+            $categorie = self::categoriesNationales()[$participant['categorie'] ?? ''] ?? null;
+            $montantMission = 0.0;
+            $montantNuitee = 0.0;
+            $totalNuitees = 0;
+            $total = 0.0;
+
+            foreach ($etapes as $etape) {
+                $bareme = (string) ($etape['bareme'] ?? 'national');
+                $jours = (int) ($etape['nombre_jours'] ?? 1);
+                $nuites = (int) ($etape['nombre_nuitees'] ?? max(0, $jours - 1));
+
+                if ($bareme !== 'national' && isset(self::BAREMES_REGIONAUX[$bareme]['frais_mission'])) {
+                    $fraisMission = (float) self::BAREMES_REGIONAUX[$bareme]['frais_mission'];
+                    $indemnites = (float) self::BAREMES_REGIONAUX[$bareme]['indemnites'];
+                } else {
+                    $fraisMission = (float) ($categorie['frais_mission'] ?? 0);
+                    $indemnites = (float) ($categorie['indemnites'] ?? 0);
+                }
+
+                $montantMission += $fraisMission * $jours;
+                $montantNuitee += $indemnites * $nuites;
+                $totalNuitees += $nuites;
+                $total += ($fraisMission * $jours) + ($indemnites * $nuites);
+            }
+
+            $joursMission = max(1, (int) $this->nombre_jours);
+            $montantParJour = round($montantMission / $joursMission, 2);
+            $montantParNuitee = $totalNuitees > 0 ? round($montantNuitee / $totalNuitees, 2) : 0;
+
+            return array_merge($participant, [
+                'montant_par_jour' => $montantParJour,
+                'montant_par_nuitee' => $montantParNuitee,
+                'nombre_nuitees' => $totalNuitees,
+                'sous_total' => round($total, 2),
+                'majoration_taux' => 0,
+                'majoration_montant' => 0,
+                'total_general' => round($total, 2),
+            ]);
+        }, $participants);
+
+        $this->montant_indemnites = round(collect($participants)->sum('total_general'), 2);
+
+        // II- Carburant : trajet (distance × consommation) et circulation en ville.
+        $prixLitre = (float) $this->prix_litre_carburant;
+        $litresTrajet = round((float) $this->distance_totale_km * (float) $this->consommation_aux_cent / 100, 2);
+        $litresVille = round((float) $this->litres_par_jour_ville * max(1, (int) $this->nombre_jours), 2);
+
+        $this->montant_carburant_trajet = round($litresTrajet * $prixLitre, 2);
+        $this->montant_carburant_ville = round($litresVille * $prixLitre, 2);
+        $this->montant_carburant = round((float) $this->montant_carburant_trajet + (float) $this->montant_carburant_ville, 2);
+        $this->montant_location_vehicule = round((int) $this->location_vehicule_jours * (float) $this->location_vehicule_tarif, 2);
+        $this->billets_economique_total = round((int) $this->billets_economique_nombre * (float) $this->billets_economique_unitaire, 2);
+        $this->montant_billets = (float) $this->billets_economique_total;
+
+        $this->montant_autres_frais = round((float) $this->montant_location_vehicule + (float) $this->montant_peages, 2);
+
+        $this->montant_total = round(
+            (float) $this->montant_indemnites
+            + (float) $this->montant_carburant
+            + (float) $this->montant_location_vehicule
+            + (float) $this->montant_billets
+            + (float) $this->montant_peages,
+            2
+        );
+
+        return $participants;
+    }
+
+    public static function calculerNombreJours($dateDepart, $dateRetour): int
+    {
+        $depart = $dateDepart instanceof Carbon ? $dateDepart : Carbon::parse($dateDepart);
+        $retour = $dateRetour instanceof Carbon ? $dateRetour : Carbon::parse($dateRetour);
+
+        return max(1, $depart->startOfDay()->diffInDays($retour->startOfDay()) + 1);
+    }
+
+    /**
+     * Jours ouvrables : les samedis et dimanches ne comptent pas. Utilisé par défaut
+     * pour les missions dans la même ville, qui se déroulent sur les jours ouvrés.
+     */
+    public static function calculerNombreJoursOuvrables($dateDepart, $dateRetour): int
+    {
+        $depart = ($dateDepart instanceof Carbon ? $dateDepart->copy() : Carbon::parse($dateDepart))->startOfDay();
+        $retour = ($dateRetour instanceof Carbon ? $dateRetour->copy() : Carbon::parse($dateRetour))->startOfDay();
+
+        if ($retour->lessThan($depart)) {
+            return 1;
+        }
+
+        $jours = 0;
+
+        for ($jour = $depart->copy(); $jour->lessThanOrEqualTo($retour); $jour->addDay()) {
+            if (! $jour->isWeekend()) {
+                $jours++;
+            }
+        }
+
+        return max(1, $jours);
+    }
+
+    /**
+     * Nombre de jours retenu : la valeur saisie prime (elle reste ajustable à la main),
+     * sinon on déduit des dates — en jours ouvrables pour une mission même ville,
+     * en jours calendaires pour les autres types.
+     */
+    public static function resoudreNombreJours(?string $type, $saisi, $dateDepart, $dateRetour): int
+    {
+        if (is_numeric($saisi) && (int) $saisi >= 1) {
+            return (int) $saisi;
+        }
+
+        return $type === self::TYPE_MEME_VILLE
+            ? self::calculerNombreJoursOuvrables($dateDepart, $dateRetour)
+            : self::calculerNombreJours($dateDepart, $dateRetour);
+    }
+
+    /**
+     * Ne renvoie que les postes réellement transmis par le formulaire, remis à zéro
+     * lorsqu'ils sont vides : un champ absent garde la valeur par défaut de la colonne.
+     *
+     * @param  array<string, mixed>  $donnees
+     * @return array<string, int|float>
+     */
+    public static function normaliserMontantsFacultatifs(array $donnees): array
+    {
+        $normalises = [];
+
+        foreach (self::CHAMPS_MONTANTS_FACULTATIFS as $champ) {
+            if (! array_key_exists($champ, $donnees)) {
+                continue;
+            }
+
+            $valeur = $donnees[$champ];
+            $normalises[$champ] = is_numeric($valeur) ? $valeur + 0 : 0;
+        }
+
+        return $normalises;
+    }
+
+    public static function calculerNombreNuitees($dateDepart, $dateRetour, bool $premiereNuiteePayee = false): int
+    {
+        return self::nuiteesDepuisJours(self::calculerNombreJours($dateDepart, $dateRetour), $premiereNuiteePayee);
+    }
+
+    /**
+     * Nuitées d'un séjour : la dernière journée est celle du retour, sauf si la
+     * première nuitée est payée, auquel cas chaque journée ouvre une nuitée.
+     */
+    public static function nuiteesDepuisJours(int $jours, bool $premiereNuiteePayee = false): int
+    {
+        if ($jours <= 0) {
+            return 0;
+        }
+
+        return $premiereNuiteePayee ? $jours : max(0, $jours - 1);
+    }
+
+    /**
+     * Les étapes d'une mission régionale s'enchaînent : leur durée est saisie, leurs
+     * dates se déduisent du départ de la mission, étape après étape. Une date de
+     * départ illisible laisse les dates vides, la validation s'en chargera.
+     *
+     * @param  array<int, array<string, mixed>>  $etapes
+     * @return array<int, array<string, mixed>>
+     */
+    public static function datesEtapesSequentielles(array $etapes, $departMission): array
+    {
+        $curseur = rescue(fn () => Carbon::parse($departMission)->startOfDay(), null, false);
+
+        return array_map(function (array $etape) use (&$curseur): array {
+            if ($curseur === null) {
+                return array_merge($etape, ['date_depart' => null, 'date_retour' => null]);
+            }
+
+            $depart = $curseur->copy();
+            $retour = $depart->copy()->addDays(max(1, (int) ($etape['nombre_jours'] ?? 1)) - 1);
+            $curseur = $retour->copy()->addDay();
+
+            return array_merge($etape, [
+                'date_depart' => $depart->toDateString(),
+                'date_retour' => $retour->toDateString(),
+            ]);
+        }, $etapes);
+    }
+
+    public function getDureeTexteAttribute(): string
+    {
+        return sprintf(
+            '%s au %s',
+            $this->date_depart?->format('d/m/Y'),
+            $this->date_retour?->format('d/m/Y')
+        );
+    }
+
+    public function getTicketsCarburantEnLettresAttribute(): string
+    {
+        $nombre = (int) $this->nombre_tickets_carburant;
+
+        if (class_exists(NumberFormatter::class)) {
+            $formatter = new NumberFormatter('fr_FR', NumberFormatter::SPELLOUT);
+            $texte = $formatter->format($nombre);
+
+            if (is_string($texte) && $texte !== '') {
+                return mb_strtoupper($texte.' tickets de carburant');
+            }
+        }
+
+        return strtoupper($nombre.' tickets de carburant');
+    }
+
+    public function getMontantTotalEnLettresAttribute(): string
+    {
+        $nombre = (int) round((float) $this->montant_total);
+
+        if (class_exists(NumberFormatter::class)) {
+            $formatter = new NumberFormatter('fr_FR', NumberFormatter::SPELLOUT);
+            $texte = $formatter->format($nombre);
+
+            if (is_string($texte) && $texte !== '') {
+                return mb_strtoupper($texte.' francs CFA');
+            }
+        }
+
+        return strtoupper($nombre.' francs CFA');
+    }
+
+    public static function prochaineReference(?string $suffixe = null): string
+    {
+        $suffixe ??= self::REFERENCE_SUFFIXE_DEFAUT;
+
+        $max = 0;
+        foreach (self::query()->pluck('reference') as $reference) {
+            if (preg_match('/^(\d+)\//', (string) $reference, $matches)) {
+                $max = max($max, (int) $matches[1]);
+            }
+        }
+
+        return sprintf('%03d/%s', $max + 1, $suffixe);
+    }
+}

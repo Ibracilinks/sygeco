@@ -2,7 +2,7 @@
     <div class="flex h-full w-full flex-1 flex-col gap-5 rounded-xl">
         <div>
             <h1 class="text-2xl font-semibold text-slate-900 dark:text-white">Créer un utilisateur</h1>
-            <p class="text-sm text-slate-500 dark:text-slate-400">Définissez les informations de profil, rattachez un département et assignez les rôles d’accès.</p>
+            <p class="text-sm text-slate-500 dark:text-slate-400">Définissez les informations de profil, rattachez une structure et assignez les rôles d’accès.</p>
         </div>
 
         <div class="rounded-xl border border-slate-200 bg-white p-6 dark:border-slate-700 dark:bg-slate-900">

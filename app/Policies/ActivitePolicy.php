@@ -4,6 +4,7 @@ namespace App\Policies;
 
 use App\Models\Activite;
 use App\Models\User;
+use App\Support\VisibiliteActivites;
 
 class ActivitePolicy
 {
@@ -14,12 +15,7 @@ class ActivitePolicy
 
     public function view(User $user, Activite $activite): bool
     {
-        if ($user->hasRole('dbcgoq')) {
-            return true;
-        }
-
-        return ($user->hasRole('chef_departement') || $user->hasRole('agent'))
-            && (int) $user->departement_id === (int) $activite->departement_id;
+        return VisibiliteActivites::peutVoir($user, $activite);
     }
 
     public function create(User $user): bool
@@ -37,7 +33,12 @@ class ActivitePolicy
             return true;
         }
 
-        return $user->hasRole('chef_departement')
+        // Le service contrôle de gestion met à jour le PTA de toutes les entités.
+        if ($user->isServiceControleGestion()) {
+            return $activite->peutEtreModifie();
+        }
+
+        return $user->hasAnyRole(['responsable-programme', 'agent-planification'])
             && (int) $user->departement_id === (int) $activite->departement_id
             && $activite->peutEtreModifie();
     }
@@ -52,7 +53,12 @@ class ActivitePolicy
             return true;
         }
 
-        return $user->hasRole('chef_departement')
+        // Le service contrôle de gestion met à jour le PTA de toutes les entités.
+        if ($user->isServiceControleGestion()) {
+            return $activite->peutEtreModifie();
+        }
+
+        return $user->hasAnyRole(['responsable-programme', 'agent-planification'])
             && (int) $user->departement_id === (int) $activite->departement_id
             && $activite->peutEtreModifie();
     }
@@ -63,7 +69,11 @@ class ActivitePolicy
             return $activite->peutEtreSoumis();
         }
 
-        return $user->hasRole('chef_departement')
+        if ($user->isServiceControleGestion()) {
+            return $activite->peutEtreSoumis();
+        }
+
+        return $user->hasAnyRole(['responsable-programme', 'agent-planification'])
             && (int) $user->departement_id === (int) $activite->departement_id
             && $activite->peutEtreSoumis();
     }

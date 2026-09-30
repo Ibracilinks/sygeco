@@ -2,8 +2,9 @@
 
 use App\Models\Exercice;
 use App\Models\Objectif;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 
-uses(\Illuminate\Foundation\Testing\RefreshDatabase::class);
+uses(RefreshDatabase::class);
 
 test('actifCourant renvoie l\'exercice actif le plus récent', function () {
     Exercice::factory()->create(['annee' => 2023, 'statut' => 'cloture']);
@@ -58,7 +59,7 @@ test('joursAvantLimite est négatif pour une limite dépassée', function () {
 
 test('un exercice a plusieurs objectifs', function () {
     $exercice = Exercice::factory()->create(['annee' => 2027]);
-    Objectif::factory()->count(3)->create(['exercice_id' => $exercice->id, 'annee' => 2027]);
+    Objectif::factory()->count(3)->pourExercice($exercice)->create(['annee' => 2027]);
 
     expect($exercice->objectifs)->toHaveCount(3);
 });

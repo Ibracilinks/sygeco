@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Services\DashboardDataService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class BudgetAnalysisController extends Controller
 {
@@ -121,11 +122,24 @@ class BudgetAnalysisController extends Controller
 
     private function calculateSpendingEfficiency($annee)
     {
-        // Calculate efficiency based on completed activities vs budget spent
-        $stats = $this->dashboardService->getStats();
-        $completedRate = $stats['taux_realisation'];
-        // Efficiency = completion rate adjusted for budget utilization
-        return min(100, $completedRate * 1.1);
+        // Efficacité des dépenses = part du budget effectivement exécuté :
+        // coût des activités « réalisées » rapporté au coût total planifié de l'exercice.
+        $row = DB::table('activites')
+            ->join('extrants', 'activites.extrant_id', '=', 'extrants.id')
+            ->join('objectifs', 'extrants.objectif_id', '=', 'objectifs.id')
+            ->where('objectifs.annee', $annee)
+            ->whereNull('activites.deleted_at')
+            ->selectRaw("
+                COALESCE(SUM(activites.cout), 0) as budget_total,
+                COALESCE(SUM(CASE WHEN activites.statut_execution = 'realise' THEN activites.cout ELSE 0 END), 0) as budget_realise
+            ")
+            ->first();
+
+        if (! $row || (float) $row->budget_total <= 0.0) {
+            return 0.0;
+        }
+
+        return round(((float) $row->budget_realise / (float) $row->budget_total) * 100, 1);
     }
 
     private function calculateDepartmentEfficiency($annee)

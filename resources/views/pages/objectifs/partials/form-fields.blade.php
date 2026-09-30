@@ -1,22 +1,33 @@
 <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
     <div class="md:col-span-2">
-        <label class="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-200">Exercice *</label>
+        <label class="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-200">Exercices couverts *</label>
+        <p class="mb-2 text-xs text-slate-500 dark:text-slate-400">
+            Cochez chaque exercice couvert par l'objectif. Un objectif de plan stratégique
+            en couvre plusieurs (ex. 2026 à 2030) ; un objectif annuel n'en couvre qu'un.
+        </p>
         @if ($exercices->isEmpty())
             <p class="text-sm text-amber-700 dark:text-amber-300">Aucun exercice disponible. Créez d'abord un exercice.</p>
             @can('manage_exercices')
                 <a href="{{ route('exercices.create') }}" class="mt-2 inline-block text-sm text-sky-600 hover:underline">Créer un exercice</a>
             @endcan
         @else
-            <select name="exercice_id" required
-                class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-800 focus:border-slate-500 focus:outline-none dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100">
+            @php($coches = collect(old('exercice_ids', $selectedExerciceIds ?? []))->map(fn ($id) => (string) $id))
+            <div class="flex flex-wrap gap-2 rounded-lg border border-slate-300 bg-white p-3 dark:border-slate-700 dark:bg-slate-900">
                 @foreach ($exercices as $exercice)
-                    <option value="{{ $exercice->id }}" @selected((string) old('exercice_id', $objectif->exercice_id ?? $defaultExerciceId ?? '') === (string) $exercice->id)>
-                        {{ $exercice->annee }} ({{ $exercice->statut }})
-                    </option>
+                    <label class="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-slate-200 px-3 py-1.5 text-sm text-slate-700 transition hover:bg-slate-50 has-[:checked]:border-sky-500 has-[:checked]:bg-sky-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800 dark:has-[:checked]:bg-sky-950/40">
+                        <input type="checkbox" name="exercice_ids[]" value="{{ $exercice->id }}"
+                            @checked($coches->contains((string) $exercice->id))
+                            class="rounded border-slate-300 text-sky-600 focus:ring-sky-500 dark:border-slate-600 dark:bg-slate-800">
+                        <span>{{ $exercice->annee }}</span>
+                        <span class="text-xs text-slate-400">({{ $exercice->statut }})</span>
+                    </label>
                 @endforeach
-            </select>
+            </div>
         @endif
-        @error('exercice_id')
+        @error('exercice_ids')
+            <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
+        @enderror
+        @error('exercice_ids.*')
             <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
         @enderror
     </div>

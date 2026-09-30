@@ -33,7 +33,7 @@ class RelanceSoumissionActivitesCommand extends Command
             return self::SUCCESS;
         }
 
-        $users = User::query()->role('chef_departement')->whereNotNull('departement_id')->get();
+        $users = User::query()->role('responsable-programme')->whereNotNull('departement_id')->get();
 
         foreach ($users as $user) {
             $count = $user->departement

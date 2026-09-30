@@ -26,7 +26,7 @@ class UserSeeder extends Seeder
         // 2. Chef de département pour chaque département
         foreach ($departements as $departement) {
             User::factory()
-                ->chefDepartement()
+                ->responsableProgramme()
                 ->dansDepartement($departement)
                 ->create([
                     'name' => fake()->name(),
@@ -43,7 +43,7 @@ class UserSeeder extends Seeder
 
             User::factory()
                 ->count($nbAgents)
-                ->agent()
+                ->chefService()
                 ->dansDepartement($departement)
                 ->create([
                     'poste' => 'Agent de saisie',
@@ -55,7 +55,7 @@ class UserSeeder extends Seeder
         // 4. Utilisateurs supplémentaires aléatoires
         User::factory()
             ->count(10)
-            ->agent()
+            ->chefService()
             ->create();
 
         $this->command->info('✅ Utilisateurs supplémentaires créés');
