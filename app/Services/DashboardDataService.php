@@ -109,7 +109,7 @@ class DashboardDataService
                     COUNT(DISTINCT extrants.id) as total_extrants,
                     COUNT(activites.id) as total_activites,
                     SUM(activites.cout) as budget_total,
-                    SUM(CASE WHEN activites.statut_execution = "realise" THEN 1 ELSE 0 END) as activites_realisees
+                    SUM(CASE WHEN activites.statut_execution = \'realise\' THEN 1 ELSE 0 END) as activites_realisees
                 ')
                 ->first();
 
@@ -511,10 +511,10 @@ class DashboardDataService
                 ->whereNull('activites.deleted_at')
                 ->tap($this->perimetreActivites())
                 ->selectRaw('
-                    SUM(CASE WHEN trimestre_1 = "oui" THEN 1 ELSE 0 END) as t1,
-                    SUM(CASE WHEN trimestre_2 = "oui" THEN 1 ELSE 0 END) as t2,
-                    SUM(CASE WHEN trimestre_3 = "oui" THEN 1 ELSE 0 END) as t3,
-                    SUM(CASE WHEN trimestre_4 = "oui" THEN 1 ELSE 0 END) as t4
+                    SUM(CASE WHEN trimestre_1 = \'oui\' THEN 1 ELSE 0 END) as t1,
+                    SUM(CASE WHEN trimestre_2 = \'oui\' THEN 1 ELSE 0 END) as t2,
+                    SUM(CASE WHEN trimestre_3 = \'oui\' THEN 1 ELSE 0 END) as t3,
+                    SUM(CASE WHEN trimestre_4 = \'oui\' THEN 1 ELSE 0 END) as t4
                 ')
                 ->first();
 
