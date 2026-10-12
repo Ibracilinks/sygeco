@@ -1,4 +1,4 @@
-<x-mail::message>
+<x-mail::message :logo="App\Support\MailLogo::src($message ?? null)">
 {{-- Greeting --}}
 @if (! empty($greeting))
 # {{ $greeting }}
