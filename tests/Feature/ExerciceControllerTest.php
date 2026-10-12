@@ -97,9 +97,9 @@ test('activate fixe l\'exercice actif de la session', function () {
     expect(ActiveExercice::id())->toBe($exercice->id);
 });
 
-// Les fenêtres se règlent depuis la fiche de l'exercice : le formulaire de création
-// ne demande plus que l'année, la période et le statut.
-test('la mise à jour enregistre les fenêtres de mi-parcours et d\'évaluation', function () {
+// Les fenêtres se règlent depuis le calendrier de la fiche de l'exercice,
+// une fenêtre à la fois (modale), et non plus depuis le formulaire d'édition.
+test('le calendrier enregistre les fenêtres de mi-parcours et d\'évaluation', function () {
     $admin = userWithRole('dbcgoq');
     $exercice = Exercice::factory()->create([
         'annee' => 2033,
@@ -107,22 +107,44 @@ test('la mise à jour enregistre les fenêtres de mi-parcours et d\'évaluation'
         'date_fin' => '2033-12-31',
     ]);
 
-    $this->actingAs($admin)->put(route('exercices.update', $exercice), [
-        'annee' => 2033,
-        'date_debut' => '2033-01-01',
-        'date_fin' => '2033-12-31',
+    $this->actingAs($admin)->put(route('exercices.calendrier', $exercice), [
+        'fenetre' => 'mi_parcours',
         'date_debut_mi_parcours' => '2033-06-01',
         'date_fin_mi_parcours' => '2033-06-30',
+    ])->assertRedirect(route('exercices.show', $exercice));
+
+    $this->actingAs($admin)->put(route('exercices.calendrier', $exercice), [
+        'fenetre' => 'evaluation',
         'date_debut_evaluation' => '2033-12-01',
         'date_fin_evaluation' => '2033-12-20',
-        'statut' => 'brouillon',
-    ])->assertRedirect(route('exercices.index'));
+    ])->assertRedirect(route('exercices.show', $exercice));
 
     $exercice = $exercice->fresh();
     expect($exercice->date_debut_mi_parcours->format('Y-m-d'))->toBe('2033-06-01');
     expect($exercice->date_fin_mi_parcours->format('Y-m-d'))->toBe('2033-06-30');
     expect($exercice->date_debut_evaluation->format('Y-m-d'))->toBe('2033-12-01');
     expect($exercice->date_fin_evaluation->format('Y-m-d'))->toBe('2033-12-20');
+});
+
+test('le calendrier ne modifie que la fenêtre envoyée', function () {
+    $admin = userWithRole('dbcgoq');
+    $exercice = Exercice::factory()->create([
+        'annee' => 2036,
+        'date_debut' => '2036-01-01',
+        'date_fin' => '2036-12-31',
+        'date_debut_evaluation' => '2036-12-01',
+        'date_fin_evaluation' => '2036-12-20',
+    ]);
+
+    $this->actingAs($admin)->put(route('exercices.calendrier', $exercice), [
+        'fenetre' => 'saisie',
+        'date_ouverture_saisie' => '2036-01-10',
+        'date_limite_saisie' => '2036-02-15',
+    ])->assertSessionHasNoErrors();
+
+    $exercice = $exercice->fresh();
+    expect($exercice->date_limite_saisie->format('Y-m-d'))->toBe('2036-02-15');
+    expect($exercice->date_debut_evaluation->format('Y-m-d'))->toBe('2036-12-01');
 });
 
 test('les dates de mi-parcours doivent rester dans l\'exercice', function () {
@@ -134,14 +156,11 @@ test('les dates de mi-parcours doivent rester dans l\'exercice', function () {
     ]);
 
     $this->actingAs($admin)
-        ->from(route('exercices.edit', $exercice))
-        ->put(route('exercices.update', $exercice), [
-            'annee' => 2034,
-            'date_debut' => '2034-01-01',
-            'date_fin' => '2034-12-31',
+        ->from(route('exercices.show', $exercice))
+        ->put(route('exercices.calendrier', $exercice), [
+            'fenetre' => 'mi_parcours',
             'date_debut_mi_parcours' => '2035-06-01', // hors exercice
-            'statut' => 'brouillon',
-        ])->assertSessionHasErrors('date_debut_mi_parcours');
+        ])->assertSessionHasErrorsIn('calendrier', 'date_debut_mi_parcours');
 });
 
 test('la fin du mi-parcours ne peut précéder son début', function () {
@@ -153,15 +172,12 @@ test('la fin du mi-parcours ne peut précéder son début', function () {
     ]);
 
     $this->actingAs($admin)
-        ->from(route('exercices.edit', $exercice))
-        ->put(route('exercices.update', $exercice), [
-            'annee' => 2035,
-            'date_debut' => '2035-01-01',
-            'date_fin' => '2035-12-31',
+        ->from(route('exercices.show', $exercice))
+        ->put(route('exercices.calendrier', $exercice), [
+            'fenetre' => 'mi_parcours',
             'date_debut_mi_parcours' => '2035-06-15',
             'date_fin_mi_parcours' => '2035-06-01',
-            'statut' => 'brouillon',
-        ])->assertSessionHasErrors('date_fin_mi_parcours');
+        ])->assertSessionHasErrorsIn('calendrier', 'date_fin_mi_parcours');
 });
 
 test('le dbcgoq peut voir le détail d\'un exercice', function () {

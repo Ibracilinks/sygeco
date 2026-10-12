@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\StoreExerciceRequest;
+use App\Http\Requests\UpdateExerciceCalendrierRequest;
 use App\Http\Requests\UpdateExerciceRequest;
 use App\Models\Activite;
 use App\Models\Exercice;
@@ -241,6 +242,17 @@ class ExerciceController extends Controller
 
         return redirect()->route('exercices.index')
             ->with('success', 'Exercice mis à jour.');
+    }
+
+    /**
+     * Met à jour une fenêtre du calendrier (saisie, mi-parcours ou évaluation) depuis la fiche.
+     */
+    public function updateCalendrier(UpdateExerciceCalendrierRequest $request, Exercice $exercice)
+    {
+        $exercice->update(collect($request->validated())->except('fenetre')->all());
+
+        return redirect()->route('exercices.show', $exercice)
+            ->with('success', 'Calendrier mis à jour.');
     }
 
     public function destroy(Exercice $exercice)

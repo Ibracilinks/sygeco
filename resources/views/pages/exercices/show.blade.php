@@ -67,61 +67,177 @@
         <div class="grid grid-cols-1 gap-5 xl:grid-cols-3">
             {{-- Colonne principale --}}
             <div class="flex flex-col gap-5 xl:col-span-2">
-                {{-- Fenêtre de saisie --}}
-                <div class="rounded-xl border border-slate-200 bg-white p-6 dark:border-slate-700 dark:bg-slate-900">
-                    <h2 class="text-lg font-semibold text-slate-900 dark:text-white">Fenêtre de saisie</h2>
-                    <dl class="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-3">
-                        <div>
-                            <dt class="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">Ouverture</dt>
-                            <dd class="mt-1 text-sm font-medium text-slate-900 dark:text-white">{{ optional($exercice->date_ouverture_saisie)->format('d/m/Y') ?? 'Non définie' }}</dd>
-                        </div>
-                        <div>
-                            <dt class="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">Date limite</dt>
-                            <dd class="mt-1 text-sm font-medium text-slate-900 dark:text-white">{{ optional($exercice->date_limite_saisie)->format('d/m/Y') ?? 'Non définie' }}</dd>
-                        </div>
-                        <div>
-                            <dt class="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">Échéance</dt>
-                            <dd class="mt-1 text-sm font-medium {{ $jours !== null && $jours < 0 ? 'text-rose-700 dark:text-rose-300' : 'text-slate-900 dark:text-white' }}">
-                                @if ($jours === null)
-                                    —
-                                @elseif ($jours < 0)
-                                    Délai dépassé
-                                @elseif ($jours === 0)
-                                    Dernier jour
-                                @else
-                                    J-{{ $jours }}
-                                @endif
-                            </dd>
-                        </div>
-                    </dl>
-                    <p class="mt-4 text-xs text-slate-500 dark:text-slate-400">
-                        Notification d'ouverture :
-                        @if ($exercice->ouverture_notifiee_le)
-                            envoyée le {{ $exercice->ouverture_notifiee_le->format('d/m/Y à H:i') }}
-                        @else
-                            non envoyée
-                        @endif
-                    </p>
+                {{-- Calendrier : fenêtres de saisie, mi-parcours et évaluation --}}
+                @php
+                    $aujourdhui = now()->startOfDay();
+                    $calendrier = [
+                        'saisie' => [
+                            'titre' => 'Saisie des activités',
+                            'aide' => 'Les structures saisissent leurs activités. La date limite déclenche les relances J-15 à J.',
+                            'champs' => [
+                                'date_ouverture_saisie' => 'Ouverture',
+                                'date_limite_saisie' => 'Date limite',
+                            ],
+                        ],
+                        'mi_parcours' => [
+                            'titre' => 'Suivi à mi-parcours',
+                            'aide' => "Saisie de l'exécution : réalisé, en cours, non réalisé.",
+                            'champs' => [
+                                'date_debut_mi_parcours' => 'Début',
+                                'date_fin_mi_parcours' => 'Fin',
+                            ],
+                        ],
+                        'evaluation' => [
+                            'titre' => 'Évaluation',
+                            'aide' => "Évaluation de fin d'exercice (bilan d'exécution).",
+                            'champs' => [
+                                'date_debut_evaluation' => 'Début',
+                                'date_fin_evaluation' => 'Fin',
+                            ],
+                        ],
+                    ];
+                    $etatFenetre = function ($debut, $fin) use ($aujourdhui) {
+                        if (! $debut || ! $fin) {
+                            return ['Non définie', 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300'];
+                        }
+                        if ($aujourdhui->lt($debut->copy()->startOfDay())) {
+                            return ['À venir', 'bg-sky-100 text-sky-800 dark:bg-sky-900/40 dark:text-sky-200'];
+                        }
+                        if ($aujourdhui->gt($fin->copy()->startOfDay())) {
+                            return ['Fermée', 'bg-amber-100 text-amber-900 dark:bg-amber-900/30 dark:text-amber-100'];
+                        }
 
-                    {{-- Relances --}}
-                    <div class="mt-5">
-                        <h3 class="text-sm font-semibold text-slate-700 dark:text-slate-200">Relances envoyées</h3>
-                        @if ($relances->isEmpty())
-                            <p class="mt-2 text-sm text-slate-500 dark:text-slate-400">Aucune relance émise pour le moment.</p>
-                        @else
-                            <div class="mt-2 flex flex-wrap gap-2">
-                                @foreach ($relances as $relance)
-                                    <span class="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs text-slate-700 dark:border-slate-700 dark:bg-slate-950/40 dark:text-slate-200">
-                                        <span class="font-semibold">{{ $relance->palier === 0 ? 'Jour J' : 'J-' . $relance->palier }}</span>
-                                        @if ($relance->envoye_le)
-                                            • {{ $relance->envoye_le->format('d/m/Y') }} • {{ $relance->destinataires }} dest.
+                        return ['Ouverte', 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-200'];
+                    };
+                    $fenetreEnErreur = $errors->calendrier->any() ? old('fenetre') : null;
+                @endphp
+                <div class="rounded-xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900">
+                    <div class="border-b border-slate-200 px-6 py-4 dark:border-slate-700">
+                        <h2 class="text-lg font-semibold text-slate-900 dark:text-white">Calendrier de l'exercice</h2>
+                        <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">Ces dates ouvrent et ferment les écrans de saisie et de suivi.</p>
+                    </div>
+
+                    <div class="divide-y divide-slate-200 dark:divide-slate-700">
+                        @foreach ($calendrier as $cle => $fenetre)
+                            @php
+                                [$champDebut, $champFin] = array_keys($fenetre['champs']);
+                                [$etat, $etatClasses] = $etatFenetre($exercice->{$champDebut}, $exercice->{$champFin});
+                            @endphp
+                            <div class="px-6 py-5">
+                                <div class="flex flex-wrap items-start justify-between gap-3">
+                                    <div class="min-w-0">
+                                        <div class="flex flex-wrap items-center gap-2">
+                                            <h3 class="text-sm font-semibold text-slate-900 dark:text-white">{{ $fenetre['titre'] }}</h3>
+                                            <span class="inline-flex rounded-full px-2 py-0.5 text-xs font-medium {{ $etatClasses }}">{{ $etat }}</span>
+                                        </div>
+                                        <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">{{ $fenetre['aide'] }}</p>
+                                    </div>
+                                    @can('update', $exercice)
+                                        <flux:modal.trigger name="calendrier-{{ $cle }}">
+                                            <button type="button" class="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-700 transition hover:bg-slate-50 dark:border-slate-600 dark:text-slate-200 dark:hover:bg-slate-800">
+                                                <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v7.5"/></svg>
+                                                {{ $exercice->{$champDebut} || $exercice->{$champFin} ? 'Modifier les dates' : 'Définir les dates' }}
+                                            </button>
+                                        </flux:modal.trigger>
+                                    @endcan
+                                </div>
+
+                                <dl class="mt-4 grid grid-cols-2 gap-4 {{ $cle === 'saisie' ? 'sm:grid-cols-3' : '' }}">
+                                    @foreach ($fenetre['champs'] as $champ => $libelle)
+                                        <div>
+                                            <dt class="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">{{ $libelle }}</dt>
+                                            <dd class="mt-1 text-sm font-medium {{ $exercice->{$champ} ? 'text-slate-900 dark:text-white' : 'text-slate-400 dark:text-slate-500' }}">
+                                                {{ $exercice->{$champ}?->format('d/m/Y') ?? 'Non définie' }}
+                                            </dd>
+                                        </div>
+                                    @endforeach
+                                    @if ($cle === 'saisie')
+                                        <div>
+                                            <dt class="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">Échéance</dt>
+                                            <dd class="mt-1 text-sm font-medium {{ $jours !== null && $jours < 0 ? 'text-rose-700 dark:text-rose-300' : 'text-slate-900 dark:text-white' }}">
+                                                @if ($jours === null)
+                                                    —
+                                                @elseif ($jours < 0)
+                                                    Délai dépassé
+                                                @elseif ($jours === 0)
+                                                    Dernier jour
+                                                @else
+                                                    J-{{ $jours }}
+                                                @endif
+                                            </dd>
+                                        </div>
+                                    @endif
+                                </dl>
+
+                                @if ($cle === 'saisie')
+                                    <div class="mt-4 rounded-lg bg-slate-50 px-4 py-3 dark:bg-slate-950/40">
+                                        <p class="text-xs text-slate-500 dark:text-slate-400">
+                                            Notification d'ouverture :
+                                            @if ($exercice->ouverture_notifiee_le)
+                                                envoyée le {{ $exercice->ouverture_notifiee_le->format('d/m/Y à H:i') }}
+                                            @else
+                                                non envoyée
+                                            @endif
+                                        </p>
+                                        <p class="mt-3 text-xs font-semibold text-slate-700 dark:text-slate-200">Relances envoyées</p>
+                                        @if ($relances->isEmpty())
+                                            <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">Aucune relance émise pour le moment.</p>
                                         @else
-                                            • marqué (non envoyé)
+                                            <div class="mt-2 flex flex-wrap gap-2">
+                                                @foreach ($relances as $relance)
+                                                    <span class="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-2.5 py-1 text-xs text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200">
+                                                        <span class="font-semibold">{{ $relance->palier === 0 ? 'Jour J' : 'J-' . $relance->palier }}</span>
+                                                        @if ($relance->envoye_le)
+                                                            • {{ $relance->envoye_le->format('d/m/Y') }} • {{ $relance->destinataires }} dest.
+                                                        @else
+                                                            • marqué (non envoyé)
+                                                        @endif
+                                                    </span>
+                                                @endforeach
+                                            </div>
                                         @endif
-                                    </span>
-                                @endforeach
+                                    </div>
+                                @endif
                             </div>
-                        @endif
+
+                            @can('update', $exercice)
+                                <flux:modal name="calendrier-{{ $cle }}" :show="$fenetreEnErreur === $cle" focusable class="w-full max-w-lg">
+                                    <form action="{{ route('exercices.calendrier', $exercice) }}" method="POST" class="space-y-5">
+                                        @csrf
+                                        @method('PUT')
+                                        <input type="hidden" name="fenetre" value="{{ $cle }}">
+
+                                        <div>
+                                            <h3 class="text-lg font-semibold text-slate-900 dark:text-white">{{ $fenetre['titre'] }}</h3>
+                                            <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">{{ $fenetre['aide'] }}</p>
+                                            <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                                                Dates comprises entre le {{ $exercice->date_debut->format('d/m/Y') }} et le {{ $exercice->date_fin->format('d/m/Y') }}.
+                                            </p>
+                                        </div>
+
+                                        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                                            @foreach ($fenetre['champs'] as $champ => $libelle)
+                                                <div>
+                                                    <label for="{{ $cle }}-{{ $champ }}" class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-200">{{ $libelle }}</label>
+                                                    <input type="date" id="{{ $cle }}-{{ $champ }}" name="{{ $champ }}"
+                                                        min="{{ $exercice->date_debut->format('Y-m-d') }}" max="{{ $exercice->date_fin->format('Y-m-d') }}"
+                                                        value="{{ $fenetreEnErreur === $cle ? old($champ) : $exercice->{$champ}?->format('Y-m-d') }}"
+                                                        class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-slate-500 focus:outline-none dark:border-slate-700 dark:bg-slate-950 dark:text-white">
+                                                    @error($champ, 'calendrier')<p class="mt-1 text-xs text-red-600 dark:text-red-400">{{ $message }}</p>@enderror
+                                                </div>
+                                            @endforeach
+                                        </div>
+
+                                        <div class="flex justify-end gap-3">
+                                            <flux:modal.close>
+                                                <button type="button" class="inline-flex items-center rounded-lg bg-slate-200 px-4 py-2 text-sm font-medium text-slate-800 transition hover:bg-slate-300 dark:bg-slate-700 dark:text-slate-100 dark:hover:bg-slate-600">Annuler</button>
+                                            </flux:modal.close>
+                                            <button type="submit" class="inline-flex items-center rounded-lg bg-slate-800 px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-700 dark:bg-slate-200 dark:text-slate-900 dark:hover:bg-white">Enregistrer</button>
+                                        </div>
+                                    </form>
+                                </flux:modal>
+                            @endcan
+                        @endforeach
                     </div>
                 </div>
 

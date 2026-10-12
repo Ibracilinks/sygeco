@@ -1,125 +1,95 @@
 <x-layouts::app title="Modifier l'exercice">
-    <div class="flex h-full w-full flex-1 flex-col gap-4 rounded-xl max-w-2xl">
-        <h1 class="text-2xl font-bold dark:text-white">Modifier l'exercice {{ $exercice->annee }}</h1>
+    @php
+        $champ = 'w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-slate-500 focus:outline-none dark:border-slate-700 dark:bg-slate-950 dark:text-white';
+        $libelle = 'mb-1 block text-sm font-medium text-slate-700 dark:text-slate-200';
 
-        <div
-            class="rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-zinc-800 p-6">
-            <form action="{{ route('exercices.update', $exercice) }}" method="POST" class="space-y-5">
-                @csrf
-                @method('PUT')
-                <div>
-                    <label class="block text-sm font-medium dark:text-white mb-1">Année *</label>
-                    <input type="number" name="annee" value="{{ old('annee', $exercice->annee) }}"
-                        class="w-full rounded-lg border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-zinc-900 px-3 py-2 dark:text-white">
-                    @error('annee')
-                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                    @enderror
-                </div>
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                        <label class="block text-sm font-medium dark:text-white mb-1">Date début *</label>
-                        <input type="date" name="date_debut"
-                            value="{{ old('date_debut', $exercice->date_debut->format('Y-m-d')) }}"
-                            class="w-full rounded-lg border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-zinc-900 px-3 py-2 dark:text-white">
-                        @error('date_debut')
-                            <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                        @enderror
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium dark:text-white mb-1">Date fin *</label>
-                        <input type="date" name="date_fin"
-                            value="{{ old('date_fin', $exercice->date_fin->format('Y-m-d')) }}"
-                            class="w-full rounded-lg border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-zinc-900 px-3 py-2 dark:text-white">
-                        @error('date_fin')
-                            <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                        @enderror
-                    </div>
-                </div>
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                        <label class="block text-sm font-medium dark:text-white mb-1">Ouverture de la saisie</label>
-                        <input type="date" name="date_ouverture_saisie"
-                            value="{{ old('date_ouverture_saisie', $exercice->date_ouverture_saisie?->format('Y-m-d')) }}"
-                            class="w-full rounded-lg border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-zinc-900 px-3 py-2 dark:text-white">
-                        <p class="mt-1 text-xs text-neutral-500">Date d'ouverture de la saisie des activités.</p>
-                        @error('date_ouverture_saisie')
-                            <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                        @enderror
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium dark:text-white mb-1">Date limite de saisie</label>
-                        <input type="date" name="date_limite_saisie"
-                            value="{{ old('date_limite_saisie', $exercice->date_limite_saisie?->format('Y-m-d')) }}"
-                            class="w-full rounded-lg border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-zinc-900 px-3 py-2 dark:text-white">
-                        <p class="mt-1 text-xs text-neutral-500">Déclenche les relances J-15, J-10, J-7, J-5, J-3, J-2, J-1, J.</p>
-                        @error('date_limite_saisie')
-                            <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                        @enderror
-                    </div>
-                </div>
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                        <label class="block text-sm font-medium dark:text-white mb-1">Début du mi-parcours</label>
-                        <input type="date" name="date_debut_mi_parcours"
-                            value="{{ old('date_debut_mi_parcours', $exercice->date_debut_mi_parcours?->format('Y-m-d')) }}"
-                            class="w-full rounded-lg border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-zinc-900 px-3 py-2 dark:text-white">
-                        <p class="mt-1 text-xs text-neutral-500">Ouvre la saisie de l'exécution (réalisé / en cours / non réalisé).</p>
-                        @error('date_debut_mi_parcours')
-                            <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                        @enderror
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium dark:text-white mb-1">Fin du mi-parcours</label>
-                        <input type="date" name="date_fin_mi_parcours"
-                            value="{{ old('date_fin_mi_parcours', $exercice->date_fin_mi_parcours?->format('Y-m-d')) }}"
-                            class="w-full rounded-lg border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-zinc-900 px-3 py-2 dark:text-white">
-                        <p class="mt-1 text-xs text-neutral-500">Ferme la fenêtre de suivi à mi-parcours.</p>
-                        @error('date_fin_mi_parcours')
-                            <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                        @enderror
-                    </div>
-                </div>
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                        <label class="block text-sm font-medium dark:text-white mb-1">Début de l'évaluation</label>
-                        <input type="date" name="date_debut_evaluation"
-                            value="{{ old('date_debut_evaluation', $exercice->date_debut_evaluation?->format('Y-m-d')) }}"
-                            class="w-full rounded-lg border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-zinc-900 px-3 py-2 dark:text-white">
-                        <p class="mt-1 text-xs text-neutral-500">Ouvre l'évaluation de fin d'exercice (bilan d'exécution).</p>
-                        @error('date_debut_evaluation')
-                            <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                        @enderror
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium dark:text-white mb-1">Fin de l'évaluation</label>
-                        <input type="date" name="date_fin_evaluation"
-                            value="{{ old('date_fin_evaluation', $exercice->date_fin_evaluation?->format('Y-m-d')) }}"
-                            class="w-full rounded-lg border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-zinc-900 px-3 py-2 dark:text-white">
-                        <p class="mt-1 text-xs text-neutral-500">Ferme la fenêtre d'évaluation.</p>
-                        @error('date_fin_evaluation')
-                            <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                        @enderror
-                    </div>
-                </div>
-                <div>
-                    <label class="block text-sm font-medium dark:text-white mb-1">Statut *</label>
-                    <select name="statut"
-                        class="w-full rounded-lg border border-neutral-300 dark:border-neutral-600 bg-white dark:bg-zinc-900 px-3 py-2 dark:text-white">
-                        <option value="brouillon" @selected(old('statut', $exercice->statut) === 'brouillon')>Brouillon</option>
-                        <option value="actif" @selected(old('statut', $exercice->statut) === 'actif')>Actif</option>
-                        <option value="cloture" @selected(old('statut', $exercice->statut) === 'cloture')>Clôturé</option>
-                    </select>
-                    @error('statut')
-                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                    @enderror
-                </div>
-                <div class="flex gap-3 pt-2">
-                    <a href="{{ route('exercices.index') }}"
-                        class="px-4 py-2 rounded-lg bg-zinc-500 text-white hover:bg-zinc-600">Annuler</a>
-                    <button type="submit" class="px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700">Mettre à
-                        jour</button>
-                </div>
-            </form>
+        $statuts = [
+            'brouillon' => ['libelle' => 'Brouillon', 'aide' => 'Préparation, invisible pour les structures.'],
+            'actif' => ['libelle' => 'Actif', 'aide' => 'Exercice de travail courant. Un seul à la fois.'],
+            'cloture' => ['libelle' => 'Clôturé', 'aide' => 'Archivé, plus aucune saisie possible.'],
+        ];
+        $statutCourant = old('statut', $exercice->statut);
+    @endphp
+
+    <div class="mx-auto flex h-full w-full max-w-3xl flex-1 flex-col gap-6">
+        <div>
+            <h1 class="text-2xl font-semibold text-slate-900 dark:text-white">Modifier l'exercice {{ $exercice->annee }}</h1>
+            <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                Période et statut de l'exercice. Les dates de saisie, de mi-parcours et d'évaluation se règlent depuis le
+                <a href="{{ route('exercices.show', $exercice) }}" class="font-medium text-slate-700 underline underline-offset-2 hover:text-slate-900 dark:text-slate-200 dark:hover:text-white">calendrier de la fiche</a>.
+            </p>
         </div>
+
+        @if ($errors->any())
+            <div class="rounded-xl border border-red-200 bg-red-50 p-4 dark:border-red-800 dark:bg-red-950">
+                <p class="text-sm font-medium text-red-800 dark:text-red-200">
+                    {{ $errors->count() }} champ(s) à corriger :
+                </p>
+                <ul class="mt-2 space-y-1 text-sm text-red-700 dark:text-red-300">
+                    @foreach ($errors->all() as $message)
+                        <li class="flex gap-2"><span aria-hidden="true">•</span><span>{{ $message }}</span></li>
+                    @endforeach
+                </ul>
+            </div>
+        @endif
+
+        <form action="{{ route('exercices.update', $exercice) }}" method="POST"
+            class="rounded-xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900">
+            @csrf
+            @method('PUT')
+
+            <div class="divide-y divide-slate-200 dark:divide-slate-700">
+                <section class="space-y-4 p-6">
+                    <h2 class="text-sm font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Période</h2>
+                    <div class="grid grid-cols-1 gap-5 sm:grid-cols-3">
+                        <div>
+                            <label for="annee" class="{{ $libelle }}">Année *</label>
+                            <input type="number" id="annee" name="annee" min="2000" max="2100"
+                                value="{{ old('annee', $exercice->annee) }}" class="{{ $champ }}">
+                            @error('annee')<p class="mt-1 text-xs text-red-600 dark:text-red-400">{{ $message }}</p>@enderror
+                        </div>
+                        <div>
+                            <label for="date_debut" class="{{ $libelle }}">Date de début *</label>
+                            <input type="date" id="date_debut" name="date_debut"
+                                value="{{ old('date_debut', $exercice->date_debut->format('Y-m-d')) }}" class="{{ $champ }}">
+                            @error('date_debut')<p class="mt-1 text-xs text-red-600 dark:text-red-400">{{ $message }}</p>@enderror
+                        </div>
+                        <div>
+                            <label for="date_fin" class="{{ $libelle }}">Date de fin *</label>
+                            <input type="date" id="date_fin" name="date_fin"
+                                value="{{ old('date_fin', $exercice->date_fin->format('Y-m-d')) }}" class="{{ $champ }}">
+                            @error('date_fin')<p class="mt-1 text-xs text-red-600 dark:text-red-400">{{ $message }}</p>@enderror
+                        </div>
+                    </div>
+                </section>
+
+                <fieldset class="p-6">
+                    <legend class="sr-only">Statut</legend>
+                    <h2 class="mb-4 text-sm font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Statut *</h2>
+                    <div class="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                        @foreach ($statuts as $code => $statut)
+                            <label class="cursor-pointer rounded-lg border p-3 transition has-[:checked]:border-slate-800 has-[:checked]:bg-slate-50 dark:has-[:checked]:border-slate-300 dark:has-[:checked]:bg-slate-800 {{ $statutCourant === $code ? 'border-slate-800 bg-slate-50 dark:border-slate-300 dark:bg-slate-800' : 'border-slate-300 dark:border-slate-700' }}">
+                                <span class="flex items-center gap-2">
+                                    <input type="radio" name="statut" value="{{ $code }}" @checked($statutCourant === $code)
+                                        class="text-slate-800 focus:ring-slate-500 dark:text-slate-200">
+                                    <span class="text-sm font-medium text-slate-900 dark:text-white">{{ $statut['libelle'] }}</span>
+                                </span>
+                                <span class="mt-1 block text-xs text-slate-500 dark:text-slate-400">{{ $statut['aide'] }}</span>
+                            </label>
+                        @endforeach
+                    </div>
+                    @error('statut')<p class="mt-1 text-xs text-red-600 dark:text-red-400">{{ $message }}</p>@enderror
+                </fieldset>
+            </div>
+
+            <div class="flex gap-3 border-t border-slate-200 px-6 py-4 dark:border-slate-700">
+                <a href="{{ route('exercices.index') }}"
+                    class="inline-flex items-center rounded-lg bg-slate-500 px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-600">Annuler</a>
+                <button type="submit"
+                    class="inline-flex items-center rounded-lg bg-slate-800 px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-700 dark:bg-slate-200 dark:text-slate-900 dark:hover:bg-white">
+                    Mettre à jour
+                </button>
+            </div>
+        </form>
     </div>
 </x-layouts::app>
