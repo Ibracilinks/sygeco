@@ -58,9 +58,8 @@
                         {{ __('Notifications') }}
                     </flux:sidebar.item>
                 @endunless
-                {{-- Tableau de pilotage : réservé à l'encadrement, ni les agents ni la
-                     cellule suivi & évaluation n'y ont affaire. --}}
-                @if ($currentUser->hasAnyRole(['superadmin', 'dbcgoq', 'responsable-programme']))
+                {{-- Tableau de pilotage SAP : réservé au dbcgoq. --}}
+                @if ($currentUser->hasRole('dbcgoq'))
                     <flux:sidebar.item icon="presentation-chart-line" href="{{ route('sap.analytics') }}" target="_blank">
                         SAP Cloud Analytics
                     </flux:sidebar.item>

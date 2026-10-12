@@ -14,8 +14,8 @@ test('un invité est redirigé vers la connexion', function () {
     $this->get(route('sap.analytics'))->assertRedirect(route('login'));
 });
 
-test('un utilisateur connecté accède au dashboard SAP', function () {
-    $user = User::factory()->create();
+test('le dbcgoq accède au dashboard SAP', function () {
+    $user = userWithRole('dbcgoq');
 
     $this->actingAs($user)
         ->get(route('sap.analytics'))
@@ -26,7 +26,7 @@ test('un utilisateur connecté accède au dashboard SAP', function () {
 });
 
 test('le dashboard SAP n\'utilise pas le layout de base (page autonome)', function () {
-    $user = User::factory()->create();
+    $user = userWithRole('dbcgoq');
 
     $response = $this->actingAs($user)->get(route('sap.analytics'));
 
@@ -44,10 +44,27 @@ test('les vraies données du projet alimentent le dashboard', function () {
     $extrant = Extrant::factory()->forResultat($resultat)->create();
     Activite::factory()->pourExtrant($extrant)->avecCout(5000000)->create();
 
-    $user = User::factory()->create();
+    $user = userWithRole('dbcgoq');
 
     $this->actingAs($user)
         ->get(route('sap.analytics', ['annee' => 2026]))
         ->assertOk()
         ->assertSee('Exercice 2026', false);
+});
+
+test('le dashboard SAP est refusé aux autres profils, et absent de leur menu', function (string $role) {
+    $user = userWithRole($role);
+
+    $this->actingAs($user)->get(route('sap.analytics'))->assertForbidden();
+    $this->actingAs($user)->get(route('dashboard'))->assertDontSee(route('sap.analytics'));
+})->with(['superadmin', 'responsable-programme', 'chef-service', 'service-controle-gestion', 'suivi-evaluation']);
+
+test('un compte sans rôle n\'accède pas au dashboard SAP', function () {
+    seedRolesAndPermissions();
+
+    $this->actingAs(User::factory()->create())->get(route('sap.analytics'))->assertForbidden();
+});
+
+test('le lien SAP figure dans le menu du dbcgoq', function () {
+    $this->actingAs(userWithRole('dbcgoq'))->get(route('dashboard'))->assertSee(route('sap.analytics'));
 });

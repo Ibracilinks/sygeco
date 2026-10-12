@@ -25,8 +25,11 @@ Route::get('/', function () {
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
-    // Dashboard parallèle « SAP Cloud Analytics » (présentation autonome, mêmes données)
-    Route::get('sap-analytics', [SapAnalyticsController::class, 'index'])->name('sap.analytics');
+    // Dashboard parallèle « SAP Cloud Analytics » (présentation autonome, mêmes données),
+    // réservé au dbcgoq.
+    Route::get('sap-analytics', [SapAnalyticsController::class, 'index'])
+        ->middleware('role:dbcgoq')
+        ->name('sap.analytics');
 
     // Manuel d'utilisation (documentation utilisateur), découpé en chapitres.
     Route::view('documentation', 'pages.documentation.index')->name('documentation');
