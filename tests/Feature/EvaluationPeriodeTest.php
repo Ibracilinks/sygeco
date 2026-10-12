@@ -60,18 +60,15 @@ test('un chef peut renseigner l\'évaluation mi-parcours pendant sa fenêtre', f
     expect($activite->fresh()->statut_execution)->toBe('realise');
 });
 
-test('un chef peut renseigner l\'évaluation hors fenêtre : la saisie reste ouverte en permanence', function () {
+test('avant l\'ouverture de la fenêtre, un chef peut déjà renseigner l\'évaluation', function () {
     seedRolesAndPermissions();
     $dep = Departement::factory()->create();
     $chef = User::factory()->dansDepartement($dep)->create();
     $chef->assignRole('responsable-programme');
 
-    // Fenêtre mi-parcours close depuis 15 jours : la saisie doit rester possible.
     $exercice = Exercice::factory()->actif()->create([
-        'date_debut_mi_parcours' => now()->subDays(20)->toDateString(),
-        'date_fin_mi_parcours' => now()->subDays(15)->toDateString(),
-        'date_debut_evaluation' => null,
-        'date_fin_evaluation' => null,
+        'date_debut_mi_parcours' => now()->addDays(10)->toDateString(),
+        'date_fin_mi_parcours' => now()->addDays(20)->toDateString(),
     ]);
     $activite = activitePourExercice($exercice, $dep);
 
@@ -80,8 +77,82 @@ test('un chef peut renseigner l\'évaluation hors fenêtre : la saisie reste ouv
         'observation' => 'Observation de contrôle',
         'valeur_indicateur' => 1,
     ])->assertSessionHas('success');
+});
 
-    expect($activite->evaluation('mi_parcours')->statut_execution)->toBe('realise');
+/*
+| Passé la date de fin de la fenêtre, seuls le dbcgoq et le service contrôle de
+| gestion peuvent encore évaluer.
+*/
+
+test('après la date limite, un chef ne peut plus renseigner l\'évaluation', function (string $slug, string $periode, array $fenetre) {
+    seedRolesAndPermissions();
+    $dep = Departement::factory()->create();
+    $chef = User::factory()->dansDepartement($dep)->create();
+    $chef->assignRole('responsable-programme');
+
+    $exercice = Exercice::factory()->actif()->create($fenetre);
+    $activite = activitePourExercice($exercice, $dep);
+
+    $this->actingAs($chef)->get(route('evaluations.index', $slug))
+        ->assertOk()
+        ->assertSee('close depuis le')
+        ->assertDontSee('✎ Renseigner', false);
+
+    $this->actingAs($chef)->post(route('evaluations.enregistrer', [$activite, $slug]), [
+        'statut_execution' => 'realise',
+        'observation' => 'Observation de contrôle',
+        'valeur_indicateur' => 1,
+    ])->assertSessionHas('error', 'La date limite de cette évaluation est dépassée.');
+
+    expect($activite->evaluation($periode))->toBeNull();
+})->with([
+    'mi-parcours' => ['mi-parcours', 'mi_parcours', [
+        'date_debut_mi_parcours' => now()->subDays(20)->toDateString(),
+        'date_fin_mi_parcours' => now()->subDay()->toDateString(),
+    ]],
+    'fin d\'année' => ['fin-annee', 'fin_annee', [
+        'date_debut_evaluation' => now()->subDays(20)->toDateString(),
+        'date_fin_evaluation' => now()->subDay()->toDateString(),
+    ]],
+]);
+
+test('après la date limite, le dbcgoq et le service contrôle de gestion évaluent encore', function (string $role) {
+    $user = userWithRole($role, ['departement_id' => Departement::factory()->create()->id]);
+    $exercice = Exercice::factory()->actif()->create([
+        'date_debut_mi_parcours' => now()->subDays(20)->toDateString(),
+        'date_fin_mi_parcours' => now()->subDay()->toDateString(),
+    ]);
+    $activite = activitePourExercice($exercice, Departement::factory()->create());
+
+    $this->actingAs($user)->post(route('evaluations.enregistrer', [$activite, 'mi-parcours']), [
+        'statut_execution' => 'en_cours',
+        'observation' => 'Observation de contrôle',
+        'valeur_indicateur' => 1,
+    ])->assertSessionHas('success');
+
+    expect($activite->evaluation('mi_parcours')->statut_execution)->toBe('en_cours');
+})->with(['dbcgoq', 'service-controle-gestion']);
+
+test('le dernier jour de la fenêtre, la saisie reste ouverte', function () {
+    seedRolesAndPermissions();
+    $dep = Departement::factory()->create();
+    $chef = User::factory()->dansDepartement($dep)->create();
+    $chef->assignRole('responsable-programme');
+
+    $exercice = Exercice::factory()->actif()->create([
+        'date_debut_evaluation' => now()->subDays(10)->toDateString(),
+        'date_fin_evaluation' => now()->toDateString(),
+    ]);
+    $activite = activitePourExercice($exercice, $dep);
+
+    $this->actingAs($chef)->get(route('evaluations.index', 'fin-annee'))
+        ->assertSee('✎ Renseigner', false);
+
+    $this->actingAs($chef)->post(route('evaluations.enregistrer', [$activite, 'fin-annee']), [
+        'statut_execution' => 'realise',
+        'observation' => 'Observation de contrôle',
+        'valeur_indicateur' => 1,
+    ])->assertSessionHas('success');
 });
 
 test('le dbcgoq peut renseigner l\'évaluation même hors fenêtre', function () {

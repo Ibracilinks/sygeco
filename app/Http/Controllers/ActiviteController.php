@@ -17,6 +17,7 @@ use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
@@ -197,9 +198,7 @@ class ActiviteController extends Controller
      */
     public function storeNonProgrammee(Request $request)
     {
-        if (! Auth::user()->can('edit_activites')) {
-            abort(403);
-        }
+        Gate::authorize('creer-activite-non-programmee');
 
         $exerciceId = ActiveExercice::id();
 
@@ -590,9 +589,16 @@ class ActiviteController extends Controller
 
     protected function notifierValidateurs(Activite $activite): void
     {
+        // Responsables de l'entité elle-même et de l'entité parente : c'est ce dernier
+        // qui valide (flux montant), par exemple la soumission d'un chef de service.
+        $entites = array_filter([
+            $activite->departement_id,
+            $activite->departement()->value('parent_id'),
+        ]);
+
         $destinataires = User::query()
             ->role('responsable-programme')
-            ->where('departement_id', $activite->departement_id)
+            ->whereIn('departement_id', $entites)
             ->where('id', '!=', Auth::id())
             ->get();
 

@@ -9,10 +9,12 @@
                 </p>
             </div>
             <div class="flex flex-wrap gap-2">
-                <a href="{{ route('validations.exporter') }}"
-                    class="inline-flex items-center rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-emerald-500">
-                    Exporter (Cadre logique)
-                </a>
+                @can('exporter-cadre-logique')
+                    <a href="{{ route('validations.exporter') }}"
+                        class="inline-flex items-center rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-emerald-500">
+                        Exporter (Cadre logique)
+                    </a>
+                @endcan
             </div>
         </div>
 

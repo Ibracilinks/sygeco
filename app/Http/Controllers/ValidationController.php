@@ -13,6 +13,7 @@ use App\Support\CadreLogique;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\Rule;
 
 class ValidationController extends Controller
@@ -360,6 +361,8 @@ class ValidationController extends Controller
 
     public function exporter(Request $request)
     {
+        Gate::authorize('exporter-cadre-logique');
+
         // L'export couvre toutes les activités de l'exercice en cours (tous statuts),
         // pas seulement celles en attente d'arbitrage.
         $query = Activite::query()->forExercice(ActiveExercice::id());

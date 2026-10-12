@@ -11,6 +11,7 @@ use App\Support\CadreLogique;
 use App\Support\VisibiliteActivites;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Gate;
 
 class EvaluationController extends Controller
 {
@@ -62,10 +63,10 @@ class EvaluationController extends Controller
             ? $exercice->fenetreEvaluation($periode)
             : [null, null];
 
-        // La saisie mi-parcours et fin d'année est ouverte en permanence : les dates
-        // de l'exercice ne sont plus qu'indicatives (bandeau d'information), elles ne
-        // ferment plus le formulaire. Seule la permission décide.
-        $peutSaisir = true;
+        // La saisie reste ouverte avant et pendant la fenêtre ; passé sa date de fin,
+        // seuls le dbcgoq et le service contrôle de gestion peuvent encore évaluer.
+        $evaluationCloturee = $exercice?->evaluationCloturee($periode) ?? false;
+        $peutSaisir = ! $evaluationCloturee || $this->peutEvaluerApresLimite();
 
         // Chaque période a sa propre page, strictement cloisonnée : mi-parcours et
         // fin d'année ne montrent jamais les données de l'autre période.
@@ -73,7 +74,7 @@ class EvaluationController extends Controller
 
         return view('pages.evaluations.'.ActiviteEvaluation::slugDePeriode($periode), compact(
             'activites', 'extrants', 'departements', 'departementsGroupes', 'summary', 'filters',
-            'exercice', 'periode', 'peutSaisir', 'peutSaisirBudget', 'debutFenetre', 'finFenetre'
+            'exercice', 'periode', 'peutSaisir', 'peutSaisirBudget', 'debutFenetre', 'finFenetre', 'evaluationCloturee'
         ));
     }
 
@@ -85,6 +86,14 @@ class EvaluationController extends Controller
     private function peutSaisirBudget(): bool
     {
         return Auth::user()?->hasAnyRole(['superadmin', 'dbcgoq']) ?? false;
+    }
+
+    /**
+     * Profils autorisés à évaluer après la date de fin de la fenêtre.
+     */
+    private function peutEvaluerApresLimite(): bool
+    {
+        return Auth::user()?->hasAnyRole(['dbcgoq', 'service-controle-gestion']) ?? false;
     }
 
     /**
@@ -108,8 +117,12 @@ class EvaluationController extends Controller
             return $this->refus($request, 'Seules les activités validées peuvent être évaluées.');
         }
 
-        // Les fenêtres mi-parcours / fin d'année ne bloquent plus la saisie : elles
-        // restent ouvertes en permanence et ne servent qu'à informer l'utilisateur.
+        // Passé la date de fin de la fenêtre (de l'exercice de l'activité), seuls le
+        // dbcgoq et le service contrôle de gestion peuvent encore évaluer.
+        if (($activite->exercice() ?? ActiveExercice::model())?->evaluationCloturee($periode)
+            && ! $this->peutEvaluerApresLimite()) {
+            return $this->refus($request, 'La date limite de cette évaluation est dépassée.');
+        }
 
         // La valeur d'indicateur est du texte libre, mais un appelant peut légitimement
         // envoyer un nombre : on normalise avant de valider plutôt que d'affaiblir la règle.
@@ -215,6 +228,8 @@ class EvaluationController extends Controller
      */
     public function exporter(Request $request, string $periode)
     {
+        Gate::authorize('exporter-cadre-logique');
+
         $periode = $this->resoudrePeriode($periode);
 
         $activites = $this->evaluationQuery($request, $periode)

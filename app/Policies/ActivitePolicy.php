@@ -4,6 +4,7 @@ namespace App\Policies;
 
 use App\Models\Activite;
 use App\Models\User;
+use App\Support\ActiveExercice;
 use App\Support\VisibiliteActivites;
 
 class ActivitePolicy
@@ -18,9 +19,21 @@ class ActivitePolicy
         return VisibiliteActivites::peutVoir($user, $activite);
     }
 
+    /**
+     * Passé la date limite de saisie de l'exercice actif, seuls le dbcgoq (Gate::before)
+     * et le service contrôle de gestion peuvent encore programmer une activité.
+     */
     public function create(User $user): bool
     {
-        return $user->can('create_activites');
+        if (! $user->can('create_activites')) {
+            return false;
+        }
+
+        if ($user->isServiceControleGestion()) {
+            return true;
+        }
+
+        return ! (ActiveExercice::model()?->saisieCloturee() ?? false);
     }
 
     public function update(User $user, Activite $activite): bool
@@ -38,7 +51,7 @@ class ActivitePolicy
             return $activite->peutEtreModifie();
         }
 
-        return $user->hasAnyRole(['responsable-programme', 'agent-planification'])
+        return $user->hasAnyRole(['responsable-programme', 'chef-service', 'agent-planification'])
             && (int) $user->departement_id === (int) $activite->departement_id
             && $activite->peutEtreModifie();
     }
@@ -58,7 +71,7 @@ class ActivitePolicy
             return $activite->peutEtreModifie();
         }
 
-        return $user->hasAnyRole(['responsable-programme', 'agent-planification'])
+        return $user->hasAnyRole(['responsable-programme', 'chef-service', 'agent-planification'])
             && (int) $user->departement_id === (int) $activite->departement_id
             && $activite->peutEtreModifie();
     }
@@ -73,7 +86,7 @@ class ActivitePolicy
             return $activite->peutEtreSoumis();
         }
 
-        return $user->hasAnyRole(['responsable-programme', 'agent-planification'])
+        return $user->hasAnyRole(['responsable-programme', 'chef-service', 'agent-planification'])
             && (int) $user->departement_id === (int) $activite->departement_id
             && $activite->peutEtreSoumis();
     }

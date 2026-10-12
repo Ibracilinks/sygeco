@@ -48,7 +48,7 @@
             <div class="rounded-xl border border-slate-200 bg-white p-6 dark:border-slate-700 dark:bg-slate-900 xl:col-span-2">
                 <div class="mb-4 flex items-center justify-between">
                     <h2 class="text-lg font-semibold text-slate-900 dark:text-white">Activités rattachées</h2>
-                    @can('create_activites')
+                    @can('create', App\Models\Activite::class)
                         <a href="{{ route('activites.create', ['extrant_id' => $extrant->id]) }}" class="text-sm font-medium text-sky-700 hover:text-sky-600 dark:text-sky-300">Ajouter une activité</a>
                     @endcan
                 </div>

@@ -60,10 +60,16 @@ test('le dbcgoq peut voir le formulaire de création', function () {
     $this->actingAs($admin)->get(route('activites.create'))->assertOk();
 });
 
-test('un agent ne peut pas créer d\'activité (pas de permission create)', function () {
-    $agent = userWithRole('chef-service');
+test('un chef de service peut voir le formulaire de création', function () {
+    $chefService = userWithRole('chef-service', ['departement_id' => Departement::factory()->create()->id]);
 
-    $this->actingAs($agent)->get(route('activites.create'))->assertForbidden();
+    $this->actingAs($chefService)->get(route('activites.create'))->assertOk();
+});
+
+test('la cellule suivi & évaluation ne peut pas créer d\'activité (pas de permission create)', function () {
+    $suivi = userWithRole('suivi-evaluation');
+
+    $this->actingAs($suivi)->get(route('activites.create'))->assertForbidden();
 });
 
 /*

@@ -80,6 +80,27 @@ class Exercice extends Model
     }
 
     /**
+     * La date limite de saisie est-elle dépassée ? Le jour J reste ouvert.
+     */
+    public function saisieCloturee(): bool
+    {
+        $jours = $this->joursAvantLimite();
+
+        return $jours !== null && $jours < 0;
+    }
+
+    /**
+     * La date de fin de la fenêtre d'évaluation (mi-parcours ou fin d'année) est-elle
+     * dépassée ? Le dernier jour reste ouvert ; sans date de fin, rien n'est fermé.
+     */
+    public function evaluationCloturee(string $periode): bool
+    {
+        [, $fin] = $this->fenetreEvaluation($periode);
+
+        return $fin !== null && now()->startOfDay()->gt($fin->copy()->startOfDay());
+    }
+
+    /**
      * Vérifie si la date du jour est comprise dans une fenêtre [début, fin].
      */
     protected function dansFenetre($debut, $fin): bool

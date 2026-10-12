@@ -25,6 +25,17 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         $this->configureDefaults();
+        $this->configureGates();
+    }
+
+    /**
+     * Droits transverses qui ne relèvent pas d'une policy de modèle. Le dbcgoq les
+     * obtient via Gate::before.
+     */
+    protected function configureGates(): void
+    {
+        Gate::define('exporter-cadre-logique', fn ($user) => $user->hasAnyRole(['service-controle-gestion', 'suivi-evaluation']));
+        Gate::define('creer-activite-non-programmee', fn ($user) => $user->hasAnyRole(['service-controle-gestion', 'suivi-evaluation']));
     }
 
     /**

@@ -9,10 +9,12 @@
                 </p>
             </div>
             <div class="flex gap-2">
-                <a href="{{ route('activites.create') }}"
-                    class="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700">
-                    Nouvelle activité
-                </a>
+                @can('create', App\Models\Activite::class)
+                    <a href="{{ route('activites.create') }}"
+                        class="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700">
+                        Nouvelle activité
+                    </a>
+                @endcan
             </div>
         </div>
 

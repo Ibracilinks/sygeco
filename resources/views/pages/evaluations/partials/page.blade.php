@@ -21,11 +21,13 @@
                 </p>
             </div>
             <div class="flex flex-wrap gap-2">
-                <a href="{{ route('evaluations.export', array_merge([$slug], request()->query()), false) }}"
-                    class="inline-flex items-center rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-emerald-500">
-                    Exporter (Cadre logique)
-                </a>
-                @can('create_activites')
+                @can('exporter-cadre-logique')
+                    <a href="{{ route('evaluations.export', array_merge([$slug], request()->query()), false) }}"
+                        class="inline-flex items-center rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-emerald-500">
+                        Exporter (Cadre logique)
+                    </a>
+                @endcan
+                @can('creer-activite-non-programmee')
                     <button type="button" onclick="document.getElementById('nonProgrammeeModal').classList.remove('hidden')"
                         class="inline-flex items-center gap-2 rounded-lg bg-slate-800 px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-700 dark:bg-slate-200 dark:text-slate-900 dark:hover:bg-white">
                         + Activité non programmée
@@ -49,7 +51,13 @@
         @endif
 
         {{-- État de la fenêtre de saisie --}}
-        @if ($exercice?->enPeriodeEvaluationPour($periode))
+        @if ($evaluationCloturee)
+            <div class="rounded-lg border border-rose-200 bg-rose-50 p-4 dark:border-rose-800 dark:bg-rose-950/40">
+                <p class="text-sm font-medium text-rose-800 dark:text-rose-200">
+                    Saisie {{ $periodeLibelle }} close depuis le {{ $finFenetre->format('d/m/Y') }}{{ $peutSaisir ? ' — vous pouvez encore la renseigner.' : '.' }}
+                </p>
+            </div>
+        @elseif ($exercice?->enPeriodeEvaluationPour($periode))
             <div class="rounded-lg border border-sky-200 bg-sky-50 p-4 dark:border-sky-800 dark:bg-sky-950/40">
                 <p class="text-sm font-medium text-sky-800 dark:text-sky-200">
                     🟢 Fenêtre de saisie {{ $periodeLibelle }} ouverte{{ $finFenetre ? " — jusqu'au ".$finFenetre->format('d/m/Y') : '' }}.
@@ -58,7 +66,7 @@
         @else
             <div class="rounded-lg border border-indigo-200 bg-indigo-50 p-4 dark:border-indigo-800 dark:bg-indigo-950/40">
                 <p class="text-sm font-medium text-indigo-800 dark:text-indigo-200">
-                    ✎ Hors période {{ $periodeLibelle }}{{ $debutFenetre && $finFenetre ? ' ('.$debutFenetre->format('d/m/Y').' → '.$finFenetre->format('d/m/Y').')' : '' }} — la saisie reste ouverte en permanence.
+                    ✎ Hors période {{ $periodeLibelle }}{{ $debutFenetre && $finFenetre ? ' ('.$debutFenetre->format('d/m/Y').' → '.$finFenetre->format('d/m/Y').')' : '' }} — la saisie reste ouverte jusqu'à la date de fin.
                 </p>
             </div>
         @endif
@@ -214,7 +222,7 @@
         <div class="mt-2">{{ $activites->withPath(route('evaluations.index', $slug, false))->links() }}</div>
     </div>
 
-    @can('create_activites')
+    @can('creer-activite-non-programmee')
         {{-- Modale : création d'une activité non programmée (hors PTA) --}}
         <div id="nonProgrammeeModal" class="fixed inset-0 z-50 hidden overflow-y-auto bg-black/40 p-4">
             <div class="mx-auto my-10 max-w-2xl rounded-2xl bg-white p-6 shadow-xl dark:bg-zinc-900">
@@ -291,7 +299,10 @@
                 </form>
             </div>
         </div>
+    @endcan
 
+    {{-- Même condition que le bouton « Renseigner » de chaque ligne. --}}
+    @if (auth()->user()->can('evaluate_activites') && $peutSaisir)
         {{-- Modale : renseigner l'évaluation de la période affichée --}}
         <div id="evaluationModal" class="fixed inset-0 z-50 hidden overflow-y-auto bg-black/40 p-4">
             <div class="mx-auto my-10 max-w-lg rounded-2xl bg-white p-6 shadow-xl dark:bg-zinc-900">
@@ -545,5 +556,5 @@
                 });
             });
         </script>
-    @endcan
+    @endif
 </x-layouts::app>
