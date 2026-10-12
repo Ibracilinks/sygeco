@@ -58,6 +58,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         // « /exercices/create » soit capturé par le joker {exercice} (bug 404 précédent).
         Route::resource('exercices', ExerciceController::class);
         Route::post('exercices/{exercice}/activate', [ExerciceController::class, 'activate'])->name('exercices.activate');
+        Route::post('exercices/{exercice}/annoncer-ouverture', [ExerciceController::class, 'annoncerOuverture'])->name('exercices.annoncer-ouverture');
         Route::put('exercices/{exercice}/calendrier', [ExerciceController::class, 'updateCalendrier'])->name('exercices.calendrier');
         Route::get('exercices/{exercice}/export', [ExerciceController::class, 'export'])->name('exercices.export');
 

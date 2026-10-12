@@ -48,12 +48,15 @@ class OuvertureSaisieActivitesNotification extends Notification
     }
 
     /**
-     * Le DBCGOQ ouvre la fiche de l'exercice ; les autres comptes, leur écran de saisie.
+     * Le DBCGOQ ouvre la fiche de l'exercice ; les profils du PTA, leur écran de saisie ;
+     * les autres (chargé des missions…), le tableau de bord, faute d'accès aux activités.
      */
     private function lien(object $notifiable): string
     {
-        return $notifiable->hasRole('dbcgoq')
-            ? route('exercices.show', $this->exercice)
-            : route('activites.index');
+        return match (true) {
+            $notifiable->hasRole('dbcgoq') => route('exercices.show', $this->exercice),
+            $notifiable->suitLePta() => route('activites.index'),
+            default => route('dashboard'),
+        };
     }
 }

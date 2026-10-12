@@ -18,6 +18,8 @@ class Exercice extends Model
         'date_ouverture_saisie',
         'date_limite_saisie',
         'ouverture_notifiee_le',
+        'ouverture_annoncee_le',
+        'ouverture_annoncee_destinataires',
         'date_debut_mi_parcours',
         'date_fin_mi_parcours',
         'mi_parcours_notifiee_le',
@@ -36,6 +38,8 @@ class Exercice extends Model
             'date_ouverture_saisie' => 'date',
             'date_limite_saisie' => 'date',
             'ouverture_notifiee_le' => 'datetime',
+            'ouverture_annoncee_le' => 'datetime',
+            'ouverture_annoncee_destinataires' => 'integer',
             'date_debut_mi_parcours' => 'date',
             'date_fin_mi_parcours' => 'date',
             'mi_parcours_notifiee_le' => 'datetime',
@@ -77,6 +81,17 @@ class Exercice extends Model
         }
 
         return (int) now()->startOfDay()->diffInDays($this->date_limite_saisie->copy()->startOfDay(), false);
+    }
+
+    /**
+     * La saisie des activités est-elle ouverte aujourd'hui (ouverture atteinte, date
+     * limite non dépassée) ?
+     */
+    public function saisieOuverte(): bool
+    {
+        return $this->date_ouverture_saisie !== null
+            && ! $this->date_ouverture_saisie->copy()->startOfDay()->isFuture()
+            && ! $this->saisieCloturee();
     }
 
     /**

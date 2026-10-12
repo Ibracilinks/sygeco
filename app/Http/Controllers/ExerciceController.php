@@ -9,9 +9,12 @@ use App\Models\Activite;
 use App\Models\Exercice;
 use App\Models\Objectif;
 use App\Models\Resultat;
+use App\Models\User;
+use App\Notifications\OuvertureSaisieActivitesNotification;
 use App\Support\ActiveExercice;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Notification;
 
 class ExerciceController extends Controller
 {
@@ -96,8 +99,9 @@ class ExerciceController extends Controller
         $charts = $this->buildExerciceCharts($exercice, $objectifs, $stats);
 
         $isActiveContext = ActiveExercice::id() === (int) $exercice->id;
+        $nbUtilisateurs = User::query()->count();
 
-        return view('pages.exercices.show', compact('exercice', 'objectifs', 'stats', 'relances', 'charts', 'isActiveContext'));
+        return view('pages.exercices.show', compact('exercice', 'objectifs', 'stats', 'relances', 'charts', 'isActiveContext', 'nbUtilisateurs'));
     }
 
     /**
@@ -253,6 +257,37 @@ class ExerciceController extends Controller
 
         return redirect()->route('exercices.show', $exercice)
             ->with('success', 'Calendrier mis à jour.');
+    }
+
+    /**
+     * Informe tous les utilisateurs (mail + notification) de l'ouverture de la saisie.
+     * L'envoi part après la réponse : la page ne reste pas bloquée le temps de joindre
+     * le serveur SMTP pour chaque compte.
+     */
+    public function annoncerOuverture(Exercice $exercice)
+    {
+        $this->authorize('update', $exercice);
+
+        if (! $exercice->saisieOuverte()) {
+            return redirect()->route('exercices.show', $exercice)
+                ->with('error', "La saisie n'est pas ouverte : vérifiez les dates d'ouverture et de limite de saisie.");
+        }
+
+        $destinataires = User::query()->count();
+
+        $exercice->forceFill([
+            'ouverture_annoncee_le' => now(),
+            'ouverture_annoncee_destinataires' => $destinataires,
+        ])->save();
+
+        defer(function () use ($exercice) {
+            User::query()->chunkById(200, function ($users) use ($exercice) {
+                Notification::send($users, new OuvertureSaisieActivitesNotification($exercice));
+            });
+        });
+
+        return redirect()->route('exercices.show', $exercice)
+            ->with('success', "Annonce de l'ouverture de la saisie envoyée à {$destinataires} utilisateur(s).");
     }
 
     public function destroy(Exercice $exercice)

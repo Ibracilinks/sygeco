@@ -40,6 +40,17 @@
             </div>
         </div>
 
+        @if (session('success'))
+            <div class="rounded-lg border border-emerald-200 bg-emerald-50 p-4 dark:border-emerald-800 dark:bg-emerald-950/40">
+                <p class="text-sm font-medium text-emerald-800 dark:text-emerald-200">{{ session('success') }}</p>
+            </div>
+        @endif
+        @if (session('error'))
+            <div class="rounded-lg border border-rose-200 bg-rose-50 p-4 dark:border-rose-800 dark:bg-rose-950/40">
+                <p class="text-sm font-medium text-rose-800 dark:text-rose-200">{{ session('error') }}</p>
+            </div>
+        @endif
+
         {{-- Cartes KPI --}}
         <div class="grid grid-cols-2 gap-4 sm:grid-cols-3 xl:grid-cols-6">
             <div class="rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-900">
@@ -170,13 +181,65 @@
                                 </dl>
 
                                 @if ($cle === 'saisie')
-                                    <div class="mt-4 rounded-lg bg-slate-50 px-4 py-3 dark:bg-slate-950/40">
+                                    {{-- Annonce manuelle de l'ouverture à tous les utilisateurs --}}
+                                    <div class="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-slate-200 px-4 py-3 dark:border-slate-700">
+                                        <div class="min-w-0">
+                                            <p class="text-sm font-medium text-slate-900 dark:text-white">Informer les utilisateurs</p>
+                                            <p class="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
+                                                @if ($exercice->ouverture_annoncee_le)
+                                                    Annonce envoyée le {{ $exercice->ouverture_annoncee_le->format('d/m/Y à H:i') }} à {{ $exercice->ouverture_annoncee_destinataires }} utilisateur(s).
+                                                @elseif ($exercice->saisieOuverte())
+                                                    Un mail et une notification annoncent l'ouverture de la saisie à tous les comptes.
+                                                @elseif ($exercice->saisieCloturee())
+                                                    La saisie est close.
+                                                @else
+                                                    Disponible une fois la saisie ouverte (date d'ouverture atteinte).
+                                                @endif
+                                            </p>
+                                        </div>
+                                        @can('update', $exercice)
+                                            @if ($exercice->saisieOuverte())
+                                                <flux:modal.trigger name="annoncer-ouverture">
+                                                    <button type="button" class="inline-flex items-center gap-1.5 rounded-lg bg-slate-800 px-3 py-1.5 text-xs font-medium text-white transition hover:bg-slate-700 dark:bg-slate-200 dark:text-slate-900 dark:hover:bg-white">
+                                                        <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 0 1-2.25 2.25h-15a2.25 2.25 0 0 1-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25m19.5 0v.243a2.25 2.25 0 0 1-1.07 1.916l-7.5 4.615a2.25 2.25 0 0 1-2.36 0L3.32 8.91a2.25 2.25 0 0 1-1.07-1.916V6.75"/></svg>
+                                                        {{ $exercice->ouverture_annoncee_le ? "Renvoyer l'annonce" : 'Envoyer le mail à tous' }}
+                                                    </button>
+                                                </flux:modal.trigger>
+
+                                                <flux:modal name="annoncer-ouverture" class="w-full max-w-md">
+                                                    <form action="{{ route('exercices.annoncer-ouverture', $exercice) }}" method="POST" class="space-y-5">
+                                                        @csrf
+                                                        <div>
+                                                            <h3 class="text-lg font-semibold text-slate-900 dark:text-white">Annoncer l'ouverture de la saisie</h3>
+                                                            <p class="mt-2 text-sm text-slate-600 dark:text-slate-300">
+                                                                Tous les utilisateurs ({{ $nbUtilisateurs }}) recevront un mail et une notification
+                                                                annonçant l'ouverture de la saisie de l'exercice {{ $exercice->annee }}@if ($exercice->date_limite_saisie), avec la date limite du {{ $exercice->date_limite_saisie->format('d/m/Y') }}@endif.
+                                                            </p>
+                                                            @if ($exercice->ouverture_annoncee_le)
+                                                                <p class="mt-2 text-sm text-amber-700 dark:text-amber-300">
+                                                                    Une annonce a déjà été envoyée le {{ $exercice->ouverture_annoncee_le->format('d/m/Y à H:i') }}.
+                                                                </p>
+                                                            @endif
+                                                        </div>
+                                                        <div class="flex justify-end gap-3">
+                                                            <flux:modal.close>
+                                                                <button type="button" class="inline-flex items-center rounded-lg bg-slate-200 px-4 py-2 text-sm font-medium text-slate-800 transition hover:bg-slate-300 dark:bg-slate-700 dark:text-slate-100 dark:hover:bg-slate-600">Annuler</button>
+                                                            </flux:modal.close>
+                                                            <button type="submit" class="inline-flex items-center rounded-lg bg-slate-800 px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-700 dark:bg-slate-200 dark:text-slate-900 dark:hover:bg-white">Envoyer</button>
+                                                        </div>
+                                                    </form>
+                                                </flux:modal>
+                                            @endif
+                                        @endcan
+                                    </div>
+
+                                    <div class="mt-3 rounded-lg bg-slate-50 px-4 py-3 dark:bg-slate-950/40">
                                         <p class="text-xs text-slate-500 dark:text-slate-400">
-                                            Notification d'ouverture :
+                                            Envoi automatique des identifiants à l'ouverture :
                                             @if ($exercice->ouverture_notifiee_le)
-                                                envoyée le {{ $exercice->ouverture_notifiee_le->format('d/m/Y à H:i') }}
+                                                envoyé le {{ $exercice->ouverture_notifiee_le->format('d/m/Y à H:i') }}
                                             @else
-                                                non envoyée
+                                                non envoyé
                                             @endif
                                         </p>
                                         <p class="mt-3 text-xs font-semibold text-slate-700 dark:text-slate-200">Relances envoyées</p>
