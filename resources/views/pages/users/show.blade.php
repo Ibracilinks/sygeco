@@ -8,10 +8,38 @@
             <div class="flex flex-wrap gap-2">
                 @can('edit_users')
                     <a href="{{ route('users.edit', $user) }}" class="inline-flex items-center rounded-lg bg-amber-500 px-4 py-2 text-sm font-medium text-white transition hover:bg-amber-400">Modifier</a>
+
+                    <flux:modal.trigger name="reinitialiser-mot-de-passe">
+                        <button type="button" class="inline-flex items-center rounded-lg bg-slate-800 px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-700 dark:bg-slate-200 dark:text-slate-900 dark:hover:bg-white">Réinitialiser le mot de passe</button>
+                    </flux:modal.trigger>
+
+                    <flux:modal name="reinitialiser-mot-de-passe" class="w-full max-w-md">
+                        <form action="{{ route('users.reinitialiser-mot-de-passe', $user) }}" method="POST" class="space-y-5">
+                            @csrf
+                            <div>
+                                <h3 class="text-lg font-semibold text-slate-900 dark:text-white">Réinitialiser le mot de passe</h3>
+                                <p class="mt-2 text-sm text-slate-600 dark:text-slate-300">
+                                    Un mot de passe provisoire sera envoyé à <span class="font-medium">{{ $user->email }}</span>. L'actuel cessera aussitôt de fonctionner, et {{ $user->name }} devra en choisir un nouveau à sa prochaine connexion.
+                                </p>
+                            </div>
+                            <div class="flex justify-end gap-2">
+                                <flux:modal.close>
+                                    <button type="button" class="inline-flex items-center rounded-lg bg-slate-200 px-4 py-2 text-sm font-medium text-slate-800 transition hover:bg-slate-300 dark:bg-slate-700 dark:text-slate-100 dark:hover:bg-slate-600">Annuler</button>
+                                </flux:modal.close>
+                                <button type="submit" class="inline-flex items-center rounded-lg bg-slate-800 px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-700 dark:bg-slate-200 dark:text-slate-900 dark:hover:bg-white">Réinitialiser</button>
+                            </div>
+                        </form>
+                    </flux:modal>
                 @endcan
                 <a href="{{ route('users.index') }}" class="inline-flex items-center rounded-lg bg-slate-200 px-4 py-2 text-sm font-medium text-slate-800 transition hover:bg-slate-300 dark:bg-slate-700 dark:text-slate-100 dark:hover:bg-slate-600">Retour</a>
             </div>
         </div>
+
+        @if (session('success'))
+            <div class="rounded-lg border border-emerald-200 bg-emerald-50 p-4 dark:border-emerald-800 dark:bg-emerald-950/40">
+                <p class="text-sm font-medium text-emerald-800 dark:text-emerald-200">{{ session('success') }}</p>
+            </div>
+        @endif
 
         <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
             <div class="rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-900">
@@ -58,6 +86,12 @@
                     <div>
                         <dt class="text-slate-500 dark:text-slate-400">Dernière mise à jour</dt>
                         <dd class="font-medium text-slate-900 dark:text-white">{{ optional($user->updated_at)->format('d/m/Y H:i') ?: '-' }}</dd>
+                    </div>
+                    <div>
+                        <dt class="text-slate-500 dark:text-slate-400">Mot de passe</dt>
+                        <dd class="font-medium {{ $user->mot_de_passe_provisoire ? 'text-amber-700 dark:text-amber-300' : 'text-emerald-700 dark:text-emerald-300' }}">
+                            {{ $user->mot_de_passe_provisoire ? 'Provisoire, à changer à la prochaine connexion' : 'Personnel' }}
+                        </dd>
                     </div>
                     <div>
                         <dt class="text-slate-500 dark:text-slate-400">Statut email</dt>

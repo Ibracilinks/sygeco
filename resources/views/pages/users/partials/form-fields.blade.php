@@ -34,33 +34,6 @@
     </div>
 
     <div>
-        <label class="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-200">
-            {{ $isEdit ? 'Nouveau mot de passe' : 'Mot de passe *' }}
-        </label>
-        <input
-            type="password"
-            name="password"
-            class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-800 focus:border-slate-500 focus:outline-none dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
-            placeholder="{{ $isEdit ? 'Laisser vide pour conserver' : 'Mot de passe sécurisé' }}"
-        >
-        @error('password')
-            <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
-        @enderror
-    </div>
-
-    <div>
-        <label class="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-200">
-            {{ $isEdit ? 'Confirmation mot de passe' : 'Confirmation mot de passe *' }}
-        </label>
-        <input
-            type="password"
-            name="password_confirmation"
-            class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-800 focus:border-slate-500 focus:outline-none dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
-            placeholder="Confirme le mot de passe"
-        >
-    </div>
-
-    <div>
         <label class="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-200">Structure</label>
         <select
             name="departement_id"

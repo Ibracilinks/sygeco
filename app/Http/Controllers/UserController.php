@@ -4,15 +4,17 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\StoreUserRequest;
 use App\Http\Requests\UpdateUserRequest;
-use App\Models\User;
 use App\Models\Departement;
+use App\Models\User;
 use App\Notifications\BienvenueUtilisateurNotification;
+use App\Notifications\MotDePasseReinitialiseNotification;
+use App\Support\MotDePasseProvisoire;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Hash;
-use Spatie\Permission\Models\Role;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
+use Spatie\Permission\Models\Role;
 
 class UserController extends Controller
 {
@@ -76,7 +78,8 @@ class UserController extends Controller
         $user = User::create([
             'name' => $validated['name'],
             'email' => $validated['email'],
-            'password' => Hash::make($validated['password']),
+            // Remplacé aussitôt par le mot de passe provisoire envoyé par e-mail.
+            'password' => Str::password(32),
             'departement_id' => $validated['departement_id'] ?? null,
             'poste' => $validated['poste'] ?? null,
             'telephone' => $validated['telephone'] ?? null,
@@ -85,8 +88,8 @@ class UserController extends Controller
         $roleNames = Role::whereIn('id', $validated['roles'])->pluck('name')->toArray();
         $user->syncRoles($roleNames);
 
-        // Mail de bienvenue avec les identifiants (mot de passe défini par l'administrateur).
-        $user->notify(new BienvenueUtilisateurNotification($validated['password']));
+        // Mail de bienvenue avec un mot de passe provisoire, à changer à la première connexion.
+        $user->notify(new BienvenueUtilisateurNotification(MotDePasseProvisoire::attribuer($user)));
 
         return redirect()->route('users.index')
             ->with('success', 'Utilisateur créé et notifié par e-mail.');
@@ -135,15 +138,23 @@ class UserController extends Controller
             'telephone' => $validated['telephone'] ?? null,
         ]);
 
-        if (filled($validated['password'] ?? null)) {
-            $user->update(['password' => Hash::make($validated['password'])]);
-        }
-
         $roleNames = Role::whereIn('id', $validated['roles'])->pluck('name')->toArray();
         $user->syncRoles($roleNames);
 
         return redirect()->route('users.index')
             ->with('success', 'Utilisateur mis à jour.');
+    }
+
+    /**
+     * Attribue un nouveau mot de passe provisoire et l'envoie par e-mail ; l'utilisateur
+     * devra le changer à sa prochaine connexion.
+     */
+    public function reinitialiserMotDePasse(User $user)
+    {
+        $user->notify(new MotDePasseReinitialiseNotification(MotDePasseProvisoire::attribuer($user)));
+
+        return redirect()->route('users.show', $user)
+            ->with('success', "Mot de passe réinitialisé : un mot de passe provisoire a été envoyé à {$user->email}.");
     }
 
     public function destroy(User $user)
@@ -160,12 +171,12 @@ class UserController extends Controller
     }
 
     /**
-     * @param array{search: string, departement_id: string, role: string, sort?: string, direction?: string} $filters
+     * @param  array{search: string, departement_id: string, role: string, sort?: string, direction?: string}  $filters
      */
     private function applyFilters(Builder $query, array $filters): void
     {
         if ($filters['search'] !== '') {
-            $term = '%' . str_replace(' ', '%', $filters['search']) . '%';
+            $term = '%'.str_replace(' ', '%', $filters['search']).'%';
 
             $query->where(function (Builder $builder) use ($term) {
                 $builder

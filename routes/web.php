@@ -76,6 +76,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
         Route::resource('departements', DepartementController::class)->except(['index', 'show']);
         Route::resource('users', UserController::class)->except(['index', 'show']);
+        Route::post('users/{user}/reinitialiser-mot-de-passe', [UserController::class, 'reinitialiserMotDePasse'])->name('users.reinitialiser-mot-de-passe');
     });
 
     Route::middleware(['role:superadmin|dbcgoq|responsable-programme'])->group(function () {

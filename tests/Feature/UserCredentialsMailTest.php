@@ -5,6 +5,7 @@ use App\Models\User;
 use App\Notifications\BienvenueUtilisateurNotification;
 use App\Notifications\IdentifiantsExerciceNotification;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Notification;
 use Spatie\Permission\Models\Role;
 
@@ -16,7 +17,7 @@ uses(RefreshDatabase::class);
 |--------------------------------------------------------------------------
 */
 
-test('la création d\'un utilisateur envoie un mail de bienvenue avec les identifiants', function () {
+test('la création d\'un utilisateur, sans mot de passe saisi, envoie un mot de passe provisoire', function () {
     Notification::fake();
     $admin = userWithRole('dbcgoq');
     $roleId = Role::where('name', 'chef-service')->value('id');
@@ -24,17 +25,16 @@ test('la création d\'un utilisateur envoie un mail de bienvenue avec les identi
     $this->actingAs($admin)->post(route('users.store'), [
         'name' => 'Nouvel Agent',
         'email' => 'nouvel.agent@canam.ml',
-        'password' => 'Secret123!',
-        'password_confirmation' => 'Secret123!',
         'roles' => [$roleId],
     ])->assertRedirect(route('users.index'));
 
     $cree = User::where('email', 'nouvel.agent@canam.ml')->firstOrFail();
 
+    expect($cree->mot_de_passe_provisoire)->toBeTrue();
     Notification::assertSentTo(
         $cree,
         BienvenueUtilisateurNotification::class,
-        fn ($notification) => $notification->motDePasse === 'Secret123!'
+        fn ($notification) => Hash::check($notification->motDePasse, $cree->password)
     );
 });
 
@@ -69,8 +69,9 @@ test('à l\'ouverture de l\'exercice, chaque utilisateur reçoit un nouveau mot 
 
     $this->artisan('activites:notifier-saisie')->assertSuccessful();
 
-    // Le mot de passe a été régénéré...
+    // Le mot de passe a été régénéré, provisoire...
     expect($user->fresh()->password)->not->toBe($ancienHash);
+    expect($user->fresh()->mot_de_passe_provisoire)->toBeTrue();
     // ...et les nouveaux accès envoyés.
     Notification::assertSentTo($user, IdentifiantsExerciceNotification::class);
     // L'ouverture est marquée comme notifiée (idempotence).

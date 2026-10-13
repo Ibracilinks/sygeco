@@ -7,10 +7,9 @@ use App\Models\ExerciceRelance;
 use App\Models\User;
 use App\Notifications\IdentifiantsExerciceNotification;
 use App\Notifications\RelanceSaisieActivitesNotification;
+use App\Support\MotDePasseProvisoire;
 use Illuminate\Console\Command;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Notification;
-use Illuminate\Support\Str;
 
 class NotifierSaisieActivitesCommand extends Command
 {
@@ -67,9 +66,7 @@ class NotifierSaisieActivitesCommand extends Command
         // À l'ouverture, chaque utilisateur (hors admin) reçoit un nouveau mot de passe + le lien de connexion.
         $cibles->chunkById(200, function ($users) use ($exercice) {
             foreach ($users as $user) {
-                $motDePasse = Str::password(12);
-                $user->forceFill(['password' => Hash::make($motDePasse)])->save();
-                $user->notify(new IdentifiantsExerciceNotification($exercice, $motDePasse));
+                $user->notify(new IdentifiantsExerciceNotification($exercice, MotDePasseProvisoire::attribuer($user)));
             }
         });
 
