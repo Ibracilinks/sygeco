@@ -19,6 +19,10 @@ use Illuminate\Database\Eloquent\Builder;
  *
  * Les rôles cumulés sont départagés dans cet ordre : un utilisateur à la fois
  * dbcgoq et agent est traité en dbcgoq.
+ *
+ * En consultation (liste de programmation, fiche), toute activité validée est en
+ * plus visible de tous, en lecture seule : le périmètre ci-dessus continue de
+ * borner l'évaluation, les pièces jointes et le tableau de bord.
  */
 class VisibiliteActivites
 {
@@ -57,9 +61,37 @@ class VisibiliteActivites
     }
 
     /**
-     * Pendant unitaire de `appliquer()`, pour la policy.
+     * Variante de `appliquer()` pour la consultation : le périmètre habituel, plus
+     * toutes les activités validées.
+     *
+     * @param  Builder|\Illuminate\Database\Query\Builder  $query
+     */
+    public static function appliquerConsultation($query, ?User $user): void
+    {
+        // Sans restriction de périmètre, il n'y a rien à élargir (et un groupe OR vide
+        // serait ignoré par le builder, ne laissant que les activités validées).
+        if ($user === null || ! self::estRestreint($user)) {
+            return;
+        }
+
+        $query->where(fn ($q) => $q
+            ->where('activites.statut', 'valide')
+            ->orWhere(fn ($perimetre) => self::appliquer($perimetre, $user)));
+    }
+
+    /**
+     * Pendant unitaire de `appliquerConsultation()`, pour la policy.
      */
     public static function peutVoir(User $user, Activite $activite): bool
+    {
+        return $activite->statut === 'valide' || self::dansPerimetre($user, $activite);
+    }
+
+    /**
+     * Pendant unitaire de `appliquer()` : l'activité relève-t-elle du périmètre de
+     * travail de l'utilisateur ? Sert aux actions (évaluation, pièces jointes).
+     */
+    public static function dansPerimetre(User $user, Activite $activite): bool
     {
         if ($user->hasAnyRole(['superadmin', 'service-controle-gestion'])) {
             return true;
@@ -104,6 +136,21 @@ class VisibiliteActivites
         sort($perimetre);
 
         return 'p'.substr(md5(implode(',', $perimetre)), 0, 12);
+    }
+
+    /**
+     * `appliquer()` restreint-il la requête pour cet utilisateur ? Mêmes branches,
+     * même ordre.
+     */
+    private static function estRestreint(User $user): bool
+    {
+        if ($user->hasAnyRole(['superadmin', 'service-controle-gestion'])) {
+            return false;
+        }
+
+        return self::estSimpleAgent($user)
+            || $user->hasRole('dbcgoq')
+            || (bool) $user->perimetreActivitesIds();
     }
 
     /**

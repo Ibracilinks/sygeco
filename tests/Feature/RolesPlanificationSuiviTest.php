@@ -104,8 +104,11 @@ test('la cellule planification ne peut pas toucher une activité hors de son ent
     $user = userWithRole('agent-planification', ['departement_id' => Departement::factory()->create()->id]);
     $activite = activiteValideePour(Departement::factory()->create());
 
-    expect($user->can('view', $activite))->toBeFalse();
+    // Validée, elle est consultable par tous, mais reste hors de son périmètre de travail.
+    expect($user->can('view', $activite))->toBeTrue();
     expect($user->can('update', $activite))->toBeFalse();
+    expect($user->can('joindre', $activite))->toBeFalse();
+    expect($user->can('view', Activite::factory()->enAttente()->pourDepartement($activite->departement)->create()))->toBeFalse();
 });
 
 test('la cellule suivi & évaluation accède à l\'évaluation sans pouvoir modifier le PTA', function () {

@@ -72,7 +72,8 @@ class ActiviteController extends Controller
             });
         }
 
-        VisibiliteActivites::appliquer($query, Auth::user());
+        // Périmètre habituel, plus les activités validées de toutes les entités (lecture seule).
+        VisibiliteActivites::appliquerConsultation($query, Auth::user());
 
         $summaryQuery = clone $query;
         $summary = [
@@ -109,7 +110,9 @@ class ActiviteController extends Controller
             ->when($exerciceId !== null, fn ($q) => $q->whereHas('objectif.exercices', fn ($oq) => $oq->where('exercices.id', $exerciceId)))
             ->ordered()
             ->get();
-        $departements = $this->departementsVisibles();
+        // Les activités validées de toutes les entités étant listées, le filtre
+        // Structure propose toutes les entités.
+        $departements = $this->departementsVisibles(toutes: true);
         $departementsGroupes = Departement::grouperParDirectionCentrale($departements);
         $statuts = ['brouillon', 'en_attente', 'valide', 'rejete'];
         $filters = $request->only(['search', 'extrant_id', 'departement_id', 'statut', 'trimestre']);
@@ -574,13 +577,13 @@ class ActiviteController extends Controller
         return (int) (Auth::user()->departement_id ?? $departementId);
     }
 
-    private function departementsVisibles()
+    private function departementsVisibles(bool $toutes = false)
     {
         // La Direction Générale ne formule pas d'activités : elle reçoit celles des
         // entités qui lui sont rattachées.
         $query = Departement::active()->formulatrices()->ordered();
 
-        if ($perimetre = Auth::user()?->perimetreActivitesIds()) {
+        if (! $toutes && ($perimetre = Auth::user()?->perimetreActivitesIds())) {
             $query->whereIn('id', $perimetre);
         }
 
@@ -616,8 +619,9 @@ class ActiviteController extends Controller
         $this->authorize('view', $activite);
 
         // La cellule suivi & évaluation joint les justificatifs d'exécution sans
-        // avoir le droit de modifier l'activité elle-même.
-        if (! Auth::user()->canAny(['edit_activites', 'validate_activites', 'evaluate_activites'])) {
+        // avoir le droit de modifier l'activité elle-même. Hors de son périmètre,
+        // une activité validée n'est que consultable.
+        if (Auth::user()->cannot('joindre', $activite)) {
             return back()->with('error', "Vous n'êtes pas autorisé à ajouter des fichiers.");
         }
 

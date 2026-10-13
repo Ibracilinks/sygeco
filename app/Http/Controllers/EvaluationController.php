@@ -321,7 +321,9 @@ class EvaluationController extends Controller
             return $activite->statut === 'valide';
         }
 
-        return $user?->can('view', $activite) ?? false;
+        // Le périmètre de travail, pas la consultation : toute activité validée est
+        // visible de tous, mais seules celles du périmètre sont évaluables.
+        return $user?->can('evaluer', $activite) ?? false;
     }
 
     /**

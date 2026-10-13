@@ -20,6 +20,24 @@ class ActivitePolicy
     }
 
     /**
+     * Évaluer : réservé au périmètre de travail (le dbcgoq passe par Gate::before).
+     */
+    public function evaluer(User $user, Activite $activite): bool
+    {
+        return VisibiliteActivites::dansPerimetre($user, $activite);
+    }
+
+    /**
+     * Joindre un fichier : réservé au périmètre de travail, même si toute activité
+     * validée est consultable par tous.
+     */
+    public function joindre(User $user, Activite $activite): bool
+    {
+        return $user->canAny(['edit_activites', 'validate_activites', 'evaluate_activites'])
+            && VisibiliteActivites::dansPerimetre($user, $activite);
+    }
+
+    /**
      * Passé la date limite de saisie de l'exercice actif, seuls le dbcgoq (Gate::before)
      * et le service contrôle de gestion peuvent encore programmer une activité.
      */
