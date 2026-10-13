@@ -32,7 +32,7 @@ class IdentifiantsExerciceNotification extends Notification
             ->greeting('Bonjour '.$notifiable->name.',')
             ->line("L'exercice {$this->exercice->annee} est ouvert. Voici vos nouveaux identifiants de connexion :")
             ->line('• Adresse e-mail : '.$notifiable->email)
-            ->line('• Mot de passe : '.$this->motDePasse);
+            ->line('• Mot de passe provisoire : '.$this->motDePasse);
 
         if ($this->exercice->date_limite_saisie) {
             $mail->line('Date limite de saisie des activités : '.$this->exercice->date_limite_saisie->format('d/m/Y').'.');
@@ -40,7 +40,7 @@ class IdentifiantsExerciceNotification extends Notification
 
         return $mail
             ->action('Se connecter', url(route('login')))
-            ->line('Pour votre sécurité, pensez à modifier votre mot de passe après connexion.');
+            ->line('Ce mot de passe est provisoire : à votre connexion, il vous sera demandé de le remplacer par un mot de passe personnel.');
     }
 
     public function toArray(object $notifiable): array

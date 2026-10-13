@@ -33,9 +33,9 @@ class BienvenueUtilisateurNotification extends Notification
             ->line('Un compte vous a été créé sur la plateforme '.config('app.name').' (Plan de Travail Annuel — CANAM).')
             ->line('Voici vos identifiants de connexion :')
             ->line('• Adresse e-mail : '.$notifiable->email)
-            ->line('• Mot de passe : '.$this->motDePasse)
+            ->line('• Mot de passe provisoire : '.$this->motDePasse)
             ->action('Se connecter', url(route('login')))
-            ->line('Pour votre sécurité, nous vous recommandons de modifier votre mot de passe après la première connexion.');
+            ->line('Ce mot de passe est provisoire : à votre première connexion, il vous sera demandé de le remplacer par un mot de passe personnel.');
     }
 
     public function toArray(object $notifiable): array

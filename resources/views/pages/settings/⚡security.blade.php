@@ -56,9 +56,19 @@ new #[Title('Paramètres de sécurité')] class extends Component {
             throw $e;
         }
 
-        Auth::user()->update([
+        $provisoire = Auth::user()->mot_de_passe_provisoire;
+
+        Auth::user()->forceFill([
             'password' => $validated['password'],
-        ]);
+            'mot_de_passe_provisoire' => false,
+        ])->save();
+
+        // Le mot de passe provisoire remplacé, l'application redevient accessible.
+        if ($provisoire) {
+            $this->redirectRoute('dashboard');
+
+            return;
+        }
 
         $this->reset('current_password', 'password', 'password_confirmation');
 
@@ -91,6 +101,13 @@ new #[Title('Paramètres de sécurité')] class extends Component {
     <flux:heading class="sr-only">{{ __('Security settings') }}</flux:heading>
 
     <x-pages::settings.layout :heading="__('Update password')" :subheading="__('Ensure your account is using a long, random password to stay secure')">
+        @if (auth()->user()->mot_de_passe_provisoire)
+            <div class="mt-6 rounded-lg border border-amber-200 bg-amber-50 p-4 dark:border-amber-800 dark:bg-amber-950/40">
+                <p class="text-sm font-medium text-amber-900 dark:text-amber-100">Votre mot de passe est provisoire.</p>
+                <p class="mt-1 text-sm text-amber-800 dark:text-amber-200">Saisissez le mot de passe reçu par e-mail comme mot de passe actuel, puis choisissez votre mot de passe personnel pour accéder à l'application.</p>
+            </div>
+        @endif
+
         <form method="POST" wire:submit="updatePassword" class="mt-6 space-y-6">
             <flux:input
                 wire:model="current_password"
