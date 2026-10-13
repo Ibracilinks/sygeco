@@ -12,7 +12,6 @@ use App\Support\ActiveExercice;
 use App\Support\CadreLogique;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\Rule;
 
@@ -61,7 +60,7 @@ class ValidationController extends Controller
 
     /**
      * Arbitrage détaillé d'une entité : toutes ses activités soumises, avec les
-     * actions groupées (fusion, validation par sélection) et l'export du cadre logique.
+     * actions groupées (validation par sélection) et l'export du cadre logique.
      */
     public function entite(Request $request, Departement $departement)
     {
@@ -239,7 +238,7 @@ class ValidationController extends Controller
             $validated['motif'] ?? null
         );
 
-        $this->notifierArbitrage($activite->saisiePar, 'modifiee', $activite->nom_activite, $validated['motif'] ?? null, null, $activite);
+        $this->notifierArbitrage($activite->saisiePar, 'modifiee', $activite->nom_activite, $validated['motif'] ?? null, $activite);
 
         // Le directeur de la Direction Centrale et le chef de service sont informés
         // de tout changement de budget décidé lors de l'arbitrage.
@@ -278,66 +277,6 @@ class ValidationController extends Controller
             ->with('success', 'Activité supprimée et l\'auteur a été notifié.');
     }
 
-    /**
-     * Arbitrage budgétaire — Fusionner plusieurs activités en une activité consolidée.
-     */
-    public function arbitrerFusionner(Request $request)
-    {
-        $validated = $request->validate($this->reglesArbitrage() + [
-            'activite_ids' => 'required|array|min:2',
-            'activite_ids.*' => 'integer|exists:activites,id',
-            'extrant_id' => 'required|integer|exists:extrants,id',
-            'departement_id' => 'required|integer|exists:departements,id',
-            'motif' => 'nullable|string|max:1000',
-        ]);
-
-        $sources = Activite::query()->soumis()->whereKey($validated['activite_ids'])->get()
-            ->filter(fn (Activite $a) => $this->canValidate($a));
-
-        if ($sources->count() < 2) {
-            return back()->with('error', 'Sélectionnez au moins deux activités fusionnables de votre périmètre.');
-        }
-
-        $consolidee = DB::transaction(function () use ($validated, $sources) {
-            $premiere = $sources->first();
-
-            $consolidee = Activite::create([
-                'extrant_id' => $validated['extrant_id'],
-                'departement_id' => $validated['departement_id'],
-                'nom_activite' => $validated['nom_activite'],
-                'indicateur_objectivement_verifiable' => $validated['indicateur_objectivement_verifiable'],
-                'moyen_verification' => $validated['moyen_verification'],
-                'cout' => $validated['cout'],
-                'trimestre_1' => $validated['trimestre_1'],
-                'trimestre_2' => $validated['trimestre_2'],
-                'trimestre_3' => $validated['trimestre_3'],
-                'trimestre_4' => $validated['trimestre_4'],
-                'statut' => 'en_attente',
-                'saisi_par' => $premiere->saisi_par,
-                'date_saisie' => now(),
-                'date_soumission' => now(),
-            ]);
-
-            $consolidee->journaliserArbitrage('arbitrage_fusion', $validated['motif'] ?? null);
-
-            foreach ($sources as $source) {
-                $source->arbitrerSuppression($validated['motif'] ?? null);
-            }
-
-            return $consolidee;
-        });
-
-        // Notifier chaque auteur d'activité source (dédoublonné par utilisateur).
-        $sources->groupBy('saisi_par')->each(function ($groupe) use ($validated, $consolidee) {
-            $auteur = $groupe->first()->saisiePar;
-            foreach ($groupe as $source) {
-                $this->notifierArbitrage($auteur, 'fusionnee', $source->nom_activite, $validated['motif'] ?? null, $consolidee->nom_activite, $consolidee);
-            }
-        });
-
-        return back()->with('success', $sources->count().' activités fusionnées et les auteurs ont été notifiés.');
-    }
-
     private function reglesArbitrage(): array
     {
         return [
@@ -352,10 +291,10 @@ class ValidationController extends Controller
         ];
     }
 
-    private function notifierArbitrage($auteur, string $action, string $nom, ?string $motif, ?string $nomConsolidee = null, ?Activite $cible = null): void
+    private function notifierArbitrage($auteur, string $action, string $nom, ?string $motif, ?Activite $cible = null): void
     {
         if ($auteur) {
-            $auteur->notify(new ActiviteArbitrageNotification($action, $nom, $motif, $nomConsolidee, $cible));
+            $auteur->notify(new ActiviteArbitrageNotification($action, $nom, $motif, $cible));
         }
     }
 

@@ -12,16 +12,15 @@ class ActiviteArbitrageNotification extends Notification
     use Queueable;
 
     /**
-     * @param  string  $action  modifiee | supprimee | fusionnee
+     * @param  string  $action  modifiee | supprimee
      * @param  string  $nomActivite  Libellé de l'activité concernée (snapshot)
-     * @param  Activite|null  $cible  Entité à consulter (activité modifiée ou consolidée) ;
-     *                                 null pour une suppression (l'entité n'existe plus).
+     * @param  Activite|null  $cible  Activité modifiée à consulter ;
+     *                                null pour une suppression (l'entité n'existe plus).
      */
     public function __construct(
         public string $action,
         public string $nomActivite,
         public ?string $motif = null,
-        public ?string $nomConsolidee = null,
         public ?Activite $cible = null
     ) {}
 
@@ -53,7 +52,6 @@ class ActiviteArbitrageNotification extends Notification
         return [
             'action' => $this->action,
             'nom_activite' => $this->nomActivite,
-            'nom_consolidee' => $this->nomConsolidee,
             'motif' => $this->motif,
             'message' => $this->phrase(),
             'url' => $this->lien($notifiable),
@@ -77,7 +75,6 @@ class ActiviteArbitrageNotification extends Notification
     {
         return match ($this->action) {
             'supprimee' => 'Arbitrage — activité supprimée',
-            'fusionnee' => 'Arbitrage — activité fusionnée',
             default => 'Arbitrage — activité modifiée',
         };
     }
@@ -86,7 +83,6 @@ class ActiviteArbitrageNotification extends Notification
     {
         return match ($this->action) {
             'supprimee' => "Votre activité « {$this->nomActivite} » a été supprimée lors de l'arbitrage budgétaire.",
-            'fusionnee' => "Votre activité « {$this->nomActivite} » a été fusionnée".($this->nomConsolidee ? " dans « {$this->nomConsolidee} »" : '').' lors de l\'arbitrage budgétaire.',
             default => "Votre activité « {$this->nomActivite} » a été modifiée lors de l'arbitrage budgétaire.",
         };
     }

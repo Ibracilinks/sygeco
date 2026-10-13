@@ -72,7 +72,7 @@
             <li>Présentation en cadre logique : Résultat stratégique → Extrant → activités.</li>
             <li>En-tête : nombre d'activités en attente, coût total à arbitrer, nombre déjà validées ; pour une Direction Centrale, la note « Inclut les activités des services rattachés à cette Direction Centrale. » rappelle le périmètre élargi.</li>
             <li>Colonnes : case à cocher (activités en attente uniquement), Activité (code + nom + auteur), Responsable (structure porteuse), IOV, Moyen de vérification, Chronogramme, Validé le (+ validateur), Coût, Actions.</li>
-            <li>Boutons de haut de page : « Exporter (Cadre logique) », « Fusionner sélection », « Valider sélection ».</li>
+            <li>Boutons de haut de page : « Exporter (Cadre logique) », « Valider sélection ».</li>
             <li>Message si aucune activité en attente : « Aucune activité en attente pour cette entité. »</li>
         </ul>
     </x-doc.section>
@@ -115,7 +115,7 @@
         </ul>
     </x-doc.section>
 
-    <x-doc.section id="arbitrage" titre="7. Arbitrage budgétaire" chapo="Avant de valider ou refuser, l'arbitre peut modifier, supprimer ou fusionner des activités encore en attente.">
+    <x-doc.section id="arbitrage" titre="7. Arbitrage budgétaire" chapo="Avant de valider ou refuser, l'arbitre peut modifier ou supprimer des activités encore en attente.">
         <h3 class="text-sm font-semibold text-slate-800 dark:text-slate-100">Modifier (arbitrer-modifier)</h3>
         <ul class="list-disc space-y-1.5 pl-5">
             <li>Uniquement sur une activité <strong>en attente</strong> et dans votre périmètre.</li>
@@ -129,19 +129,6 @@
             <li>L'activité est archivée (suppression réversible), l'auteur est notifié.</li>
             <li>Succès : « Activité supprimée et l'auteur a été notifié. »</li>
         </ul>
-        <h3 class="text-sm font-semibold text-slate-800 dark:text-slate-100">Fusionner (arbitrer-fusionner)</h3>
-        <ul class="list-disc space-y-1.5 pl-5">
-            <li>Sélectionnez <strong>au moins deux</strong> activités en attente de votre périmètre, puis « Fusionner sélection ».</li>
-            <li>Pour chaque champ (intitulé, IOV, moyen de vérification), choisissez la valeur d'une des sources ou saisissez un texte final ; pour le coût, choisissez une des valeurs ou la <strong>somme</strong> (proposée par défaut) ; le chronogramme reprend les trimestres cochés par au moins une source ; extrant et structure responsable se choisissent parmi les valeurs déjà présentes dans la sélection.</li>
-            <li>Une <strong>nouvelle activité consolidée</strong> est créée, au statut <strong>En attente</strong> (elle devra donc être validée à son tour) ; chacune des activités sources est archivée (même mécanisme que « Supprimer »).</li>
-            <li>Chaque auteur d'une activité fusionnée est notifié, avec le nom de la nouvelle activité consolidée.</li>
-            <li>Message si moins de deux sources valides : « Sélectionnez au moins deux activités fusionnables de votre périmètre. »</li>
-            <li>Succès : « {n} activités fusionnées et les auteurs ont été notifiés. »</li>
-        </ul>
-        <x-doc.astuce type="attention">
-            La fusion n'est <strong>pas instantanément définitive</strong> : l'activité consolidée reste à valider
-            comme n'importe quelle autre soumission — elle n'hérite pas automatiquement du statut « Validé ».
-        </x-doc.astuce>
     </x-doc.section>
 
     <x-doc.section id="export" titre="8. Exporter le cadre logique">
@@ -156,7 +143,7 @@
 
     <x-doc.section id="historique" titre="9. Historique de validation">
         <p>
-            Chaque étape (soumission, validation, refus, modification d'arbitrage, suppression d'arbitrage, fusion)
+            Chaque étape (soumission, validation, refus, modification d'arbitrage, suppression d'arbitrage)
             est journalisée avec sa date, son auteur, le motif ou commentaire éventuel, et l'ancien/nouveau statut. La
             fiche d'une activité (module Activités) affiche l'historique complet ; les modales de validation et
             l'écran d'entité n'en montrent que les dernières entrées.
@@ -178,10 +165,6 @@
                 <summary class="cursor-pointer font-medium text-slate-800 dark:text-slate-100">« Aucune activité sélectionnée ne peut être validée par votre profil. »</summary>
                 <p class="mt-2">Toutes les activités cochées sont hors de votre périmètre (par exemple vos propres activités, ou celles d'une entité que vous ne supervisez pas directement).</p>
             </details>
-            <details class="rounded-lg border border-slate-200 p-4 dark:border-slate-700">
-                <summary class="cursor-pointer font-medium text-slate-800 dark:text-slate-100">« Sélectionnez au moins deux activités fusionnables de votre périmètre. »</summary>
-                <p class="mt-2">Cochez au moins deux activités en attente qui sont bien dans votre périmètre avant de lancer la fusion.</p>
-            </details>
         </div>
     </x-doc.section>
 
@@ -190,7 +173,6 @@
             <li>Traitez en priorité les entités affichant le <strong>plus gros budget soumis</strong> depuis la vue globale (§2).</li>
             <li>Utilisez l'<strong>arbitrage « Modifier »</strong> plutôt que de refuser puis attendre une re-soumission, pour les corrections mineures (coût, chronogramme, formulation).</li>
             <li>Réservez le <strong>refus</strong> aux activités nécessitant une révision de fond par leur auteur, avec un motif clair et exploitable.</li>
-            <li>Avant une <strong>fusion</strong>, vérifiez que les activités sources concernent bien le même extrant et la même structure, pour limiter les choix à trancher.</li>
             <li>Utilisez la <strong>validation groupée</strong> pour les activités déjà cohérentes et sans ambiguïté, et réservez le traitement unitaire à celles nécessitant un commentaire ou un arbitrage.</li>
         </ul>
         <p class="text-xs text-slate-500 dark:text-slate-400">

@@ -89,7 +89,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
             // Arbitrage budgétaire
             Route::post('/{activite}/arbitrer-modifier', [ValidationController::class, 'arbitrerModifier'])->name('arbitrer-modifier');
             Route::post('/{activite}/arbitrer-supprimer', [ValidationController::class, 'arbitrerSupprimer'])->name('arbitrer-supprimer');
-            Route::post('/arbitrer-fusionner', [ValidationController::class, 'arbitrerFusionner'])->name('arbitrer-fusionner');
             Route::get('/export/excel', [ValidationController::class, 'exporter'])->name('exporter');
         });
     });

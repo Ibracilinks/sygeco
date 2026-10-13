@@ -461,14 +461,6 @@ class Activite extends Model
         $this->delete();
     }
 
-    /**
-     * Journalise une action d'arbitrage (ex. fusion) sur l'activité.
-     */
-    public function journaliserArbitrage(string $action, ?string $motif = null): void
-    {
-        $this->logHistorique($action, $this->statut, $this->statut, $motif);
-    }
-
     protected function logHistorique(string $action, string $ancienStatut, string $nouveauStatut, ?string $commentaire = null, ?int $utilisateurId = null)
     {
         $this->validationHistoriques()->create([

@@ -59,7 +59,7 @@
         <ul class="list-disc space-y-1.5 pl-5">
             <li>Une activité n'est <strong>modifiable</strong> par son auteur que tant qu'elle est en <strong>Brouillon</strong> ou <strong>Rejetée</strong>.</li>
             <li>Seule une activité <strong>Brouillon</strong> ou <strong>Rejetée</strong> peut être <strong>soumise</strong> (ou re-soumise).</li>
-            <li>Une fois <strong>En attente</strong>, elle échappe à son auteur : seul l'arbitrage du module Validation peut encore la modifier, la supprimer ou la fusionner avant décision.</li>
+            <li>Une fois <strong>En attente</strong>, elle échappe à son auteur : seul l'arbitrage du module Validation peut encore la modifier ou la supprimer avant décision.</li>
             <li>Une activité <strong>Validée</strong> n'est plus modifiable du tout par ce module ; elle devient éligible à la saisie d'exécution du chapitre <a href="{{ route('documentation.suivi') }}" class="underline">Suivi &amp; évaluation</a>.</li>
         </ul>
     </x-doc.section>

@@ -144,11 +144,11 @@ test('le lien d\'arbitrage pointe vers l\'activité concernée', function () {
     $activite = Activite::factory()->pourDepartement($dep)->create();
 
     // Cas « modifiée » : lien vers la fiche de l'activité (accessible à l'auteur).
-    $modif = (new ActiviteArbitrageNotification('modifiee', $activite->nom_activite, 'motif', null, $activite))->toArray($auteur);
+    $modif = (new ActiviteArbitrageNotification('modifiee', $activite->nom_activite, 'motif', $activite))->toArray($auteur);
     expect($modif['url'])->toContain('/activites/'.$activite->id);
 
     // Cas « supprimée » : l'entité n'existe plus -> repli sur la liste.
-    $suppr = (new ActiviteArbitrageNotification('supprimee', 'Nom snapshot', 'motif', null, null))->toArray($auteur);
+    $suppr = (new ActiviteArbitrageNotification('supprimee', 'Nom snapshot', 'motif', null))->toArray($auteur);
     expect($suppr['url'])->toContain('/activites');
     expect($suppr['url'])->not->toContain('/activites/');
 });

@@ -66,7 +66,7 @@
             </a>
             <a href="{{ route('documentation.validation') }}" class="group rounded-lg border border-slate-200 p-4 transition hover:border-sky-300 hover:bg-sky-50/50 dark:border-slate-700 dark:hover:border-sky-800 dark:hover:bg-sky-950/20">
                 <p class="text-sm font-semibold text-slate-800 group-hover:text-sky-800 dark:text-slate-100 dark:group-hover:text-sky-200">✅ Validation</p>
-                <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">Circuit montant, validation groupée, arbitrage budgétaire (modifier, supprimer, fusionner), historique.</p>
+                <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">Circuit montant, validation groupée, arbitrage budgétaire (modifier, supprimer), historique.</p>
             </a>
             <a href="{{ route('documentation.suivi') }}" class="group rounded-lg border border-slate-200 p-4 transition hover:border-sky-300 hover:bg-sky-50/50 dark:border-slate-700 dark:hover:border-sky-800 dark:hover:bg-sky-950/20">
                 <p class="text-sm font-semibold text-slate-800 group-hover:text-sky-800 dark:text-slate-100 dark:group-hover:text-sky-200">📊 Suivi &amp; évaluation</p>
@@ -194,7 +194,7 @@
         </div>
         <ul class="list-disc space-y-1.5 pl-5">
             <li>Une activité <strong>rejetée</strong> peut être corrigée puis re-soumise ; le motif de refus est indiqué.</li>
-            <li>Le responsable peut procéder à un <strong>arbitrage budgétaire</strong> (modification, suppression ou fusion) avant validation.</li>
+            <li>Le responsable peut procéder à un <strong>arbitrage budgétaire</strong> (modification ou suppression) avant validation.</li>
             <li>Chaque action est tracée dans l'historique de validation de l'activité.</li>
         </ul>
         <x-doc.astuce>

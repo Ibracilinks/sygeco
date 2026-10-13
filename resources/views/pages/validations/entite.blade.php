@@ -30,10 +30,6 @@
                         Exporter (Cadre logique)
                     </a>
                 @endcan
-                <button type="button" onclick="openFusionModal()"
-                    class="inline-flex items-center rounded-lg bg-violet-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-violet-700">
-                    Fusionner sélection
-                </button>
                 <button type="button" onclick="submitBulkValidation()"
                     class="inline-flex items-center rounded-lg bg-slate-800 px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-700 dark:bg-slate-200 dark:text-slate-900 dark:hover:bg-white">
                     Valider sélection
@@ -116,10 +112,6 @@
                                         'trimestre_2' => $activite->trimestre_2,
                                         'trimestre_3' => $activite->trimestre_3,
                                         'trimestre_4' => $activite->trimestre_4,
-                                        'extrant_id' => $activite->extrant_id,
-                                        'extrant_code' => $activite->extrant->code ?? '-',
-                                        'departement_id' => $activite->departement_id,
-                                        'departement_nom' => $activite->departement->nom ?? '-',
                                     ];
                                     $historique = $activite->validationHistoriques->take(3)->map(fn ($item) => [
                                         'action' => $item->action,
@@ -191,7 +183,6 @@
         @include('pages.validations.partials.modal-refuser')
         @include('pages.validations.partials.modal-arbitrer-modifier')
         @include('pages.validations.partials.modal-arbitrer-supprimer')
-        @include('pages.validations.partials.modal-arbitrer-fusionner')
     </div>
 
     <style>
@@ -263,17 +254,6 @@
 
         // ----- Arbitrage budgétaire -----
 
-        function escHtml(value) {
-            const div = document.createElement('div');
-            div.textContent = value == null ? '' : String(value);
-            return div.innerHTML;
-        }
-
-        function selectedActivites() {
-            return Array.from(document.querySelectorAll('.row-checkbox:checked'))
-                .map((el) => JSON.parse(el.dataset.activite));
-        }
-
         function activiteData(id) {
             const cb = document.querySelector('.row-checkbox[value="' + id + '"]');
             return cb ? JSON.parse(cb.dataset.activite) : null;
@@ -301,93 +281,6 @@
             form.motif.value = '';
             document.getElementById('arbSupprimerNom').textContent = nom;
             document.getElementById('arbSupprimerModal').classList.remove('hidden');
-        }
-
-        function openFusionModal() {
-            const sources = selectedActivites();
-            if (sources.length < 2) {
-                alert('Sélectionnez au moins deux activités à fusionner.');
-                return;
-            }
-
-            // Identifiants des sources
-            document.getElementById('fusionIds').innerHTML = sources
-                .map((s) => '<input type="hidden" name="activite_ids[]" value="' + s.id + '">')
-                .join('');
-
-            const textFields = [
-                ['nom_activite', "Nom de l'activité"],
-                ['indicateur_objectivement_verifiable', 'Indicateur objectivement vérifiable'],
-                ['moyen_verification', 'Moyen de vérification'],
-            ];
-
-            let html = '';
-
-            // Champs texte : radios des sources + valeur finale éditable
-            textFields.forEach(([field, title]) => {
-                const radios = sources.map((s, i) =>
-                    '<label class="flex items-start gap-2 text-xs text-slate-600 dark:text-slate-300">' +
-                    '<input type="radio" name="pick_' + field + '" class="mt-0.5" ' + (i === 0 ? 'checked' : '') +
-                    ' data-val="' + escHtml(s[field]) + '"' +
-                    ' onclick="document.getElementById(\'fus_' + field + '\').value = this.dataset.val">' +
-                    '<span>' + escHtml(s[field]) + '</span></label>'
-                ).join('');
-
-                html += '<div class="rounded-lg border border-slate-200 p-3 dark:border-slate-700">' +
-                    '<p class="text-sm font-medium text-slate-700 dark:text-slate-200">' + title + '</p>' +
-                    '<div class="mt-2 space-y-1">' + radios + '</div>' +
-                    '<textarea id="fus_' + field + '" name="' + field + '" rows="2" class="arb-input mt-2">' + escHtml(sources[0][field]) + '</textarea>' +
-                    '</div>';
-            });
-
-            // Coût : radios (chaque source + somme) + valeur finale
-            const sum = sources.reduce((acc, s) => acc + Number(s.cout || 0), 0);
-            let coutRadios = sources.map((s) =>
-                '<label class="flex items-center gap-2 text-xs text-slate-600 dark:text-slate-300">' +
-                '<input type="radio" name="pick_cout" data-val="' + Math.round(s.cout || 0) + '"' +
-                ' onclick="document.getElementById(\'fus_cout\').value = this.dataset.val">' +
-                new Intl.NumberFormat('fr-FR').format(Math.round(s.cout || 0)) + '</label>'
-            ).join('');
-            coutRadios += '<label class="flex items-center gap-2 text-xs font-medium text-slate-700 dark:text-slate-200">' +
-                '<input type="radio" name="pick_cout" checked data-val="' + sum + '"' +
-                ' onclick="document.getElementById(\'fus_cout\').value = this.dataset.val">' +
-                'Somme : ' + new Intl.NumberFormat('fr-FR').format(sum) + '</label>';
-
-            html += '<div class="rounded-lg border border-slate-200 p-3 dark:border-slate-700">' +
-                '<p class="text-sm font-medium text-slate-700 dark:text-slate-200">Coût (FCFA)</p>' +
-                '<div class="mt-2 space-y-1">' + coutRadios + '</div>' +
-                '<input type="number" id="fus_cout" name="cout" min="0" step="1" value="' + sum + '" class="arb-input mt-2">' +
-                '</div>';
-
-            // Chronogramme : coché si au moins une source a le trimestre
-            let trims = [1, 2, 3, 4].map((t) => {
-                const anyOui = sources.some((s) => s['trimestre_' + t] === 'oui');
-                return '<label class="inline-flex items-center gap-1.5 text-sm text-slate-700 dark:text-slate-200">' +
-                    '<input type="hidden" name="trimestre_' + t + '" value="non">' +
-                    '<input type="checkbox" name="trimestre_' + t + '" value="oui" class="rounded border-slate-300" ' + (anyOui ? 'checked' : '') + '>' +
-                    'T' + t + '</label>';
-            }).join('');
-            html += '<div class="rounded-lg border border-slate-200 p-3 dark:border-slate-700">' +
-                '<p class="text-sm font-medium text-slate-700 dark:text-slate-200">Chronogramme</p>' +
-                '<div class="mt-2 flex flex-wrap gap-3">' + trims + '</div></div>';
-
-            // Extrant et structure : sélection parmi les sources
-            const exMap = {}, depMap = {};
-            sources.forEach((s) => { exMap[s.extrant_id] = s.extrant_code; depMap[s.departement_id] = s.departement_nom; });
-            const exOpts = Object.keys(exMap).map((id, i) => '<option value="' + id + '" ' + (i === 0 ? 'selected' : '') + '>' + escHtml(exMap[id]) + '</option>').join('');
-            const depOpts = Object.keys(depMap).map((id, i) => '<option value="' + id + '" ' + (i === 0 ? 'selected' : '') + '>' + escHtml(depMap[id]) + '</option>').join('');
-
-            html += '<div class="grid grid-cols-1 gap-4 md:grid-cols-2">' +
-                '<div class="rounded-lg border border-slate-200 p-3 dark:border-slate-700">' +
-                '<p class="text-sm font-medium text-slate-700 dark:text-slate-200">Extrant</p>' +
-                '<select name="extrant_id" class="arb-input mt-2">' + exOpts + '</select></div>' +
-                '<div class="rounded-lg border border-slate-200 p-3 dark:border-slate-700">' +
-                '<p class="text-sm font-medium text-slate-700 dark:text-slate-200">Structure responsable</p>' +
-                '<select name="departement_id" class="arb-input mt-2">' + depOpts + '</select></div>' +
-                '</div>';
-
-            document.getElementById('fusionFields').innerHTML = html;
-            document.getElementById('arbFusionnerModal').classList.remove('hidden');
         }
     </script>
 </x-layouts::app>
