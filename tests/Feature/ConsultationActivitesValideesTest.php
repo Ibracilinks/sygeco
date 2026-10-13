@@ -3,6 +3,7 @@
 use App\Models\Activite;
 use App\Models\Departement;
 use App\Models\Exercice;
+use App\Support\ActiveExercice;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
@@ -28,7 +29,8 @@ test('la liste montre les activités validées des autres entités, pas leurs br
     Activite::factory()->enAttente()->pourDepartement($autre)->pourExercice($exercice)->create(['nom_activite' => 'En attente ailleurs']);
     Activite::factory()->brouillon()->pourDepartement($autre)->pourExercice($exercice)->create(['nom_activite' => 'Brouillon ailleurs']);
 
-    $this->actingAs($chef)->get(route('activites.index'))
+    // La factory des objectifs peut créer un autre exercice actif : on épingle celui du test.
+    $this->actingAs($chef)->withSession([ActiveExercice::SESSION_KEY => $exercice->id])->get(route('activites.index'))
         ->assertOk()
         ->assertSee('Validée ailleurs')
         ->assertDontSee('En attente ailleurs')
@@ -44,7 +46,8 @@ test('le périmètre habituel reste visible en plus des activités validées', f
     Activite::factory()->brouillon()->pourDepartement($direction)->pourExercice($exercice)->create(['nom_activite' => 'Mon brouillon']);
     Activite::factory()->valide()->pourDepartement($autre)->pourExercice($exercice)->create(['nom_activite' => 'Validée ailleurs']);
 
-    $this->actingAs($responsable)->get(route('activites.index'))
+    // La factory des objectifs peut créer un autre exercice actif : on épingle celui du test.
+    $this->actingAs($responsable)->withSession([ActiveExercice::SESSION_KEY => $exercice->id])->get(route('activites.index'))
         ->assertOk()
         ->assertSee('Mon brouillon')
         ->assertSee('Validée ailleurs');
