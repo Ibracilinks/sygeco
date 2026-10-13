@@ -13,3 +13,7 @@ Schedule::command('activites:notifier-saisie')->dailyAt('08:00');
 
 // Ouverture des fenêtres de suivi (mi-parcours et évaluation) aux chefs de département.
 Schedule::command('activites:notifier-suivi')->dailyAt('08:05');
+
+// Fin de trimestre : les 5, 12, 19 et 26 du dernier mois (mars, juin, septembre, décembre),
+// rappel aux comptes des structures dont des activités du trimestre ne sont pas réalisées.
+Schedule::command('activites:rappel-trimestriel')->cron('10 8 5,12,19,26 3,6,9,12 *');
