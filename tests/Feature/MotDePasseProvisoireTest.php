@@ -133,3 +133,24 @@ test('le mail « mot de passe oublié » est en français', function () {
         ->and($mail->actionText)->toBe('Réinitialiser le mot de passe')
         ->and($mail->actionUrl)->toContain('reset-password/jeton');
 });
+
+test('derrière le proxy HTTPS, le parcours du mot de passe provisoire ne repasse jamais par HTTP', function () {
+    $user = userWithRole('responsable-programme');
+    $user->forceFill(['mot_de_passe_provisoire' => true])->save();
+    $https = ['X-Forwarded-Proto' => 'https'];
+
+    // Renvoi vers la page de sécurité : le schéma annoncé par le proxy est repris.
+    $vers = $this->actingAs($user)->get('http://sygeco.test/dashboard', $https)->headers->get('Location');
+    expect($vers)->toBe('https://sygeco.test/settings/security');
+
+    // La confirmation du mot de passe exigée par la page de sécurité reste en HTTPS.
+    $confirmation = $this->actingAs($user)->get('http://sygeco.test/settings/security', $https)->headers->get('Location');
+    expect($confirmation)->toStartWith('https://');
+
+    // L'endpoint Livewire du formulaire est en HTTPS : sinon le navigateur le bloque
+    // (« Blocked loading mixed active content … /livewire-…/update »).
+    $page = $this->actingAs($user)->withSession(['auth.password_confirmed_at' => time()])
+        ->get('http://sygeco.test/settings/security', $https)->assertOk()->getContent();
+    expect($page)->toContain('https://sygeco.test/livewire')
+        ->and($page)->not->toContain('http://sygeco.test/livewire');
+});

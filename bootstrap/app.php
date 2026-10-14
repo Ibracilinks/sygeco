@@ -4,6 +4,7 @@ use App\Http\Middleware\ExigerChangementMotDePasse;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
+use Illuminate\Http\Request;
 use Spatie\Permission\Middleware\RoleMiddleware;
 
 return Application::configure(basePath: dirname(__DIR__))
@@ -13,6 +14,11 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        // Le TLS est terminé par Cloudflare : seul le schéma annoncé par le proxy est
+        // repris, pour générer des URLs https://. L'hôte transmis n'est pas pris en
+        // compte (il servirait à forger les liens des e-mails de réinitialisation).
+        $middleware->trustProxies(at: '*', headers: Request::HEADER_X_FORWARDED_PROTO);
+
         $middleware->web(append: [
             ExigerChangementMotDePasse::class,
         ]);
