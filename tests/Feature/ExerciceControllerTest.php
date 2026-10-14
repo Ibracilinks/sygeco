@@ -147,6 +147,38 @@ test('le calendrier ne modifie que la fenêtre envoyée', function () {
     expect($exercice->date_debut_evaluation->format('Y-m-d'))->toBe('2036-12-01');
 });
 
+test('les dates de saisie des activités peuvent sortir de l\'exercice', function () {
+    $admin = userWithRole('dbcgoq');
+    $exercice = Exercice::factory()->create([
+        'annee' => 2037,
+        'date_debut' => '2037-01-01',
+        'date_fin' => '2037-12-31',
+    ]);
+
+    $this->actingAs($admin)->put(route('exercices.calendrier', $exercice), [
+        'fenetre' => 'saisie',
+        'date_ouverture_saisie' => '2036-11-15',
+        'date_limite_saisie' => '2038-01-15',
+    ])->assertSessionHasNoErrors();
+
+    $exercice = $exercice->fresh();
+    expect($exercice->date_ouverture_saisie->format('Y-m-d'))->toBe('2036-11-15');
+    expect($exercice->date_limite_saisie->format('Y-m-d'))->toBe('2038-01-15');
+});
+
+test('la date limite de saisie ne peut précéder l\'ouverture', function () {
+    $admin = userWithRole('dbcgoq');
+    $exercice = Exercice::factory()->create(['annee' => 2038]);
+
+    $this->actingAs($admin)
+        ->from(route('exercices.show', $exercice))
+        ->put(route('exercices.calendrier', $exercice), [
+            'fenetre' => 'saisie',
+            'date_ouverture_saisie' => '2038-03-01',
+            'date_limite_saisie' => '2038-02-01',
+        ])->assertSessionHasErrorsIn('calendrier', 'date_limite_saisie');
+});
+
 test('les dates de mi-parcours doivent rester dans l\'exercice', function () {
     $admin = userWithRole('dbcgoq');
     $exercice = Exercice::factory()->create([

@@ -273,9 +273,11 @@
                                         <div>
                                             <h3 class="text-lg font-semibold text-slate-900 dark:text-white">{{ $fenetre['titre'] }}</h3>
                                             <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">{{ $fenetre['aide'] }}</p>
-                                            <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                                                Dates comprises entre le {{ $exercice->date_debut->format('d/m/Y') }} et le {{ $exercice->date_fin->format('d/m/Y') }}.
-                                            </p>
+                                            @if ($cle !== 'saisie')
+                                                <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                                                    Dates comprises entre le {{ $exercice->date_debut->format('d/m/Y') }} et le {{ $exercice->date_fin->format('d/m/Y') }}.
+                                                </p>
+                                            @endif
                                         </div>
 
                                         <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -283,7 +285,7 @@
                                                 <div>
                                                     <label for="{{ $cle }}-{{ $champ }}" class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-200">{{ $libelle }}</label>
                                                     <input type="date" id="{{ $cle }}-{{ $champ }}" name="{{ $champ }}"
-                                                        min="{{ $exercice->date_debut->format('Y-m-d') }}" max="{{ $exercice->date_fin->format('Y-m-d') }}"
+                                                        @if ($cle !== 'saisie') min="{{ $exercice->date_debut->format('Y-m-d') }}" max="{{ $exercice->date_fin->format('Y-m-d') }}" @endif
                                                         value="{{ $fenetreEnErreur === $cle ? old($champ) : $exercice->{$champ}?->format('Y-m-d') }}"
                                                         class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-slate-500 focus:outline-none dark:border-slate-700 dark:bg-slate-950 dark:text-white">
                                                     @error($champ, 'calendrier')<p class="mt-1 text-xs text-red-600 dark:text-red-400">{{ $message }}</p>@enderror

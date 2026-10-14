@@ -26,8 +26,9 @@ class UpdateExerciceCalendrierRequest extends FormRequest
 
         return [
             'fenetre' => ['required', 'in:saisie,mi_parcours,evaluation'],
-            'date_ouverture_saisie' => ['sometimes', 'nullable', 'date', "after_or_equal:$debut", "before_or_equal:$fin"],
-            'date_limite_saisie' => ['sometimes', 'nullable', 'date', 'after_or_equal:date_ouverture_saisie', "after_or_equal:$debut", "before_or_equal:$fin"],
+            // La saisie des activités peut s'ouvrir avant le début de l'exercice et se clore après sa fin.
+            'date_ouverture_saisie' => ['sometimes', 'nullable', 'date'],
+            'date_limite_saisie' => ['sometimes', 'nullable', 'date', 'after_or_equal:date_ouverture_saisie'],
             'date_debut_mi_parcours' => ['sometimes', 'nullable', 'date', "after_or_equal:$debut", "before_or_equal:$fin"],
             'date_fin_mi_parcours' => ['sometimes', 'nullable', 'date', 'after_or_equal:date_debut_mi_parcours', "before_or_equal:$fin"],
             'date_debut_evaluation' => ['sometimes', 'nullable', 'date', "after_or_equal:$debut", "before_or_equal:$fin"],
