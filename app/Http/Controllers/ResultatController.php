@@ -31,7 +31,7 @@ class ResultatController extends Controller
         ];
 
         $query = Resultat::query()
-            ->with(['objectif:id,code,annee,libelle', 'objectif.exercices:id,annee'])
+            ->with('objectif:id,code,annee,libelle')
             ->withCount('extrants');
 
         $query->forExercice($exerciceId);

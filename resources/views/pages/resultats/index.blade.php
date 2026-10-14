@@ -98,7 +98,6 @@
                             </td>
                             <td class="px-5 py-4 text-sm text-slate-700 dark:text-slate-200">
                                 <p class="font-medium">{{ $resultat->objectif?->code ?? '-' }}</p>
-                                <p class="text-xs text-slate-500 dark:text-slate-400">{{ $resultat->objectif?->periode_libelle ?? '-' }}</p>
                             </td>
                             <td class="px-5 py-4 text-sm text-slate-700 dark:text-slate-200">{{ $resultat->extrants_count }}</td>
                             <td class="px-5 py-4">
