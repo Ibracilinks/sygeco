@@ -16,7 +16,8 @@ test('les activités coûteuses des alertes budgétaires sont cliquables et affi
     $extrant = Extrant::factory()->forResultat($resultat)->create();
 
     $nomComplet = "Acquisition et déploiement d'une plateforme intégrée de gestion documentaire à l'échelle nationale";
-    $activite = Activite::factory()->pourExtrant($extrant)->create([
+    // Validée : un brouillon d'autrui échappe au dbcgoq.
+    $activite = Activite::factory()->pourExtrant($extrant)->valide()->create([
         'nom_activite' => $nomComplet,
         'cout' => 8_000_000, // > 5M -> alerte « activité coûteuse »
     ]);

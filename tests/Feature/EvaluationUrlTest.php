@@ -3,6 +3,7 @@
 use App\Models\Activite;
 use App\Models\ActiviteEvaluation;
 use App\Models\Exercice;
+use App\Support\ActiveExercice;
 use GuzzleHttp\Psr7\Uri;
 use GuzzleHttp\Psr7\UriResolver;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -16,7 +17,9 @@ test('les liens et la saisie des évaluations conservent le protocole du navigat
     $pageUrl = new Uri("{$scheme}://sygeco.test/evaluations/{$periode}");
 
     // Le navigateur peut être en HTTPS alors que le serveur reçoit du HTTP du proxy.
+    // L'exercice est épinglé : les fabriques peuvent créer un autre exercice « actif ».
     $response = $this->actingAs($admin)
+        ->withSession([ActiveExercice::SESSION_KEY => $exercice->id])
         ->get("http://sygeco.test/evaluations/{$periode}?statut_execution=non_evaluee", [
             'X-Forwarded-Proto' => $scheme,
         ])

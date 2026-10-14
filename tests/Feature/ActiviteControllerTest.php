@@ -284,7 +284,7 @@ test('un chef voit les activités de son sous-arbre (entité + entités en desso
 
     activiteNommee($exercice, $departement, 'ACTPROPRE');
     activiteNommee($exercice, $service, 'ACTSERVICE');
-    activiteNommee($exercice, $horsArbre, 'ACTHORS');
+    activiteNommee($exercice, $horsArbre, 'ACTHORS', null, ['statut' => 'en_attente']);
 
     $this->actingAs($chef)
         ->withSession([ActiveExercice::SESSION_KEY => $exercice->id])
@@ -306,7 +306,7 @@ test('un agent ne voit que les activités qu\'il a lui-même saisies', function 
 
     // Même entité, même exercice : seule la paternité de la saisie les sépare.
     activiteNommee($exercice, $direction, 'ACTMOI', $agent);
-    activiteNommee($exercice, $direction, 'ACTCOLLEGUE', $collegue);
+    activiteNommee($exercice, $direction, 'ACTCOLLEGUE', $collegue, ['statut' => 'en_attente']);
 
     $this->actingAs($agent)
         ->withSession([ActiveExercice::SESSION_KEY => $exercice->id])
@@ -328,7 +328,7 @@ test("un chef voit les activités de sa direction et d'aucune autre", function (
 
     activiteNommee($exercice, $direction, 'ACTDIR');
     activiteNommee($exercice, $service, 'ACTSRV');
-    activiteNommee($exercice, $autreDirection, 'ACTAILLEURS');
+    activiteNommee($exercice, $autreDirection, 'ACTAILLEURS', null, ['statut' => 'en_attente']);
 
     // Son entité et les services qu'elle chapeaute, jamais la direction voisine.
     $this->actingAs($chef)

@@ -129,13 +129,17 @@ class ObjectifFactory extends Factory
         $ids = array_map(fn ($e) => $e instanceof Exercice ? $e->id : (int) $e, $exercices);
         $anneeDepart = (int) Exercice::query()->whereIn('id', $ids)->min('annee');
 
-        return $this->afterCreating(function (Objectif $objectif) use ($ids, $anneeDepart) {
-            $objectif->exercices()->sync($ids);
+        // L'année de départ est fixée dès la création : le rattachement par défaut
+        // (configure) retombe ainsi sur un exercice visé au lieu d'en créer un
+        // d'une année aléatoire, qui entrerait en collision avec ceux du test.
+        return $this->state(fn () => $anneeDepart > 0 ? ['annee' => $anneeDepart] : [])
+            ->afterCreating(function (Objectif $objectif) use ($ids, $anneeDepart) {
+                $objectif->exercices()->sync($ids);
 
-            if ($anneeDepart > 0 && $objectif->annee !== $anneeDepart) {
-                $objectif->forceFill(['annee' => $anneeDepart])->save();
-            }
-        });
+                if ($anneeDepart > 0 && $objectif->annee !== $anneeDepart) {
+                    $objectif->forceFill(['annee' => $anneeDepart])->save();
+                }
+            });
     }
 
     /**
