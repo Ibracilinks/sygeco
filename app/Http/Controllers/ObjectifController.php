@@ -29,9 +29,16 @@ class ObjectifController extends Controller
             'direction' => (string) $request->string('direction', 'asc'),
         ];
 
+        // Résultats et extrants appartiennent au couple « exercice + objectif » :
+        // ils ne sont comptés que pour l'exercice filtré.
+        $exerciceFiltre = $filters['exercice_id'] !== '' ? (int) $filters['exercice_id'] : null;
+
         $query = Objectif::query()
             ->with('exercices:id,annee,statut')
-            ->withCount(['resultats', 'extrants']);
+            ->withCount([
+                'resultats' => fn ($q) => $q->forExercice($exerciceFiltre),
+                'extrants' => fn ($q) => $q->forExercice($exerciceFiltre),
+            ]);
 
         if ($this->isResponsableProgramme($user)) {
             $this->applyDepartmentScopeToObjectifQuery($query, (int) $user->departement_id);
@@ -52,7 +59,7 @@ class ObjectifController extends Controller
             'total' => (clone $summaryQuery)->count('*'),
             'actifs' => (clone $summaryQuery)->where('statut', 'actif')->count('*'),
             'inactifs' => (clone $summaryQuery)->where('statut', 'inactif')->count('*'),
-            'avec_resultats' => (clone $summaryQuery)->has('resultats')->count('*'),
+            'avec_resultats' => (clone $summaryQuery)->whereHas('resultats', fn ($q) => $q->forExercice($exerciceFiltre))->count('*'),
         ];
 
         // Les années sélectionnables sont celles des exercices : un objectif
@@ -89,7 +96,7 @@ class ObjectifController extends Controller
         $validated['annee'] = (int) Exercice::query()->whereIn('id', $exerciceIds)->min('annee');
 
         $objectif = Objectif::create($validated);
-        $objectif->exercices()->sync($exerciceIds);
+        $objectif->rattacherExercices($exerciceIds);
 
         return redirect()->route('objectifs.index')
             ->with('success', "Objectif {$objectif->code} créé avec succès.");
@@ -106,9 +113,11 @@ class ObjectifController extends Controller
             abort(403);
         }
 
-        // Charger toute la hiérarchie : Résultats → Extrants → Activités
+        // Charger toute la hiérarchie de l'exercice actif : Résultats → Extrants → Activités
+        $exerciceId = ActiveExercice::id();
         $objectif->load([
-            'resultats' => function ($query) use ($user) {
+            'resultats' => function ($query) use ($user, $exerciceId) {
+                $query->forExercice($exerciceId);
                 $this->applyDepartmentScopeToResultatQuery($query, $user?->departement_id);
                 $query->orderBy('ordre')->orderBy('code');
                 $query->with([
@@ -189,7 +198,8 @@ class ObjectifController extends Controller
         $validated['annee'] = (int) Exercice::query()->whereIn('id', $exerciceIds)->min('annee');
 
         $objectif->update($validated);
-        $objectif->exercices()->sync($exerciceIds);
+        // Un exercice ajouté reçoit sa propre copie des résultats et extrants.
+        $objectif->rattacherExercices($exerciceIds);
 
         return redirect()->route('objectifs.index')
             ->with('success', "Objectif {$objectif->code} mis à jour.");

@@ -12,6 +12,7 @@ class Extrant extends Model
     use HasFactory, LogsActivityWithDefaults, SoftDeletes;
 
     protected $fillable = [
+        'exercice_id',
         'objectif_id',
         'resultat_id',
         'code',
@@ -26,10 +27,16 @@ class Extrant extends Model
     ];
 
     // Relations
+    public function exercice()
+    {
+        return $this->belongsTo(Exercice::class);
+    }
+
     public function objectif()
     {
         return $this->belongsTo(Objectif::class);
     }
+
     public function resultat()
     {
         return $this->belongsTo(Resultat::class);
@@ -51,6 +58,19 @@ class Extrant extends Model
         return $query->where('is_active', true);
     }
 
+    /**
+     * Résultats / extrants d'un exercice : ils appartiennent au couple
+     * « exercice + objectif », un objectif pluriannuel en portant un jeu par exercice.
+     */
+    public function scopeForExercice($query, ?int $exerciceId)
+    {
+        if ($exerciceId === null) {
+            return $query;
+        }
+
+        return $query->where($query->getModel()->qualifyColumn('exercice_id'), $exerciceId);
+    }
+
     public function scopeOrdered($query)
     {
         return $query->orderBy('ordre')->orderBy('code');
@@ -59,7 +79,7 @@ class Extrant extends Model
     // Accesseurs
     public function getFullNameAttribute()
     {
-        return $this->code . ' - ' . $this->libelle;
+        return $this->code.' - '.$this->libelle;
     }
 
     public function getStatutLabelAttribute()

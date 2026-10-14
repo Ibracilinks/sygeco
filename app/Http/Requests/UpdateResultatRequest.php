@@ -22,8 +22,18 @@ class UpdateResultatRequest extends FormRequest
         $resultat = $this->route('resultat');
 
         return [
-            'objectif_id' => 'required|exists:objectifs,id',
-            'code' => ['required', 'string', 'max:20', Rule::unique('resultats', 'code')->ignore($resultat?->id)],
+            // Le résultat reste dans son exercice : l'objectif choisi doit le couvrir,
+            // et le code n'est unique qu'au sein de cet exercice.
+            'objectif_id' => [
+                'required',
+                $resultat?->exercice_id
+                    ? Rule::exists('exercice_objectif', 'objectif_id')->where('exercice_id', $resultat->exercice_id)
+                    : Rule::exists('objectifs', 'id'),
+            ],
+            'code' => [
+                'required', 'string', 'max:20',
+                Rule::unique('resultats', 'code')->where('exercice_id', $resultat?->exercice_id)->ignore($resultat?->id)->withoutTrashed(),
+            ],
             'libelle' => 'required|string|max:500',
             'description' => 'nullable|string',
             'ordre' => 'nullable|integer|min:0',

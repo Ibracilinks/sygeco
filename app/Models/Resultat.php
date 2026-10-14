@@ -14,6 +14,7 @@ class Resultat extends Model
     protected $table = 'resultats';
 
     protected $fillable = [
+        'exercice_id',
         'objectif_id',
         'code',
         'libelle',
@@ -27,6 +28,11 @@ class Resultat extends Model
     ];
 
     // Relations
+    public function exercice()
+    {
+        return $this->belongsTo(Exercice::class);
+    }
+
     public function objectif()
     {
         return $this->belongsTo(Objectif::class);
@@ -46,6 +52,19 @@ class Resultat extends Model
     public function scopeActif($query)
     {
         return $query->where('is_active', true);
+    }
+
+    /**
+     * Résultats / extrants d'un exercice : ils appartiennent au couple
+     * « exercice + objectif », un objectif pluriannuel en portant un jeu par exercice.
+     */
+    public function scopeForExercice($query, ?int $exerciceId)
+    {
+        if ($exerciceId === null) {
+            return $query;
+        }
+
+        return $query->where($query->getModel()->qualifyColumn('exercice_id'), $exerciceId);
     }
 
     public function scopeOrdered($query)

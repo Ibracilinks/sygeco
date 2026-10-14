@@ -6,6 +6,7 @@ use App\Concerns\LogsActivityWithDefaults;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Facades\DB;
 
 class Objectif extends Model
 {
@@ -78,6 +79,68 @@ class Objectif extends Model
     public function scopeOrdered($query)
     {
         return $query->orderBy('ordre')->orderBy('code');
+    }
+
+    /**
+     * Rattache l'objectif aux exercices donnés (le pivot fait foi).
+     *
+     * Résultats et extrants appartiennent au couple « exercice + objectif » : un
+     * exercice nouvellement rattaché reçoit une copie de ceux de l'exercice le plus
+     * récent de l'objectif, sans les activités. Les exercices déjà couverts gardent
+     * leurs propres résultats et extrants.
+     *
+     * @param  array<int, int|string>  $exerciceIds
+     */
+    public function rattacherExercices(array $exerciceIds): void
+    {
+        DB::transaction(function () use ($exerciceIds) {
+            $changements = $this->exercices()->sync($exerciceIds);
+
+            foreach ($changements['attached'] as $exerciceId) {
+                $this->recopierCadreVersExercice((int) $exerciceId);
+            }
+        });
+    }
+
+    /**
+     * Recopie les résultats et extrants de l'exercice source le plus récent
+     * (hors exercice cible) vers l'exercice cible, s'il n'en a pas déjà.
+     */
+    public function recopierCadreVersExercice(int $exerciceId): void
+    {
+        if ($this->resultats()->forExercice($exerciceId)->exists()) {
+            return;
+        }
+
+        $source = $this->resultats()
+            ->join('exercices', 'exercices.id', '=', 'resultats.exercice_id')
+            ->where('resultats.exercice_id', '!=', $exerciceId)
+            ->orderByDesc('exercices.annee')
+            ->value('resultats.exercice_id');
+
+        if ($source === null) {
+            return;
+        }
+
+        $resultats = $this->resultats()
+            ->forExercice((int) $source)
+            ->with(['departements:id', 'extrants' => fn ($q) => $q->with('departements:id')])
+            ->get();
+
+        foreach ($resultats as $resultat) {
+            $copie = $resultat->replicate();
+            $copie->exercice_id = $exerciceId;
+            $copie->save();
+            $copie->departements()->sync($resultat->departements->pluck('id'));
+
+            foreach ($resultat->extrants as $extrant) {
+                $copieExtrant = $extrant->replicate();
+                $copieExtrant->exercice_id = $exerciceId;
+                $copieExtrant->resultat_id = $copie->id;
+                $copieExtrant->save();
+                $copieExtrant->departements()->sync($extrant->departements->pluck('id'));
+            }
+        }
     }
 
     // Accesseurs

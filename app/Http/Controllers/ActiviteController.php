@@ -107,7 +107,7 @@ class ActiviteController extends Controller
         $extrants = Extrant::query()
             ->with('objectif')
             ->actif()
-            ->when($exerciceId !== null, fn ($q) => $q->whereHas('objectif.exercices', fn ($oq) => $oq->where('exercices.id', $exerciceId)))
+            ->forExercice($exerciceId)
             ->ordered()
             ->get();
         // Les activités validées de toutes les entités étant listées, le filtre
@@ -129,7 +129,7 @@ class ActiviteController extends Controller
         $extrants = Extrant::query()
             ->with('objectif')
             ->actif()
-            ->when($exerciceId !== null, fn ($q) => $q->whereHas('objectif.exercices', fn ($oq) => $oq->where('exercices.id', $exerciceId)))
+            ->forExercice($exerciceId)
             ->ordered()
             ->get();
         $departements = $this->departementsVisibles();
@@ -285,7 +285,7 @@ class ActiviteController extends Controller
         $extrants = Extrant::query()
             ->with('objectif')
             ->actif()
-            ->when($exerciceId !== null, fn ($q) => $q->whereHas('objectif.exercices', fn ($oq) => $oq->where('exercices.id', $exerciceId)))
+            ->forExercice($exerciceId)
             ->ordered()
             ->get();
         $departements = $this->departementsVisibles();

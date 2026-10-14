@@ -2,8 +2,9 @@
 
 namespace Database\Factories;
 
-use App\Models\Resultat;
+use App\Models\Exercice;
 use App\Models\Objectif;
+use App\Models\Resultat;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 class ResultatFactory extends Factory
@@ -17,42 +18,42 @@ class ResultatFactory extends Factory
             [
                 'code_prefix' => 'RS_PERF',
                 'libelle' => 'Amélioration de la performance opérationnelle',
-                'description' => 'Optimisation des processus et des indicateurs de performance pour une meilleure efficacité'
+                'description' => 'Optimisation des processus et des indicateurs de performance pour une meilleure efficacité',
             ],
             [
                 'code_prefix' => 'RS_QUAL',
                 'libelle' => 'Renforcement de la qualité des services',
-                'description' => 'Mise en place de normes qualité et amélioration continue des services'
+                'description' => 'Mise en place de normes qualité et amélioration continue des services',
             ],
             [
                 'code_prefix' => 'RS_GEST',
                 'libelle' => 'Optimisation de la gestion budgétaire',
-                'description' => 'Amélioration du suivi et du contrôle budgétaire'
+                'description' => 'Amélioration du suivi et du contrôle budgétaire',
             ],
             [
                 'code_prefix' => 'RS_NUM',
                 'libelle' => 'Accélération de la transformation digitale',
-                'description' => 'Digitalisation des processus et dématérialisation des échanges'
+                'description' => 'Digitalisation des processus et dématérialisation des échanges',
             ],
             [
                 'code_prefix' => 'RS_RH',
                 'libelle' => 'Renforcement des compétences du personnel',
-                'description' => 'Formation et développement des compétences des agents'
+                'description' => 'Formation et développement des compétences des agents',
             ],
             [
                 'code_prefix' => 'RS_COMM',
                 'libelle' => 'Amélioration de la communication',
-                'description' => 'Renforcement de la communication interne et externe'
+                'description' => 'Renforcement de la communication interne et externe',
             ],
             [
                 'code_prefix' => 'RS_SAT',
                 'libelle' => 'Amélioration de la satisfaction des assurés',
-                'description' => 'Enquêtes et actions pour améliorer la satisfaction des usagers'
+                'description' => 'Enquêtes et actions pour améliorer la satisfaction des usagers',
             ],
             [
                 'code_prefix' => 'RS_CONF',
                 'libelle' => 'Renforcement de la conformité',
-                'description' => 'Mise en conformité avec les normes et réglementations'
+                'description' => 'Mise en conformité avec les normes et réglementations',
             ],
         ];
 
@@ -61,7 +62,7 @@ class ResultatFactory extends Factory
 
         // Générer un numéro séquentiel unique
         $numero = rand(1000000000, 9999999999);
-        $code = $resultat['code_prefix'] . '_' . $numero;
+        $code = $resultat['code_prefix'].'_'.$numero;
 
         return [
             // FK non nullable ; surchargé par forObjectif() et les seeders.
@@ -79,8 +80,21 @@ class ResultatFactory extends Factory
      */
     public function forObjectif(Objectif $objectif): static
     {
-        return $this->state(fn(array $attributes) => [
+        // Par défaut, le résultat appartient au premier exercice couvert par l'objectif.
+        return $this->state(fn (array $attributes) => [
             'objectif_id' => $objectif->id,
+            'exercice_id' => $attributes['exercice_id']
+                ?? $objectif->exercices()->orderBy('annee')->value('exercices.id'),
+        ]);
+    }
+
+    /**
+     * Rattache le résultat à un exercice précis (couple « exercice + objectif »).
+     */
+    public function pourExercice(Exercice $exercice): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'exercice_id' => $exercice->id,
         ]);
     }
 
@@ -89,7 +103,7 @@ class ResultatFactory extends Factory
      */
     public function actif(): static
     {
-        return $this->state(fn(array $attributes) => [
+        return $this->state(fn (array $attributes) => [
             'is_active' => true,
         ]);
     }
@@ -99,7 +113,7 @@ class ResultatFactory extends Factory
      */
     public function inactif(): static
     {
-        return $this->state(fn(array $attributes) => [
+        return $this->state(fn (array $attributes) => [
             'is_active' => false,
         ]);
     }
@@ -109,7 +123,7 @@ class ResultatFactory extends Factory
      */
     public function avecOrdre(int $ordre): static
     {
-        return $this->state(fn(array $attributes) => [
+        return $this->state(fn (array $attributes) => [
             'ordre' => $ordre,
         ]);
     }
@@ -119,7 +133,7 @@ class ResultatFactory extends Factory
      */
     public function avecCode(string $code): static
     {
-        return $this->state(fn(array $attributes) => [
+        return $this->state(fn (array $attributes) => [
             'code' => $code,
         ]);
     }

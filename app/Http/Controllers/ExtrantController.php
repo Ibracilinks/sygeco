@@ -23,9 +23,7 @@ class ExtrantController extends Controller
             ->withCount('activites');
 
         $exerciceId = ActiveExercice::id();
-        if ($exerciceId !== null) {
-            $query->whereHas('objectif.exercices', fn ($q) => $q->where('exercices.id', $exerciceId));
-        }
+        $query->forExercice($exerciceId);
 
         if ($this->isResponsableProgramme($user)) {
             $this->applyDepartmentScopeToExtrantQuery($query, (int) $user->departement_id);
@@ -87,8 +85,9 @@ class ExtrantController extends Controller
     {
         $validated = $request->validate($this->reglesExtrant($request));
 
-        // L'objectif est dérivé du résultat sélectionné (cohérence Objectif → Résultat → Extrant).
-        $validated['objectif_id'] = Resultat::whereKey($validated['resultat_id'])->value('objectif_id');
+        // L'objectif et l'exercice sont dérivés du résultat sélectionné
+        // (cohérence Exercice + Objectif → Résultat → Extrant).
+        $validated += $this->rattachementDuResultat((int) $validated['resultat_id']);
 
         $extrant = Extrant::create($validated);
 
@@ -137,23 +136,23 @@ class ExtrantController extends Controller
      */
     public function edit(Extrant $extrant)
     {
-        $resultats = $this->resultatsSelectionnables();
+        $resultats = $this->resultatsSelectionnables($extrant->exercice_id);
 
         return view('pages.extrants.edit', compact('extrant', 'resultats'));
     }
 
     /**
-     * Résultats actifs sélectionnables comme parent d'un extrant, limités à l'exercice actif,
-     * avec leur objectif de rattachement chargé pour l'affichage.
+     * Résultats actifs sélectionnables comme parent d'un extrant, limités à l'exercice
+     * donné (à défaut l'exercice actif), avec leur objectif chargé pour l'affichage.
      */
-    private function resultatsSelectionnables()
+    private function resultatsSelectionnables(?int $exerciceId = null)
     {
-        $exerciceId = ActiveExercice::id();
+        $exerciceId ??= ActiveExercice::id();
 
         return Resultat::query()
             ->actif()
             ->with(['objectif:id,code,annee,libelle', 'objectif.exercices:id,annee'])
-            ->when($exerciceId !== null, fn ($q) => $q->whereHas('objectif.exercices', fn ($o) => $o->where('exercices.id', $exerciceId)))
+            ->forExercice($exerciceId)
             ->ordered()
             ->get();
     }
@@ -165,8 +164,8 @@ class ExtrantController extends Controller
     {
         $validated = $request->validate($this->reglesExtrant($request, $extrant));
 
-        // L'objectif suit le résultat sélectionné.
-        $validated['objectif_id'] = Resultat::whereKey($validated['resultat_id'])->value('objectif_id');
+        // L'objectif et l'exercice suivent le résultat sélectionné.
+        $validated = array_merge($validated, $this->rattachementDuResultat((int) $validated['resultat_id']));
 
         $extrant->update($validated);
 
@@ -179,8 +178,7 @@ class ExtrantController extends Controller
      *
      * Le code n'est pas unique dans toute la base : la même nomenclature
      * (« EXT_001 », « Extrant 1.1 ») est réutilisée d'un exercice à l'autre.
-     * L'unicité s'apprécie **par exercice**, en remontant Extrant → Résultat →
-     * Objectif → exercices couverts.
+     * L'unicité s'apprécie **par exercice**, celui du résultat parent.
      *
      * @return array<string, mixed>
      */
@@ -210,41 +208,40 @@ class ExtrantController extends Controller
     }
 
     /**
-     * Année du premier exercice où le code est déjà porté par un autre extrant,
+     * Objectif et exercice hérités du résultat parent.
+     *
+     * @return array{objectif_id: int|null, exercice_id: int|null}
+     */
+    private function rattachementDuResultat(int $resultatId): array
+    {
+        $resultat = Resultat::query()->whereKey($resultatId)->first(['objectif_id', 'exercice_id']);
+
+        return [
+            'objectif_id' => $resultat?->objectif_id,
+            'exercice_id' => $resultat?->exercice_id,
+        ];
+    }
+
+    /**
+     * Année de l'exercice où le code est déjà porté par un autre extrant,
      * ou null si le code est libre.
      */
     private function codeDejaUtiliseDansExercice(string $code, int $resultatId, ?int $extrantIdIgnore): ?int
     {
-        $objectifId = Resultat::whereKey($resultatId)->value('objectif_id');
+        $exerciceId = Resultat::whereKey($resultatId)->value('exercice_id');
 
-        if ($objectifId === null) {
+        if ($exerciceId === null) {
             return null;
         }
 
-        $exerciceIds = Objectif::whereKey($objectifId)
-            ->firstOrFail()
-            ->exercices()
-            ->pluck('exercices.id');
-
-        if ($exerciceIds->isEmpty()) {
-            return null;
-        }
-
-        // Un extrant en conflit est un extrant de même code dont l'objectif couvre
-        // au moins un des exercices visés.
         $conflit = Extrant::query()
+            ->with('exercice:id,annee')
             ->where('code', $code)
+            ->forExercice((int) $exerciceId)
             ->when($extrantIdIgnore !== null, fn ($q) => $q->whereKeyNot($extrantIdIgnore))
-            ->whereHas('objectif.exercices', fn ($q) => $q->whereIn('exercices.id', $exerciceIds))
             ->first();
 
-        if ($conflit === null) {
-            return null;
-        }
-
-        return (int) $conflit->objectif?->exercices()
-            ->whereIn('exercices.id', $exerciceIds)
-            ->min('annee');
+        return $conflit?->exercice?->annee;
     }
 
     /**

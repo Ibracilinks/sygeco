@@ -125,7 +125,7 @@ class Activite extends Model
     }
 
     /**
-     * Exercice rattaché à l'activité (via extrant → objectif).
+     * Exercice rattaché à l'activité (à défaut, celui de son extrant).
      */
     public function exercice(): ?Exercice
     {
@@ -136,11 +136,9 @@ class Activite extends Model
             return $this->exerciceDirect ?? Exercice::find($this->exercice_id);
         }
 
-        // Filet pour les activités antérieures au backfill dont l'objectif
-        // ne couvre qu'un seul exercice.
-        $exercices = $this->extrant?->objectif?->exercices;
-
-        return $exercices?->count() === 1 ? $exercices->first() : null;
+        // Filet pour les activités antérieures au backfill : l'extrant
+        // appartient à un exercice précis.
+        return $this->extrant?->exercice;
     }
 
     /**

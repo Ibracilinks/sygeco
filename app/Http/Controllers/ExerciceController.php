@@ -65,8 +65,13 @@ class ExerciceController extends Controller
     {
         $exercice->loadCount('objectifs');
 
+        // Résultats et extrants sont comptés pour cet exercice seulement : un objectif
+        // pluriannuel en porte un jeu distinct par exercice.
         $objectifs = Objectif::forExercice($exercice->id)
-            ->withCount(['resultats', 'extrants'])
+            ->withCount([
+                'resultats' => fn ($q) => $q->forExercice($exercice->id),
+                'extrants' => fn ($q) => $q->forExercice($exercice->id),
+            ])
             ->orderBy('ordre')
             ->orderBy('code')
             ->get();
@@ -115,7 +120,8 @@ class ExerciceController extends Controller
 
         $objectifCodes = $objectifs->pluck('code', 'id');
 
-        $resultats = Resultat::whereIn('objectif_id', $objectifs->pluck('id'))
+        $resultats = Resultat::forExercice($exercice->id)
+            ->whereIn('objectif_id', $objectifs->pluck('id'))
             ->withCount('extrants')
             ->orderBy('ordre')
             ->orderBy('code')
@@ -216,10 +222,10 @@ class ExerciceController extends Controller
         $objectifs = Objectif::forExercice($exercice->id)
             ->orderBy('ordre')
             ->orderBy('code')
-            ->with(['resultats' => function ($q) {
-                $q->orderBy('ordre')->orderBy('code')
-                    ->with(['extrants' => function ($e) {
-                        $e->orderBy('ordre')->orderBy('code')
+            ->with(['resultats' => function ($q) use ($exercice) {
+                $q->forExercice($exercice->id)->orderBy('ordre')->orderBy('code')
+                    ->with(['extrants' => function ($e) use ($exercice) {
+                        $e->forExercice($exercice->id)->orderBy('ordre')->orderBy('code')
                             ->with(['activites' => function ($a) {
                                 $a->with(['departement:id,code,nom', 'departements:id,code,nom'])->orderBy('id');
                             }]);

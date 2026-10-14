@@ -34,9 +34,7 @@ class ResultatController extends Controller
             ->with(['objectif:id,code,annee,libelle', 'objectif.exercices:id,annee'])
             ->withCount('extrants');
 
-        if ($exerciceId !== null) {
-            $query->whereHas('objectif.exercices', fn (Builder $builder) => $builder->where('exercices.id', $exerciceId));
-        }
+        $query->forExercice($exerciceId);
 
         if ($this->isResponsableProgramme($user)) {
             $this->applyDepartmentScopeToResultatQuery($query, (int) $user->departement_id);
@@ -47,10 +45,7 @@ class ResultatController extends Controller
 
         $resultats = $query->paginate(15)->withQueryString();
 
-        $summaryQuery = Resultat::query();
-        if ($exerciceId !== null) {
-            $summaryQuery->whereHas('objectif.exercices', fn (Builder $builder) => $builder->where('exercices.id', $exerciceId));
-        }
+        $summaryQuery = Resultat::query()->forExercice($exerciceId);
         if ($this->isResponsableProgramme($user)) {
             $this->applyDepartmentScopeToResultatQuery($summaryQuery, (int) $user->departement_id);
         }
@@ -99,6 +94,8 @@ class ResultatController extends Controller
     {
         $validated = $request->validated();
         $validated['is_active'] = (bool) ($validated['is_active'] ?? false);
+        // Le résultat appartient au couple « exercice actif + objectif ».
+        $validated['exercice_id'] = ActiveExercice::id();
 
         $resultat = Resultat::create($validated);
 
@@ -223,7 +220,8 @@ class ResultatController extends Controller
      */
     public function edit(Resultat $resultat)
     {
-        $exerciceId = ActiveExercice::id();
+        // Seuls les objectifs couvrant l'exercice du résultat lui conviennent.
+        $exerciceId = $resultat->exercice_id ?? ActiveExercice::id();
         $objectifs = Objectif::query()
             ->with('exercices:id,annee')
             ->where('statut', 'actif')

@@ -187,10 +187,9 @@ class DashboardDataService
                         ->whereNull('activites.deleted_at')
                         ->tap($this->perimetreActivites());
                 })
-                // Le résultat est retenu si son objectif couvre l'année, même pluriannuel.
-                ->whereExists(fn ($q) => $q->select(DB::raw(1))->from('exercice_objectif')
-                    ->whereColumn('exercice_objectif.objectif_id', 'objectifs.id')
-                    ->whereIn('exercice_objectif.exercice_id', $exerciceIds))
+                // Le résultat appartient au couple « exercice + objectif ».
+                ->whereIn('resultats.exercice_id', $exerciceIds)
+                ->whereNull('resultats.deleted_at')
                 ->selectRaw('
                     resultats.code,
                     resultats.libelle,
@@ -222,16 +221,15 @@ class DashboardDataService
             $exerciceIds = $this->exerciceIdsDeLAnnee();
 
             $result = DB::table('extrants')
-                ->join('objectifs', 'extrants.objectif_id', '=', 'objectifs.id')
                 ->leftJoin('activites', function ($join) use ($exerciceIds) {
                     $join->on('extrants.id', '=', 'activites.extrant_id')
                         ->whereIn('activites.exercice_id', $exerciceIds)
                         ->whereNull('activites.deleted_at')
                         ->tap($this->perimetreActivites());
                 })
-                ->whereExists(fn ($q) => $q->select(DB::raw(1))->from('exercice_objectif')
-                    ->whereColumn('exercice_objectif.objectif_id', 'objectifs.id')
-                    ->whereIn('exercice_objectif.exercice_id', $exerciceIds))
+                // L'extrant appartient au couple « exercice + objectif ».
+                ->whereIn('extrants.exercice_id', $exerciceIds)
+                ->whereNull('extrants.deleted_at')
                 ->selectRaw('
                     extrants.code,
                     extrants.libelle,

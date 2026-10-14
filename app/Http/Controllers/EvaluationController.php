@@ -50,7 +50,7 @@ class EvaluationController extends Controller
         $extrants = Extrant::query()
             ->with('objectif')
             ->actif()
-            ->when($exerciceId !== null, fn ($q) => $q->whereHas('objectif.exercices', fn ($oq) => $oq->where('exercices.id', $exerciceId)))
+            ->forExercice($exerciceId)
             ->ordered()
             ->get();
 

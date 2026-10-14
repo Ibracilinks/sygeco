@@ -81,35 +81,31 @@ test('la mise à jour d\'un extrant ne se heurte pas à son propre code', functi
     expect($extrant->fresh()->libelle)->toBe('Libellé corrigé');
 });
 
-test('un objectif pluriannuel propage le conflit à tous ses exercices', function () {
+test('un objectif pluriannuel porte des extrants distincts par exercice', function () {
     $admin = userWithRole('dbcgoq');
 
-    // Plan 2026-2028 : son extrant EXT_001 occupe le code sur les trois exercices.
-    $exercices = collect([2026, 2027, 2028])
+    // Plan 2026-2027 : EXT_001 n'occupe le code que dans l'exercice de son résultat.
+    $exercices = collect([2026, 2027])
         ->map(fn ($annee) => Exercice::factory()->create(['annee' => $annee]));
     $plan = Objectif::factory()->pourExercices($exercices->all())->create(['code' => 'PS_PLAN']);
-    $resultatPlan = Resultat::factory()->forObjectif($plan)->create();
-    Extrant::factory()->forResultat($resultatPlan)->create(['code' => 'EXT_001']);
+    $resultat2026 = Resultat::factory()->forObjectif($plan)->pourExercice($exercices[0])->create();
+    Extrant::factory()->forResultat($resultat2026)->create(['code' => 'EXT_001']);
 
-    // Objectif annuel 2027 : chevauche la période du plan → conflit.
-    $annuel = Objectif::factory()->pourExercice($exercices->firstWhere('annee', 2027))->create(['code' => 'OG_2027']);
-    $resultatAnnuel = Resultat::factory()->forObjectif($annuel)->create();
+    $resultat2027 = Resultat::factory()->forObjectif($plan)->pourExercice($exercices[1])->create();
 
     $this->actingAs($admin)->post(route('extrants.store'), [
-        'resultat_id' => $resultatAnnuel->id,
+        'resultat_id' => $resultat2026->id,
         'code' => 'EXT_001',
-        'libelle' => 'Chevauche le plan pluriannuel',
+        'libelle' => 'Doublon en 2026',
         'is_active' => 1,
     ])->assertSessionHasErrors('code');
 
-    // Objectif annuel 2030 : hors période du plan → accepté.
-    $horsPlan = Objectif::factory()->pourAnnee(2030)->create(['code' => 'OG_2030']);
-    $resultatHorsPlan = Resultat::factory()->forObjectif($horsPlan)->create();
-
     $this->actingAs($admin)->post(route('extrants.store'), [
-        'resultat_id' => $resultatHorsPlan->id,
+        'resultat_id' => $resultat2027->id,
         'code' => 'EXT_001',
-        'libelle' => 'Hors période du plan',
+        'libelle' => 'Même code en 2027',
         'is_active' => 1,
     ])->assertRedirect(route('extrants.index'))->assertSessionHasNoErrors();
+
+    expect(Extrant::where('code', 'EXT_001')->where('exercice_id', $exercices[1]->id)->count())->toBe(1);
 });

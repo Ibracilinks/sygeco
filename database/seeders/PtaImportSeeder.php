@@ -91,7 +91,7 @@ abstract class PtaImportSeeder extends Seeder
                 }
                 $roman = strtoupper($m[1]);
                 $resultat = Resultat::updateOrCreate(
-                    ['objectif_id' => $objectif->id, 'code' => 'RS.'.$roman],
+                    ['exercice_id' => $exercice->id, 'objectif_id' => $objectif->id, 'code' => 'RS.'.$roman],
                     [
                         'libelle' => trim($m[2]) !== '' ? trim($m[2]) : 'RS. '.$roman,
                         'ordre' => $this->romanToInt($roman),
@@ -113,6 +113,7 @@ abstract class PtaImportSeeder extends Seeder
                     ['resultat_id' => $resultat->id, 'code' => $m[1]],
                     [
                         'objectif_id' => $resultat->objectif_id,
+                        'exercice_id' => $resultat->exercice_id,
                         'libelle' => trim($m[2]) !== '' ? trim($m[2]) : $m[1],
                         'ordre' => (int) filter_var($m[1], FILTER_SANITIZE_NUMBER_INT),
                         'is_active' => true,
