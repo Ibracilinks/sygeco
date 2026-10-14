@@ -140,8 +140,8 @@ test('un chef de département voit son département forcé à la création', fun
 test('les structures intervenantes sont enregistrées, sans la structure porteuse', function () {
     $admin = userWithRole('dbcgoq');
     $porteuse = Departement::factory()->create();
-    $intervenanteA = Departement::factory()->create();
-    $intervenanteB = Departement::factory()->create();
+    $intervenanteA = Departement::factory()->departement()->create();
+    $intervenanteB = Departement::factory()->departement()->create();
     $extrant = Extrant::factory()->create();
 
     $this->actingAs($admin)->post(route('activites.store'), [
@@ -161,10 +161,29 @@ test('les structures intervenantes sont enregistrées, sans la structure porteus
         ->toBe(collect([$intervenanteA->id, $intervenanteB->id])->sort()->values()->all());
 });
 
+test('seules la DG et les entités qui lui sont rattachées sont proposées comme structures intervenantes', function () {
+    $admin = userWithRole('dbcgoq');
+    $dg = Departement::factory()->direction()->create(['nom' => 'DG TEST']);
+    $centrale = Departement::factory()->departement()->enfantDe($dg)->create(['nom' => 'DC TEST']);
+    $service = Departement::factory()->service()->enfantDe($centrale)->create(['nom' => 'SERVICE TEST']);
+
+    $html = $this->actingAs($admin)->get(route('activites.create'))->assertOk()->getContent();
+
+    expect($html)->toContain('data-si-libelle="DG TEST"')
+        ->and($html)->toContain('data-si-libelle="DC TEST"')
+        ->and($html)->not->toContain('data-si-libelle="SERVICE TEST"');
+
+    $this->actingAs($admin)->post(route('activites.store'), [
+        'extrant_id' => Extrant::factory()->create()->id,
+        'departement_id' => $centrale->id,
+        'structures_intervenantes' => [$service->id],
+    ])->assertSessionHasErrors('structures_intervenantes.0');
+});
+
 test('la mise à jour remplace les structures intervenantes', function () {
     $admin = userWithRole('dbcgoq');
-    $ancienne = Departement::factory()->create();
-    $nouvelle = Departement::factory()->create();
+    $ancienne = Departement::factory()->departement()->create();
+    $nouvelle = Departement::factory()->departement()->create();
     $porteuse = Departement::factory()->create();
     $activite = Activite::factory()->pourDepartement($porteuse)->create(['statut' => 'brouillon']);
     $activite->departements()->sync([$ancienne->id]);

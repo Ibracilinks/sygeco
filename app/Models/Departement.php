@@ -6,6 +6,7 @@ use App\Concerns\LogsActivityWithDefaults;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Collection;
 
 class Departement extends Model
 {
@@ -14,9 +15,13 @@ class Departement extends Model
     protected $table = 'departements';
 
     public const TYPE_DIRECTION = 'direction';
+
     public const TYPE_DEPARTEMENT = 'departement';
+
     public const TYPE_SERVICE = 'service';
+
     public const TYPE_AGENCE_COMPTABLE = 'agence_comptable';
+
     public const TYPE_BUREAU_REGIONAL = 'bureau_regional';
 
     public const TYPES = [
@@ -56,8 +61,11 @@ class Departement extends Model
 
     /** Libellés des groupes utilisés dans les listes déroulantes hiérarchiques. */
     public const GROUPE_DIRECTIONS = 'Direction Générale';
+
     public const GROUPE_DIRECTIONS_CENTRALES = 'Directions Centrales';
+
     public const GROUPE_AGENCE_COMPTABLE = 'Agence Comptable';
+
     public const GROUPE_BUREAUX_REGIONAUX = 'Bureaux Régionaux';
 
     protected $fillable = [
@@ -68,7 +76,7 @@ class Departement extends Model
         'description',
         'responsable_id',
         'is_active',
-        'ordre'
+        'ordre',
     ];
 
     protected $casts = [
@@ -159,9 +167,9 @@ class Departement extends Model
     /**
      * Chaîne des ancêtres, de la racine jusqu'au parent direct.
      *
-     * @return \Illuminate\Support\Collection<int, Departement>
+     * @return Collection<int, Departement>
      */
-    public function ancetres(): \Illuminate\Support\Collection
+    public function ancetres(): Collection
     {
         $chaine = collect();
         $courant = $this->parent;
@@ -247,6 +255,16 @@ class Departement extends Model
     }
 
     /**
+     * Structures proposables comme intervenantes d'une activité : la Direction
+     * Générale et les entités qui lui sont directement rattachées (Directions
+     * Centrales, Agence Comptable, Bureaux Régionaux), sans les services.
+     */
+    public function scopeStructuresIntervenantes($query)
+    {
+        return $query->whereIn('type', [self::TYPE_DIRECTION, ...self::TYPES_RATTACHES_DG]);
+    }
+
+    /**
      * Regroupe des entités par Direction Centrale de rattachement, pour alimenter
      * les <optgroup> des listes déroulantes. Groupes et entités triés par nom.
      *
@@ -292,7 +310,7 @@ class Departement extends Model
      * L'Agence Comptable et les Bureaux Régionaux, rattachés directement à la DG,
      * ont leur propre groupe ; le reste retombe sur le groupe de la DG.
      */
-    protected static function libelleGroupeHierarchique(self $departement, \Illuminate\Support\Collection $carte): string
+    protected static function libelleGroupeHierarchique(self $departement, Collection $carte): string
     {
         $courant = $carte[$departement->id] ?? $departement;
 

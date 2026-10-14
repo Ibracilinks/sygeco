@@ -152,7 +152,7 @@ class ActiviteController extends Controller
             'extrant_id' => 'required|exists:extrants,id',
             'departement_id' => 'required|exists:departements,id',
             'structures_intervenantes' => 'nullable|array',
-            'structures_intervenantes.*' => 'integer|exists:departements,id',
+            'structures_intervenantes.*' => ['integer', Rule::exists('departements', 'id')->whereIn('type', [Departement::TYPE_DIRECTION, ...Departement::TYPES_RATTACHES_DG])],
             'nom_activite' => $this->regleNomUnique(),
             'indicateur_objectivement_verifiable' => 'required|string',
             'moyen_verification' => 'required|string',
@@ -306,7 +306,7 @@ class ActiviteController extends Controller
             'extrant_id' => 'required|exists:extrants,id',
             'departement_id' => 'required|exists:departements,id',
             'structures_intervenantes' => 'nullable|array',
-            'structures_intervenantes.*' => 'integer|exists:departements,id',
+            'structures_intervenantes.*' => ['integer', Rule::exists('departements', 'id')->whereIn('type', [Departement::TYPE_DIRECTION, ...Departement::TYPES_RATTACHES_DG])],
             'nom_activite' => $this->regleNomUnique($activite),
             'indicateur_objectivement_verifiable' => 'required|string',
             'moyen_verification' => 'required|string',
@@ -555,7 +555,7 @@ class ActiviteController extends Controller
      */
     private function structuresIntervenantesGroupes(): array
     {
-        return Departement::grouperParDirectionCentrale(Departement::active()->ordered()->get());
+        return Departement::grouperParDirectionCentrale(Departement::active()->structuresIntervenantes()->ordered()->get());
     }
 
     /**

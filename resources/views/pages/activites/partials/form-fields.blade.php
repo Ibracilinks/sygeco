@@ -31,7 +31,7 @@
         @enderror
     </div>
 
-    @php($structuresGroupesListe = $structuresGroupes ?? \App\Models\Departement::grouperParDirectionCentrale(\App\Models\Departement::active()->ordered()->get()))
+    @php($structuresGroupesListe = $structuresGroupes ?? \App\Models\Departement::grouperParDirectionCentrale(\App\Models\Departement::active()->structuresIntervenantes()->ordered()->get()))
     @php($structuresSelectionnees = collect(old('structures_intervenantes', isset($activite) ? $activite->departements->pluck('id')->all() : []))->map(fn ($id) => (string) $id)->all())
 
     <div class="md:col-span-2">
