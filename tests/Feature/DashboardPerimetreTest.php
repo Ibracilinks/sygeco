@@ -90,3 +90,20 @@ test('le cache du tableau de bord ne mélange pas les périmètres', function ()
     $this->actingAs(userWithRole('responsable-programme', ['departement_id' => $direction->id]));
     expect((new DashboardDataService)->getDashboardPayload()['kpis']['activites'])->toBe(1);
 });
+
+test('un objectif sur 2026 et 2027 compte pour 1 dans chacun des deux exercices', function () {
+    $exercice2026 = Exercice::factory()->create(['annee' => 2026]);
+    $exercice2027 = Exercice::factory()->create(['annee' => 2027]);
+    $objectif = Objectif::factory()->pourExercices([$exercice2026, $exercice2027])->create();
+    $resultat = Resultat::factory()->forObjectif($objectif)->pourExercice($exercice2026)->create();
+    Activite::factory()->pourExtrant(Extrant::factory()->forResultat($resultat)->create())->create();
+
+    $this->actingAs(userWithRole('superadmin'));
+
+    foreach ([$exercice2026, $exercice2027] as $exercice) {
+        ActiveExercice::set($exercice->id);
+        $kpis = (new DashboardDataService)->getDashboardPayload()['kpis'];
+
+        expect($kpis['objectifs'])->toBe(1);
+    }
+});

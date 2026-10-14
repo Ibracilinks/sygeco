@@ -100,13 +100,10 @@ class DashboardDataService
         return Cache::remember($this->cleCache('stats'), 3600, function () {
             $stats = DB::table('activites')
                 ->join('extrants', 'activites.extrant_id', '=', 'extrants.id')
-                ->join('objectifs', 'extrants.objectif_id', '=', 'objectifs.id')
                 ->whereIn('activites.exercice_id', $this->exerciceIdsDeLAnnee())
                 ->whereNull('activites.deleted_at')
                 ->tap($this->perimetreActivites())
                 ->selectRaw('
-                    COUNT(DISTINCT objectifs.id) as total_objectifs,
-                    COUNT(DISTINCT extrants.id) as total_extrants,
                     COUNT(activites.id) as total_activites,
                     SUM(activites.cout) as budget_total,
                     SUM(CASE WHEN activites.statut_execution = \'realise\' THEN 1 ELSE 0 END) as activites_realisees
@@ -115,9 +112,24 @@ class DashboardDataService
 
             $tauxRealisation = $stats->total_activites > 0 ? round(($stats->activites_realisees / $stats->total_activites) * 100, 1) : 0;
 
+            // Le cadre logique de l'année ne dépend pas des activités saisies : un objectif
+            // pluriannuel (ex. 2026-2027) compte dans chacun de ses exercices, et les
+            // extrants sont ceux du couple « exercice + objectif ».
+            $exerciceIds = $this->exerciceIdsDeLAnnee();
+            $totalObjectifs = DB::table('exercice_objectif')
+                ->join('objectifs', 'objectifs.id', '=', 'exercice_objectif.objectif_id')
+                ->whereIn('exercice_objectif.exercice_id', $exerciceIds)
+                ->whereNull('objectifs.deleted_at')
+                ->distinct()
+                ->count('objectifs.id');
+            $totalExtrants = DB::table('extrants')
+                ->whereIn('extrants.exercice_id', $exerciceIds)
+                ->whereNull('extrants.deleted_at')
+                ->count();
+
             return [
-                'total_objectifs' => (int) $stats->total_objectifs,
-                'total_extrants' => (int) $stats->total_extrants,
+                'total_objectifs' => $totalObjectifs,
+                'total_extrants' => $totalExtrants,
                 'total_activites' => (int) $stats->total_activites,
                 'budget_total' => (float) $stats->budget_total,
                 'taux_realisation' => $tauxRealisation,
@@ -560,7 +572,6 @@ class DashboardDataService
         return Cache::remember($this->cleCache('budget_moyen'), 3600, function () {
             $stats = DB::table('activites')
                 ->join('extrants', 'activites.extrant_id', '=', 'extrants.id')
-                ->join('objectifs', 'extrants.objectif_id', '=', 'objectifs.id')
                 ->whereIn('activites.exercice_id', $this->exerciceIdsDeLAnnee())
                 ->whereNull('activites.deleted_at')
                 ->tap($this->perimetreActivites())
