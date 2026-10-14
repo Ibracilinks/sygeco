@@ -86,5 +86,13 @@
     "View recovery codes": "Afficher les codes de récupération",
     "When you enable two-factor authentication, you will be prompted for a secure pin during login. This pin can be retrieved from a TOTP-supported application on your phone.": "Lorsque vous activez l'authentification à deux facteurs, un code PIN sécurisé vous sera demandé lors de la connexion. Ce code peut être obtenu à partir d'une application compatible TOTP sur votre téléphone.",
     "Your email address is unverified.": "Votre adresse e-mail n'est pas vérifiée.",
-    "You will be prompted for a secure, random pin during login, which you can retrieve from the TOTP-supported application on your phone.": "Un code PIN sécurisé et aléatoire vous sera demandé lors de la connexion ; vous pouvez l'obtenir depuis l'application compatible TOTP sur votre téléphone."
+    "You will be prompted for a secure, random pin during login, which you can retrieve from the TOTP-supported application on your phone.": "Un code PIN sécurisé et aléatoire vous sera demandé lors de la connexion ; vous pouvez l'obtenir depuis l'application compatible TOTP sur votre téléphone.",
+    "Hello!": "Bonjour,",
+    "Whoops!": "Oups !",
+    "Regards,": "Cordialement,",
+    "Reset Password Notification": "Réinitialisation du mot de passe",
+    "You are receiving this email because we received a password reset request for your account.": "Vous recevez ce message car une demande de réinitialisation du mot de passe a été faite pour votre compte.",
+    "Reset Password": "Réinitialiser le mot de passe",
+    "This password reset link will expire in :count minutes.": "Ce lien de réinitialisation expire dans :count minutes.",
+    "If you did not request a password reset, no further action is required.": "Si vous n'êtes pas à l'origine de cette demande, aucune action n'est requise."
 }

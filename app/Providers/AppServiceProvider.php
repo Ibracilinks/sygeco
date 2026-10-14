@@ -3,6 +3,8 @@
 namespace App\Providers;
 
 use Carbon\CarbonImmutable;
+use Illuminate\Auth\Notifications\ResetPassword;
+use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
@@ -26,6 +28,29 @@ class AppServiceProvider extends ServiceProvider
     {
         $this->configureDefaults();
         $this->configureGates();
+        $this->configureMails();
+    }
+
+    /**
+     * Mail « mot de passe oublié » (Fortify) en français, dans le ton des autres mails.
+     */
+    protected function configureMails(): void
+    {
+        ResetPassword::toMailUsing(function (object $notifiable, string $token): MailMessage {
+            $url = url(route('password.reset', [
+                'token' => $token,
+                'email' => $notifiable->getEmailForPasswordReset(),
+            ], false));
+            $minutes = config('auth.passwords.'.config('auth.defaults.passwords').'.expire');
+
+            return (new MailMessage)
+                ->subject('Réinitialisation de votre mot de passe '.config('app.name'))
+                ->greeting('Bonjour '.$notifiable->name.',')
+                ->line('Vous recevez ce message car une demande de réinitialisation du mot de passe a été faite pour votre compte.')
+                ->action('Réinitialiser le mot de passe', $url)
+                ->line("Ce lien expire dans {$minutes} minutes.")
+                ->line("Si vous n'êtes pas à l'origine de cette demande, ignorez ce message : votre mot de passe reste inchangé.");
+        });
     }
 
     /**
@@ -57,14 +82,7 @@ class AppServiceProvider extends ServiceProvider
             app()->isProduction(),
         );
 
-        Password::defaults(fn (): ?Password => app()->isProduction()
-            ? Password::min(12)
-                ->mixedCase()
-                ->letters()
-                ->numbers()
-                ->symbols()
-                ->uncompromised()
-            : null,
-        );
+        // 8 caractères minimum, sans exigence de majuscule, de chiffre ni de caractère spécial.
+        Password::defaults(fn (): Password => Password::min(8));
     }
 }

@@ -2,9 +2,11 @@
 
 use App\Models\User;
 use App\Notifications\MotDePasseReinitialiseNotification;
+use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Notification;
+use Illuminate\Validation\Rules\Password;
 use Livewire\Livewire;
 use Spatie\Permission\Models\Role;
 
@@ -114,4 +116,20 @@ test('changer le mot de passe provisoire rouvre l\'application', function () {
     expect($user->mot_de_passe_provisoire)->toBeFalse()
         ->and(Hash::check('Personnel-2026!', $user->password))->toBeTrue();
     $this->actingAs($user)->get(route('dashboard'))->assertOk();
+});
+
+test('un mot de passe de 8 caractères sans caractère spécial est accepté, 7 sont refusés', function () {
+    expect(validator(['p' => 'abcdefgh'], ['p' => Password::default()])->passes())->toBeTrue()
+        ->and(validator(['p' => 'abcdefg'], ['p' => Password::default()])->passes())->toBeFalse();
+});
+
+test('le mail « mot de passe oublié » est en français', function () {
+    $user = User::factory()->create(['name' => 'Awa Traoré']);
+
+    $mail = (new ResetPassword('jeton'))->toMail($user);
+
+    expect($mail->subject)->toContain('Réinitialisation de votre mot de passe')
+        ->and($mail->greeting)->toBe('Bonjour Awa Traoré,')
+        ->and($mail->actionText)->toBe('Réinitialiser le mot de passe')
+        ->and($mail->actionUrl)->toContain('reset-password/jeton');
 });
