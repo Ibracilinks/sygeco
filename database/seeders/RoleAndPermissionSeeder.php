@@ -79,8 +79,8 @@ class RoleAndPermissionSeeder extends Seeder
             'view_exercices'
         ]);
 
-        // Le chef de service programme et soumet les activités de son service ; la
-        // validation revient au responsable de programme de l'entité parente.
+        // Le chef de service saisit les activités de son service sans les soumettre :
+        // la soumission revient au responsable de programme de l'entité parente.
         $roleChefService->syncPermissions([
             'view_activites',
             'create_activites',

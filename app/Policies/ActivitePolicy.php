@@ -104,8 +104,19 @@ class ActivitePolicy
             return $activite->peutEtreSoumis();
         }
 
-        return $user->hasAnyRole(['responsable-programme', 'chef-service', 'agent-planification'])
-            && (int) $user->departement_id === (int) $activite->departement_id
-            && $activite->peutEtreSoumis();
+        if (! $activite->peutEtreSoumis()) {
+            return false;
+        }
+
+        // Le responsable de programme soumet les activités de son entité et des
+        // services qu'elle chapeaute, dont celles saisies par ses chefs de service.
+        if ($user->hasRole('responsable-programme')) {
+            return VisibiliteActivites::dansPerimetre($user, $activite);
+        }
+
+        // Le chef de service saisit seulement : la soumission revient à son
+        // responsable de programme.
+        return $user->hasRole('agent-planification')
+            && (int) $user->departement_id === (int) $activite->departement_id;
     }
 }

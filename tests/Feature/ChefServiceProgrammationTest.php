@@ -17,8 +17,8 @@ uses(RefreshDatabase::class);
 |--------------------------------------------------------------------------
 | Programmation par le chef de service
 |--------------------------------------------------------------------------
-| Le chef de service programme et soumet les activités de son service ; la
-| soumission est validée par le responsable de programme de l'entité parente.
+| Le chef de service saisit les activités de son service sans les soumettre :
+| la soumission revient au responsable de programme de l'entité parente.
 */
 
 /**
@@ -62,20 +62,30 @@ test('le chef de service programme une activité pour son service', function () 
     expect($activite->statut)->toBe('brouillon');
 });
 
-test('le chef de service modifie et soumet une activité de son service, son responsable est notifié', function () {
-    Notification::fake();
-    ['service' => $service, 'chefService' => $chefService, 'responsable' => $responsable] = organigrammeChefService();
-    $autreResponsable = userWithRole('responsable-programme', ['departement_id' => Departement::factory()->departement()->create()->id]);
-
-    $activite = Activite::factory()->brouillon()->pourDepartement($service)->create();
+test('le chef de service modifie une activité de son service mais ne la soumet pas', function () {
+    ['service' => $service, 'chefService' => $chefService] = organigrammeChefService();
+    $activite = Activite::factory()->brouillon()->pourDepartement($service)->saisiePar($chefService)->create();
 
     $this->actingAs($chefService)->get(route('activites.edit', $activite))->assertOk();
-    $this->actingAs($chefService)->post(route('activites.soumettre', $activite))
+    $this->actingAs($chefService)->post(route('activites.soumettre', $activite))->assertForbidden();
+    $this->actingAs($chefService)->get(route('activites.show', $activite))
+        ->assertOk()
+        ->assertDontSee(route('activites.soumettre', $activite));
+
+    expect($activite->fresh()->statut)->toBe('brouillon');
+});
+
+test('le responsable de programme soumet l\'activité saisie par son chef de service', function () {
+    Notification::fake();
+    ['service' => $service, 'chefService' => $chefService, 'responsable' => $responsable] = organigrammeChefService();
+    $dbcgoq = userWithRole('dbcgoq');
+    $activite = Activite::factory()->brouillon()->pourDepartement($service)->saisiePar($chefService)->create();
+
+    $this->actingAs($responsable)->post(route('activites.soumettre', $activite))
         ->assertRedirect(route('activites.index'));
 
     expect($activite->fresh()->statut)->toBe('en_attente');
-    Notification::assertSentTo($responsable, ActiviteSoumiseNotification::class);
-    Notification::assertNotSentTo($autreResponsable, ActiviteSoumiseNotification::class);
+    Notification::assertSentTo($dbcgoq, ActiviteSoumiseNotification::class);
 });
 
 test('le chef de service ne touche pas aux activités d\'une autre entité', function () {
