@@ -60,12 +60,14 @@ class ActiviteController extends Controller
             'rejete' => (clone $summaryQuery)->where('statut', 'rejete')->count(),
         ];
 
-        // Présentation en cadre logique : Résultat → Extrant → activités. L'ordre SQL
-        // suit la même hiérarchie pour qu'une page de pagination donne des blocs cohérents.
+        // D'abord ce qui reste à faire : brouillons, rejetées, en validation, puis
+        // validées. Ensuite le cadre logique : Résultat → Extrant → activités, pour
+        // qu'une page de pagination donne des blocs cohérents.
         $activites = $query
             ->leftJoin('extrants', 'extrants.id', '=', 'activites.extrant_id')
             ->leftJoin('resultats', 'resultats.id', '=', 'extrants.resultat_id')
             ->leftJoin('departements', 'departements.id', '=', 'activites.departement_id')
+            ->orderByRaw("case activites.statut when 'brouillon' then 0 when 'rejete' then 1 when 'en_attente' then 2 when 'valide' then 3 else 4 end")
             ->orderBy('resultats.ordre')
             ->orderBy('resultats.code')
             ->orderBy('extrants.ordre')

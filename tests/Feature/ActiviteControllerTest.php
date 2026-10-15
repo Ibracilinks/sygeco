@@ -656,3 +656,19 @@ test('le coût reste obligatoire quand « pour mémoire » n\'est pas coché', f
         ])
         ->assertSessionHasErrors('cout');
 });
+
+test('la programmation liste d\'abord les brouillons, puis les rejetées, les activités en validation et les validées', function () {
+    $exercice = Exercice::factory()->actif()->create();
+    $departement = Departement::factory()->create();
+    $admin = userWithRole('superadmin');
+
+    foreach (['valide' => 'ACT_VALIDEE', 'en_attente' => 'ACT_EN_VALIDATION', 'rejete' => 'ACT_REJETEE', 'brouillon' => 'ACT_BROUILLON'] as $statut => $nom) {
+        activiteNommee($exercice, $departement, $nom, null, ['statut' => $statut]);
+    }
+
+    $this->actingAs($admin)
+        ->withSession([ActiveExercice::SESSION_KEY => $exercice->id])
+        ->get(route('activites.index'))
+        ->assertOk()
+        ->assertSeeInOrder(['ACT_BROUILLON', 'ACT_REJETEE', 'ACT_EN_VALIDATION', 'ACT_VALIDEE']);
+});
