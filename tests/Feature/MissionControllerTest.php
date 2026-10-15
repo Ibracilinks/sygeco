@@ -865,3 +865,34 @@ test('le choix de catégorie affiche la correspondance entre parenthèses', func
 
     expect($html)->toContain('Catégorie I (Ministère de Tutelle, PCA, Directeur Général)');
 })->with([Mission::TYPE_EXTERIEURE, Mission::TYPE_REGION]);
+
+test('une mission même ville affiche sa durée totale en tête et ses jours ouvrables dans le tableau', function () {
+    $admin = userWithRole('dbcgoq');
+
+    // Du vendredi au lundi : 4 jours au total, dont 2 ouvrables.
+    $this->actingAs($admin)->post(route('missions.store'), [
+        'type' => Mission::TYPE_MEME_VILLE,
+        'reference' => '006/MSDS-CANAM-DAGRH',
+        'departement_id' => Departement::factory()->create()->id,
+        'objet' => 'Mission locale sur un week-end',
+        'date_document' => '2026-10-15',
+        'date_depart' => '2026-10-16',
+        'date_retour' => '2026-10-19',
+        'tickets_carburant_par_jour' => 2,
+        'lieu_signature' => 'Bamako',
+        'statut' => 'brouillon',
+        'participants' => [['nom_complet' => 'MOUSSA TRAORE']],
+        'signataires' => missionSignatairesPayload(),
+    ])->assertSessionHasNoErrors();
+
+    $mission = Mission::where('reference', '006/MSDS-CANAM-DAGRH')->firstOrFail();
+
+    expect($mission->duree_totale)->toBe(4)
+        ->and((int) $mission->nombre_jours)->toBe(2)
+        ->and((int) $mission->nombre_tickets_carburant)->toBe(4);
+
+    $this->actingAs($admin)->get(route('missions.show', $mission))
+        ->assertOk()
+        ->assertSee('4 jour(s)')
+        ->assertDontSee('ouvrable(s)');
+});

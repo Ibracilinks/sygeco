@@ -683,6 +683,18 @@ class Mission extends Model
         return $participants;
     }
 
+    /**
+     * Durée totale de la mission, week-ends compris, du départ au retour. Le nombre de
+     * jours retenu pour les calculs (`nombre_jours`) exclut, lui, les week-ends d'une
+     * mission dans la même ville.
+     */
+    public function getDureeTotaleAttribute(): int
+    {
+        return $this->date_depart && $this->date_retour
+            ? self::calculerNombreJours($this->date_depart, $this->date_retour)
+            : (int) $this->nombre_jours;
+    }
+
     public static function calculerNombreJours($dateDepart, $dateRetour): int
     {
         $depart = $dateDepart instanceof Carbon ? $dateDepart : Carbon::parse($dateDepart);

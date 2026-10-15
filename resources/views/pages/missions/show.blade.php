@@ -115,7 +115,7 @@
                     </p>
 
                     <div class="mt-5 text-[12px]">
-                        <p><span class="font-bold uppercase underline">Durée :</span> <span class="font-bold">{{ $mission->nombre_jours }} jour(s) ouvrable(s)</span></p>
+                        <p><span class="font-bold uppercase underline">Durée :</span> <span class="font-bold">{{ $mission->duree_totale }} jour(s)</span></p>
                         <p>{{ $mission->date_depart?->format('d/m/Y') }} au {{ $mission->date_retour?->format('d/m/Y') }}</p>
                     </div>
 
@@ -482,6 +482,7 @@
     @if ($mission->estMemeVille())
         @php
             $missionPdf = $missionBase + [
+                'duree_totale' => $mission->duree_totale,
                 'tickets_par_jour' => $mission->tickets_carburant_par_jour,
                 'nombre_tickets' => $mission->nombre_tickets_carburant,
                 'nombre_personnes' => $mission->nombre_personnes,

@@ -567,7 +567,8 @@ window.exportMissionMemeVillePDF = (button, dataElId) => exporterMission(button,
     // ── Objet et durée ──────────────────────────────────────────────────
     y = objetMission(doc, 'OBJET DE LA MISSION:', mission.objet, y + r(8), k) + r(6);
     texteSouligne(doc, 'DUREE :', margin, y, r(9));
-    doc.text(`${mission.nombre_jours} jour(s) ouvrable(s)`, margin + r(18), y);
+    // Durée totale, week-ends compris ; le tableau garde les jours ouvrables.
+    doc.text(`${mission.duree_totale ?? mission.nombre_jours} jour(s)`, margin + r(18), y);
     doc.setFont('helvetica', 'normal');
     doc.text(`${mission.date_depart} au ${mission.date_retour}`, margin, y + r(5));
 
