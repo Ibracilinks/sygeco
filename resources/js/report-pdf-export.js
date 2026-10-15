@@ -469,8 +469,8 @@ const titreReference = (doc, titre, reference, y, taille, plancher) => {
 };
 
 /**
- * « OBJET DE LA MISSION » souligné ligne à ligne, aligné à gauche ou centré.
- * Renvoie l'ordonnée sous le bloc.
+ * « OBJET DE LA MISSION » suivi de l'objet, aligné à gauche ou centré : seul le
+ * libellé est souligné. Renvoie l'ordonnée sous le bloc.
  */
 const objetMission = (doc, libelle, objet, y, k, centre = false) => {
     const pageW = doc.internal.pageSize.getWidth();
@@ -479,13 +479,14 @@ const objetMission = (doc, libelle, objet, y, k, centre = false) => {
 
     doc.setFontSize(taille);
     const lignes = doc.splitTextToSize(`${libelle} ${String(objet || '').toUpperCase()}`, pageW - MARGE_MISSION * 2);
+    const largeurLibelle = largeurTexte(doc, libelle, taille);
     lignes.forEach((ligne, index) => {
         const ligneY = y + index * interligne;
-        if (centre) {
-            doc.text(ligne, pageW / 2, ligneY, { align: 'center' });
-            souligneCentre(doc, ligne, pageW / 2, ligneY, taille);
-        } else {
-            texteSouligne(doc, ligne, MARGE_MISSION, ligneY, taille);
+        const x = centre ? (pageW - largeurTexte(doc, ligne, taille)) / 2 : MARGE_MISSION;
+        doc.text(ligne, x, ligneY);
+        // Le libellé ouvre toujours la première ligne.
+        if (index === 0) {
+            doc.line(x, ligneY + 1, x + largeurLibelle, ligneY + 1);
         }
     });
 

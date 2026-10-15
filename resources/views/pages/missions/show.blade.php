@@ -110,8 +110,8 @@
                         Budget relatif a l'ordre de mission n°{{ $mission->reference }}
                     </h3>
 
-                    <p class="mt-5 text-justify text-[12px] font-bold uppercase underline">
-                        Objet de la mission: {{ $mission->objet }}
+                    <p class="mt-5 text-justify text-[12px] font-bold uppercase">
+                        <span class="underline">Objet de la mission:</span> {{ $mission->objet }}
                     </p>
 
                     <div class="mt-5 text-[12px]">
@@ -203,7 +203,7 @@
                         Projet de budget relatif a la levee d'ordre de mission n°{{ $mission->reference }}
                     </h3>
 
-                    <p class="mt-5 text-center text-[12px] font-bold uppercase underline">Objet de la mission : {{ $mission->objet }}</p>
+                    <p class="mt-5 text-center text-[12px] font-bold uppercase"><span class="underline">Objet de la mission :</span> {{ $mission->objet }}</p>
 
                     <div class="mt-5 flex items-start justify-between text-[12px]">
                         <div>
@@ -344,7 +344,7 @@
                         Budget relatif a l'ordre de mission n°{{ $mission->reference }}
                     </h3>
 
-                    <p class="mt-5 text-[12px] font-bold uppercase underline">Objet de la mission : {{ $mission->objet }}</p>
+                    <p class="mt-5 text-[12px] font-bold uppercase"><span class="underline">Objet de la mission :</span> {{ $mission->objet }}</p>
 
                     <div class="mt-5 flex items-start justify-between text-[12px]">
                         <div>
