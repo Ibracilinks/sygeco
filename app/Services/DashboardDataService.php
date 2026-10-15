@@ -300,7 +300,7 @@ class DashboardDataService
      */
     public function getBudgetParDepartement()
     {
-        return Cache::remember($this->cleCache('budget_departement'), 3600, function () {
+        return Cache::remember($this->cleCache('budget_departement_v2'), 3600, function () {
             $exerciceIds = $this->exerciceIdsDeLAnnee();
 
             $result = DB::table('departements')
@@ -311,15 +311,18 @@ class DashboardDataService
                         ->tap($this->perimetreActivites());
                 })
                 ->selectRaw('
+                    departements.code,
                     departements.nom,
                     COALESCE(SUM(activites.cout), 0) as budget
                 ')
-                ->groupBy('departements.id', 'departements.nom')
+                ->groupBy('departements.id', 'departements.code', 'departements.nom')
                 ->havingRaw('SUM(activites.cout) > 0')
                 ->orderByDesc('budget')
                 ->get()
                 ->map(function ($item) {
                     return [
+                        // Libellé court des graphiques : le code, à défaut le nom.
+                        'code' => $item->code ?: $item->nom,
                         'nom' => $item->nom,
                         'budget' => $item->budget,
                     ];

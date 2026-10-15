@@ -103,7 +103,7 @@
                     <p class="text-sm text-slate-500 dark:text-slate-400">Répartition budgétaire</p>
                 </div>
                 <div id="chart-depenses-departement">
-                <x-charts.bar-chart :labels="array_column($departmentBudgetAnalysis['department_spending'], 'nom')" :datasets="[
+                <x-charts.bar-chart :labels="array_column($departmentBudgetAnalysis['department_spending'], 'code')" :datasets="[
                     [
                         'label' => 'Budget Dépensé (M FCFA)',
                         'data' => array_map(function ($item) {
@@ -123,7 +123,7 @@
                     <p class="text-sm text-slate-500 dark:text-slate-400">Taux d'efficacité budgétaire</p>
                 </div>
                 <div id="chart-efficacite-departement">
-                <x-charts.bar-chart :labels="array_column($departmentBudgetAnalysis['department_efficiency'], 'nom')" :datasets="[
+                <x-charts.bar-chart :labels="array_column($departmentBudgetAnalysis['department_efficiency'], 'code')" :datasets="[
                     [
                         'label' => 'Efficacité (%)',
                         'data' => array_column($departmentBudgetAnalysis['department_efficiency'], 'efficiency'),

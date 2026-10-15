@@ -116,6 +116,7 @@ class BudgetAnalysisController extends Controller
     {
         // Simplified calculation - in a real app, this would compare against planned budget
         $stats = $this->dashboardService->getStats();
+
         // Assuming 80% is a typical utilization rate for demonstration
         return 85.5; // This would be calculated based on planned vs actual
     }
@@ -150,6 +151,7 @@ class BudgetAnalysisController extends Controller
         foreach ($departments as $dept) {
             // Simplified efficiency calculation
             $efficiency[] = [
+                'code' => $dept['code'],
                 'nom' => $dept['nom'],
                 'efficiency' => rand(75, 95), // In real app, calculate based on completion rates
                 'budget' => $dept['budget'],
@@ -207,6 +209,7 @@ class BudgetAnalysisController extends Controller
     private function getOverBudgetDepartments($annee)
     {
         $departments = $this->calculateDepartmentVariance($annee);
+
         return array_filter($departments, function ($dept) {
             return $dept['variance'] < 0; // Negative variance means over budget
         });
@@ -215,6 +218,7 @@ class BudgetAnalysisController extends Controller
     private function getUnderUtilizedBudgets($annee)
     {
         $departments = $this->calculateDepartmentVariance($annee);
+
         return array_filter($departments, function ($dept) {
             return $dept['variance'] > 1000000; // More than 1M FCFA under budget
         });
@@ -223,6 +227,7 @@ class BudgetAnalysisController extends Controller
     private function getHighCostActivities($annee)
     {
         $activities = $this->dashboardService->getTopActivites();
+
         return array_filter($activities, function ($activity) {
             return $activity['cout'] > 5000000; // Activities costing more than 5M FCFA
         });
@@ -241,13 +246,16 @@ class BudgetAnalysisController extends Controller
                 'actual' => rand(45000000, 140000000),
             ];
         }
+
         return $trends;
     }
 
     private function calculateBudgetGrowthRate($annee)
     {
         $trends = $this->calculateYearlyTrends($annee);
-        if (count($trends) < 2) return 0;
+        if (count($trends) < 2) {
+            return 0;
+        }
 
         $current = end($trends)['budget'];
         $previous = prev($trends)['budget'];
