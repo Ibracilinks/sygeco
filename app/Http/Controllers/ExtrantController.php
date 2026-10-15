@@ -6,7 +6,6 @@ use App\Models\Extrant;
 use App\Models\Objectif;
 use App\Models\Resultat;
 use App\Support\ActiveExercice;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -17,17 +16,12 @@ class ExtrantController extends Controller
      */
     public function index(Request $request)
     {
-        $user = Auth::user();
         $query = Extrant::query()
             ->with('objectif')
             ->withCount('activites');
 
         $exerciceId = ActiveExercice::id();
         $query->forExercice($exerciceId);
-
-        if ($this->isResponsableProgramme($user)) {
-            $this->applyDepartmentScopeToExtrantQuery($query, (int) $user->departement_id);
-        }
 
         if ($request->filled('objectif_id')) {
             $query->where('objectif_id', $request->objectif_id);
@@ -60,7 +54,6 @@ class ExtrantController extends Controller
             ->with('exercices:id,annee')
             ->where('statut', 'actif')
             ->forExercice($exerciceId)
-            ->when($this->isResponsableProgramme($user), fn ($q) => $q->whereHas('extrants.activites', fn (Builder $builder) => $builder->where('departement_id', $user->departement_id)))
             ->orderBy('annee', 'desc')
             ->get();
 
@@ -100,16 +93,10 @@ class ExtrantController extends Controller
      */
     public function show(Extrant $extrant)
     {
-        $user = Auth::user();
+        $perimetre = $this->perimetreActivites(Auth::user());
 
-        if ($this->isResponsableProgramme($user) && ! $this->extrantHasDepartmentActivities($extrant, (int) $user->departement_id)) {
-            abort(403);
-        }
-
-        $extrant->load(['objectif', 'activites' => function ($query) use ($user) {
-            if ($this->isResponsableProgramme($user) && $user?->departement_id) {
-                $query->where('departement_id', $user->departement_id);
-            }
+        $extrant->load(['objectif', 'activites' => function ($query) use ($perimetre) {
+            $query->when($perimetre !== null, fn ($q) => $q->whereIn('departement_id', $perimetre));
 
             $query->with('departement');
             $query->latest()->limit(10);
@@ -274,20 +261,17 @@ class ExtrantController extends Controller
             ->with('success', "Extrant {$extrant->code} {$status}.");
     }
 
-    private function isResponsableProgramme($user): bool
+    /**
+     * Le cadre logique (objectifs, résultats, extrants) est visible de tous ; seules
+     * les activités affichées sont ramenées au périmètre du responsable de programme
+     * (son entité et les services qu'elle chapeaute).
+     *
+     * @return array<int, int>|null
+     */
+    private function perimetreActivites($user): ?array
     {
-        return $user?->hasRole('responsable-programme') && $user?->departement_id !== null;
-    }
-
-    private function extrantHasDepartmentActivities(Extrant $extrant, int $departementId): bool
-    {
-        return $extrant->activites()
-            ->where('departement_id', $departementId)
-            ->exists();
-    }
-
-    private function applyDepartmentScopeToExtrantQuery(Builder $query, int $departementId): void
-    {
-        $query->whereHas('activites', fn (Builder $builder) => $builder->where('departement_id', $departementId));
+        return $user?->hasRole('responsable-programme') && $user?->departement_id !== null
+            ? $user->perimetreActivitesIds()
+            : null;
     }
 }

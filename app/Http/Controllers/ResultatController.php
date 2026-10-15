@@ -20,7 +20,6 @@ class ResultatController extends Controller
     public function index(Request $request)
     {
         $exerciceId = ActiveExercice::id();
-        $user = Auth::user();
 
         $filters = [
             'search' => trim((string) $request->string('search')),
@@ -36,19 +35,12 @@ class ResultatController extends Controller
 
         $query->forExercice($exerciceId);
 
-        if ($this->isResponsableProgramme($user)) {
-            $this->applyDepartmentScopeToResultatQuery($query, (int) $user->departement_id);
-        }
-
         $this->applyFilters($query, $filters);
         $this->applySort($query, $filters['sort'], $filters['direction']);
 
         $resultats = $query->paginate(15)->withQueryString();
 
         $summaryQuery = Resultat::query()->forExercice($exerciceId);
-        if ($this->isResponsableProgramme($user)) {
-            $this->applyDepartmentScopeToResultatQuery($summaryQuery, (int) $user->departement_id);
-        }
         $this->applyFilters($summaryQuery, $filters);
 
         $summary = [
@@ -62,7 +54,6 @@ class ResultatController extends Controller
             ->with('exercices:id,annee')
             ->where('statut', 'actif')
             ->forExercice($exerciceId)
-            ->when($this->isResponsableProgramme($user), fn ($q) => $q->whereHas('resultats.extrants.activites', fn (Builder $builder) => $builder->where('departement_id', $user->departement_id)))
             ->orderBy('annee', 'desc')
             ->orderBy('code')
             ->get(['id', 'code', 'annee', 'libelle']);
@@ -108,24 +99,13 @@ class ResultatController extends Controller
      */
     public function show(Resultat $resultat)
     {
-        $user = Auth::user();
-
-        if ($this->isResponsableProgramme($user) && ! $this->resultatHasDepartmentActivities($resultat, (int) $user->departement_id)) {
-            abort(403);
-        }
+        $perimetre = $this->perimetreActivites(Auth::user());
 
         $resultat->load([
             'objectif',
-            'extrants' => function ($query) use ($user) {
-                if ($this->isResponsableProgramme($user) && $user?->departement_id) {
-                    $query->whereHas('activites', fn (Builder $builder) => $builder->where('departement_id', $user->departement_id));
-                }
-
-                $query->with(['activites' => function ($activiteQuery) use ($user) {
-                    if ($this->isResponsableProgramme($user) && $user?->departement_id) {
-                        $activiteQuery->where('departement_id', $user->departement_id);
-                    }
-
+            'extrants' => function ($query) use ($perimetre) {
+                $query->with(['activites' => function ($activiteQuery) use ($perimetre) {
+                    $activiteQuery->when($perimetre !== null, fn ($q) => $q->whereIn('departement_id', $perimetre));
                     $activiteQuery->with('departement');
                 }]);
             },
@@ -308,20 +288,17 @@ class ResultatController extends Controller
         $query->orderBy($sort, $direction)->orderBy('code', 'asc');
     }
 
-    private function isResponsableProgramme($user): bool
+    /**
+     * Le cadre logique (objectifs, résultats, extrants) est visible de tous ; seules
+     * les activités affichées sont ramenées au périmètre du responsable de programme
+     * (son entité et les services qu'elle chapeaute).
+     *
+     * @return array<int, int>|null
+     */
+    private function perimetreActivites($user): ?array
     {
-        return $user?->hasRole('responsable-programme') && $user?->departement_id !== null;
-    }
-
-    private function resultatHasDepartmentActivities(Resultat $resultat, int $departementId): bool
-    {
-        return $resultat->extrants()
-            ->whereHas('activites', fn (Builder $query) => $query->where('departement_id', $departementId))
-            ->exists();
-    }
-
-    private function applyDepartmentScopeToResultatQuery(Builder $query, int $departementId): void
-    {
-        $query->whereHas('extrants.activites', fn (Builder $builder) => $builder->where('departement_id', $departementId));
+        return $user?->hasRole('responsable-programme') && $user?->departement_id !== null
+            ? $user->perimetreActivitesIds()
+            : null;
     }
 }
