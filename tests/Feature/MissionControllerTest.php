@@ -803,6 +803,7 @@ test('le formulaire de mission ne demande plus la date du document ni le lieu de
         $response->assertDontSee('name="lieu_signature"', false);
         $response->assertSee('name="structures_demandeuses[]"', false);
         $response->assertSee('name="code_budgetaire"', false);
+        $response->assertSee('value="CE : G630210"', false);
     }
 
     $this->actingAs($admin)->get(route('missions.create', ['type' => Mission::TYPE_REGION]))
@@ -895,4 +896,66 @@ test('une mission même ville affiche sa durée totale en tête et ses jours ouv
         ->assertOk()
         ->assertSee('4 jour(s)')
         ->assertDontSee('ouvrable(s)');
+});
+
+test('une nouvelle mission ne reprend ni les participants ni les services demandeurs de la précédente', function () {
+    $admin = userWithRole('dbcgoq');
+    $service = Departement::factory()->create(['nom' => 'Direction des Opérations']);
+
+    $this->actingAs($admin)->post(route('missions.store'), [
+        'type' => Mission::TYPE_MEME_VILLE,
+        'reference' => '007/MSDS-CANAM-DAGRH',
+        'structures_demandeuses' => [$service->id],
+        'objet' => 'Mission précédente',
+        'code_budgetaire' => Mission::CODES_BUDGETAIRES[0],
+        'date_depart' => '2026-10-20',
+        'date_retour' => '2026-10-21',
+        'tickets_carburant_par_jour' => 3,
+        'statut' => 'brouillon',
+        'participants' => [['nom_complet' => 'AMINATA KONATE']],
+        'signataires' => missionSignatairesPayload(),
+    ])->assertSessionHasNoErrors();
+
+    $this->actingAs($admin)->get(route('missions.create', ['type' => Mission::TYPE_MEME_VILLE]))
+        ->assertOk()
+        // Ni le participant ni le service demandeur ne sont repris…
+        ->assertDontSee('AMINATA KONATE')
+        ->assertDontSee('value="'.$service->id.'" selected', false)
+        // …mais le code budgétaire et les signataires le sont toujours.
+        ->assertSee('value="'.Mission::CODES_BUDGETAIRES[0].'" selected', false)
+        ->assertSee('BOUBACAR DEMBELE');
+});
+
+test('les étapes d\'une mission à l\'intérieur sont une région ou un cercle, dont le type fixe le barème', function () {
+    $admin = userWithRole('dbcgoq');
+
+    $formulaire = $this->actingAs($admin)->get(route('missions.create', ['type' => Mission::TYPE_REGION]))->assertOk();
+    $formulaire->assertSee('<option value="region"', false)
+        ->assertSee('<option value="cercle"', false)
+        ->assertDontSee('<option value="commune"', false)
+        ->assertDontSee('<option value="autre_localite"', false)
+        // Plus de choix du barème : il découle du type d'étape.
+        ->assertDontSee('[bareme]', false);
+
+    $this->actingAs($admin)->post(route('missions.store'), [
+        'type' => Mission::TYPE_REGION,
+        'reference' => '310/MSDS-CANAM-DAGRH',
+        'departement_id' => Departement::factory()->create()->id,
+        'objet' => 'Supervision région et cercle',
+        'destination' => 'Sikasso',
+        'date_depart' => '2026-11-02',
+        'date_retour' => '2026-11-05',
+        'statut' => 'brouillon',
+        'participants' => [['nom_complet' => 'MOUSSA TRAORE', 'categorie' => 'cat_4']],
+        'etapes' => [
+            // Un barème envoyé malgré tout est ignoré au profit de celui du type.
+            ['type_etape' => 'region', 'bareme' => 'meme_cercle', 'localite' => 'Sikasso', 'nombre_jours' => 2],
+            ['type_etape' => 'cercle', 'bareme' => 'national', 'localite' => 'Koutiala', 'nombre_jours' => 2],
+        ],
+        'signataires' => missionSignatairesPayload(),
+    ])->assertSessionHasNoErrors();
+
+    $etapes = Mission::where('reference', '310/MSDS-CANAM-DAGRH')->firstOrFail()->etapes()->orderBy('ordre')->get();
+
+    expect($etapes->pluck('bareme')->all())->toBe(['national', 'meme_cercle']);
 });

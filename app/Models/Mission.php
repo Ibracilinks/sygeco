@@ -139,11 +139,23 @@ class Mission extends Model
     ];
 
     public const TYPES_ETAPES_REGIONALES = [
-        'region' => 'Chef-lieu de région',
+        'region' => 'Région',
         'cercle' => 'Cercle',
-        'commune' => 'Commune',
-        'autre_localite' => 'Autre localité',
     ];
+
+    /**
+     * Le type d'étape fixe son barème : une région suit le barème national par
+     * catégorie, un cercle le barème forfaitaire. Il n'est plus choisi à la main.
+     */
+    public const BAREME_PAR_TYPE_ETAPE = [
+        'region' => 'national',
+        'cercle' => 'meme_cercle',
+    ];
+
+    public static function baremePourTypeEtape(?string $typeEtape): string
+    {
+        return self::BAREME_PAR_TYPE_ETAPE[$typeEtape] ?? 'national';
+    }
 
     /**
      * Régions administratives du Mali, telles que retenues pour les missions à
@@ -180,12 +192,13 @@ class Mission extends Model
      *
      * @var array<int, string>
      */
+    /** Codes budgétaires proposés : compte de charges précédé de « G ». */
     public const CODES_BUDGETAIRES = [
-        'Code budgétaire 1',
-        'Code budgétaire 2',
-        'Code budgétaire 3',
-        'Code budgétaire 4',
-        'Code budgétaire 5',
+        'CE : G630210',
+        'CE : G638600',
+        'CE : G638700',
+        'CE : G630220',
+        'CE : G630280',
     ];
 
     /**

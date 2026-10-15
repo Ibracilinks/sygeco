@@ -513,7 +513,7 @@ const piedMission = (doc, mission, y, k, { lettres, ecartNom }) => {
 
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(9 * k);
-    doc.text(`${mission.lieu_signature} le ....................`, pageW - MARGE_MISSION, y, { align: 'right' });
+    doc.text(`${mission.lieu_signature} le ............................................................`, pageW - MARGE_MISSION, y, { align: 'right' });
     y += 12 * k;
 
     signatures(doc, mission.signataires, y, k, MARGE_MISSION, fullW,

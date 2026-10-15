@@ -54,7 +54,7 @@ class MissionController extends Controller
         $departements = Departement::query()->active()->ordered()->get(['id', 'nom']);
         $precedente = Mission::query()
             ->where('type', $type)
-            ->with(['participants', 'signataires', 'etapes', 'departements'])
+            ->with(['signataires', 'etapes'])
             ->latest('date_document')
             ->latest('id')
             ->first();
@@ -85,13 +85,8 @@ class MissionController extends Controller
             'statut' => 'brouillon',
         ]);
 
-        $participants = $precedente?->participants
-            ? $precedente->participants->map(fn ($participant) => [
-                'nom_complet' => $participant->nom_complet,
-                'categorie' => $participant->categorie,
-                'nombre_nuitees' => $participant->nombre_nuitees,
-            ])->all()
-            : [['nom_complet' => '', 'categorie' => null, 'nombre_nuitees' => null]];
+        // Les participants changent d'une mission à l'autre : une ligne vide, jamais repris.
+        $participants = [['nom_complet' => '', 'categorie' => null, 'nombre_nuitees' => null]];
 
         $etapes = $precedente?->etapes
             ? $precedente->etapes->map(fn ($etape) => [
@@ -117,7 +112,8 @@ class MissionController extends Controller
             ])->all()
             : $this->signatairesParDefaut($type);
 
-        $structuresDemandeuses = $precedente?->departements->pluck('id')->all() ?? [];
+        // Idem pour les services demandeurs.
+        $structuresDemandeuses = [];
 
         $formPartial = $this->formPartialFor($type);
 

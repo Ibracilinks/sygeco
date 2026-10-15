@@ -95,9 +95,12 @@ class StoreMissionRequest extends FormRequest
                 $premiereNuiteePayee = filter_var($etape['premiere_nuitee_payee'] ?? false, FILTER_VALIDATE_BOOL);
                 $jours = is_numeric($etape['nombre_jours'] ?? null) ? max(1, (int) $etape['nombre_jours']) : 1;
 
+                $type = trim((string) ($etape['type_etape'] ?? '')) ?: null;
+
                 return [
-                    'type_etape' => trim((string) ($etape['type_etape'] ?? '')) ?: null,
-                    'bareme' => trim((string) ($etape['bareme'] ?? '')) ?: 'national',
+                    'type_etape' => $type,
+                    // Le barème découle du type d'étape (région → national, cercle → forfait).
+                    'bareme' => Mission::baremePourTypeEtape($type),
                     'localite' => trim((string) ($etape['localite'] ?? '')),
                     'nombre_jours' => $jours,
                     'nombre_nuitees' => Mission::nuiteesDepuisJours($jours, $premiereNuiteePayee),
