@@ -3,7 +3,7 @@
         <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
             <div>
                 <h1 class="text-2xl font-semibold text-slate-900 dark:text-white">Extrants stratégiques</h1>
-                <p class="text-sm text-slate-500 dark:text-slate-400">Suivi des extrants par objectif, statut et ordre de priorité.</p>
+                <p class="text-sm text-slate-500 dark:text-slate-400">Suivi des extrants par objectif, et statut.</p>
             </div>
             @can('create_extrants')
                 <a href="{{ route('extrants.create') }}" class="inline-flex items-center rounded-lg bg-slate-800 px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-700 dark:bg-slate-200 dark:text-slate-900 dark:hover:bg-white">
@@ -74,7 +74,6 @@
                     <tr>
                         <th class="px-5 py-3 text-left text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">Extrant</th>
                         <th class="px-5 py-3 text-left text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">Objectif</th>
-                        <th class="px-5 py-3 text-left text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">Ordre</th>
                         <th class="px-5 py-3 text-left text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">Statut</th>
                         <th class="px-5 py-3 text-left text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">Actions</th>
                     </tr>
@@ -90,7 +89,6 @@
                                 <p class="font-medium">{{ $extrant->objectif?->code ?? '-' }}</p>
                                 <p class="text-xs text-slate-500 dark:text-slate-400">{{ $extrant->objectif?->periode_libelle ?? '-' }}</p>
                             </td>
-                            <td class="px-5 py-4 text-sm text-slate-700 dark:text-slate-200">{{ $extrant->ordre ?? '-' }}</td>
                             <td class="px-5 py-4">
                                 <span class="rounded-full px-2 py-1 text-xs font-semibold {{ $extrant->is_active ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-200' : 'bg-rose-100 text-rose-800 dark:bg-rose-900/40 dark:text-rose-200' }}">
                                     {{ $extrant->is_active ? 'Actif' : 'Inactif' }}
@@ -117,7 +115,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="5" class="px-5 py-10 text-center text-sm text-slate-500 dark:text-slate-400">Aucun extrant trouvé.</td>
+                            <td colspan="4" class="px-5 py-10 text-center text-sm text-slate-500 dark:text-slate-400">Aucun extrant trouvé.</td>
                         </tr>
                     @endforelse
                 </tbody>

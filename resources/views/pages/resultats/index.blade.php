@@ -94,7 +94,6 @@
                             <td class="px-5 py-4">
                                 <p class="font-mono text-sm font-semibold text-slate-900 dark:text-white">{{ $resultat->code }}</p>
                                 <p class="mt-1 text-sm text-slate-700 dark:text-slate-200">{{ Str::limit($resultat->libelle, 90) }}</p>
-                                <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">Ordre: {{ $resultat->ordre ?? '-' }}</p>
                             </td>
                             <td class="px-5 py-4 text-sm text-slate-700 dark:text-slate-200">
                                 <p class="font-medium">{{ $resultat->objectif?->code ?? '-' }}</p>

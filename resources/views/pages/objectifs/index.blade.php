@@ -113,7 +113,6 @@
                                 </p>
                             </td>
                             <td class="px-5 py-4 text-sm text-slate-700 dark:text-slate-200">
-                                <p>Ordre: {{ $objectif->ordre ?? '-' }}</p>
                                 <p class="text-xs text-slate-500 dark:text-slate-400">{{ $objectif->resultats_count }} résultats • {{ $objectif->extrants_count }} extrants</p>
                             </td>
                             <td class="px-5 py-4">
