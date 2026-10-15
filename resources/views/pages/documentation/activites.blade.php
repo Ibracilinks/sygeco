@@ -79,11 +79,10 @@
             <li><strong>Actions par ligne</strong> : Voir (toujours), Modifier/Supprimer (si l'activité est encore modifiable et que vous en avez la permission), Soumettre (si elle est soumettable et que vous en avez le droit).</li>
         </ul>
         <p>La liste affiche <strong>15 activités par page</strong>.</p>
-        <x-doc.astuce type="attention">
-            Il n'existe pas de bouton « Dupliquer » ni « Exporter » sur cette liste : pour obtenir un export Excel du
-            cadre logique, utilisez le bouton d'export du module
-            <a href="{{ route('documentation.validation') }}" class="font-medium underline">Validation</a> ou de celui de
-            <a href="{{ route('documentation.suivi') }}" class="font-medium underline">Suivi &amp; évaluation</a>.
+        <x-doc.astuce>
+            Le bouton <strong>« Exporter (Cadre logique) »</strong> télécharge un classeur Excel (.xlsx) des activités
+            affichées, avec les filtres en cours : Objectif → Résultat → Extrant → activités, chronogramme, responsables
+            et coûts sous-totalisés. Il n'existe pas de bouton « Dupliquer ».
         </x-doc.astuce>
     </x-doc.section>
 

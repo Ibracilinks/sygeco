@@ -10,6 +10,7 @@ use App\Notifications\ActiviteRefusee;
 use App\Notifications\ActiviteValidee;
 use App\Support\ActiveExercice;
 use App\Support\CadreLogique;
+use App\Support\ExportCadreLogique;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Gate;
@@ -317,14 +318,11 @@ class ValidationController extends Controller
         // Cadre logique d'arbitrage : Objectif → Résultat stratégique → Extrant.
         $objectifs = CadreLogique::grouper($activites);
 
-        $html = view('pages.validations.export-arbitrage', compact('objectifs'))->render();
-
-        $filename = 'cadre-logique-arbitrage-'.now()->format('Ymd_His').'.xls';
-
-        return response($html, 200, [
-            'Content-Type' => 'application/vnd.ms-excel; charset=UTF-8',
-            'Content-Disposition' => 'attachment; filename="'.$filename.'"',
-        ]);
+        return ExportCadreLogique::programmation(
+            $objectifs,
+            'Cadre logique — arbitrage / validation',
+            'Exercice '.ActiveExercice::model()?->annee.' — exporté le '.now()->format('d/m/Y à H:i'),
+        )->telecharger('cadre-logique-arbitrage-'.now()->format('Ymd_His').'.xlsx');
     }
 
     private function buildQuery(Request $request)

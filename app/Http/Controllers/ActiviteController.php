@@ -9,9 +9,12 @@ use App\Models\Extrant;
 use App\Models\User;
 use App\Notifications\ActiviteCoutModifieNotification;
 use App\Notifications\ActiviteRefusee;
+use App\Notifications\ActiviteSaisieNotification;
 use App\Notifications\ActiviteSoumiseNotification;
 use App\Notifications\ActiviteValidee;
 use App\Support\ActiveExercice;
+use App\Support\CadreLogique;
+use App\Support\ExportCadreLogique;
 use App\Support\VisibiliteActivites;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\Request;
@@ -43,39 +46,12 @@ class ActiviteController extends Controller
      */
     public function index(Request $request)
     {
-        $query = Activite::with(['extrant.objectif', 'extrant.resultat', 'departement', 'departements', 'saisiePar']);
-
         $exerciceId = ActiveExercice::id();
-        $query->forExercice($exerciceId);
-
-        // Filtres
-        if ($request->filled('extrant_id')) {
-            $query->where('extrant_id', $request->extrant_id);
-        }
-
-        if ($request->filled('departement_id')) {
-            $query->where('departement_id', $request->departement_id);
-        }
-
-        if ($request->filled('statut')) {
-            $query->where('statut', $request->statut);
-        }
-
-        if ($request->filled('trimestre')) {
-            $query->pourTrimestre($request->trimestre);
-        }
-
-        if ($request->filled('search')) {
-            $query->where(function ($q) use ($request) {
-                $q->where('nom_activite', 'like', "%{$request->search}%")
-                    ->orWhere('indicateur_objectivement_verifiable', 'like', "%{$request->search}%");
-            });
-        }
-
-        // Périmètre habituel, plus les activités validées de toutes les entités (lecture seule).
-        VisibiliteActivites::appliquerConsultation($query, Auth::user());
+        $query = $this->requeteListe($request)
+            ->with(['extrant.objectif', 'extrant.resultat', 'departement', 'departements', 'saisiePar']);
 
         $summaryQuery = clone $query;
+
         $summary = [
             'total' => (clone $summaryQuery)->count(),
             'brouillon' => (clone $summaryQuery)->where('statut', 'brouillon')->count(),
@@ -118,6 +94,66 @@ class ActiviteController extends Controller
         $filters = $request->only(['search', 'extrant_id', 'departement_id', 'statut', 'trimestre']);
 
         return view('pages.activites.index', compact('activites', 'groupes', 'extrants', 'departements', 'departementsGroupes', 'statuts', 'summary', 'filters'));
+    }
+
+    /**
+     * Activités de la liste de programmation : exercice actif, filtres de l'écran
+     * et périmètre de consultation. Partagée par la liste et son export.
+     */
+    private function requeteListe(Request $request)
+    {
+        $query = Activite::query()->forExercice(ActiveExercice::id());
+
+        // Filtres
+        if ($request->filled('extrant_id')) {
+            $query->where('extrant_id', $request->extrant_id);
+        }
+
+        if ($request->filled('departement_id')) {
+            $query->where('departement_id', $request->departement_id);
+        }
+
+        if ($request->filled('statut')) {
+            $query->where('statut', $request->statut);
+        }
+
+        if ($request->filled('trimestre')) {
+            $query->pourTrimestre($request->trimestre);
+        }
+
+        if ($request->filled('search')) {
+            $query->where(function ($q) use ($request) {
+                $q->where('nom_activite', 'like', "%{$request->search}%")
+                    ->orWhere('indicateur_objectivement_verifiable', 'like', "%{$request->search}%");
+            });
+        }
+
+        // Périmètre habituel, plus les activités validées de toutes les entités (lecture seule).
+        VisibiliteActivites::appliquerConsultation($query, Auth::user());
+
+        return $query;
+    }
+
+    /**
+     * Export Excel du cadre logique de la programmation, avec les filtres de l'écran.
+     */
+    public function export(Request $request)
+    {
+        $this->authorize('viewAny', Activite::class);
+
+        $activites = $this->requeteListe($request)
+            ->with(['extrant.resultat.objectif', 'departement:id,code,nom', 'departements:id,code,nom'])
+            ->get()
+            // Même ordre que la liste : résultat puis extrant, selon leur ordre et leur code.
+            ->sortBy(fn (Activite $a) => sprintf('%06d|%s|%06d|%s',
+                $a->extrant?->resultat?->ordre ?? 999999, $a->extrant?->resultat?->code,
+                $a->extrant?->ordre ?? 999999, $a->extrant?->code));
+
+        return ExportCadreLogique::programmation(
+            CadreLogique::grouper($activites),
+            'Cadre logique — programmation / planification',
+            'Exercice '.ActiveExercice::model()?->annee.' — exporté le '.now()->format('d/m/Y à H:i'),
+        )->telecharger('cadre-logique-programmation-'.now()->format('Ymd_His').'.xlsx');
     }
 
     /**
@@ -190,6 +226,8 @@ class ActiviteController extends Controller
         $activite->save();
 
         $activite->departements()->sync($this->structuresIntervenantes($validated));
+
+        $this->notifierResponsablesDuChefService($activite);
 
         return redirect()->route('activites.index')
             ->with('success', 'Activité créée avec succès.');
@@ -588,6 +626,32 @@ class ActiviteController extends Controller
         }
 
         return $query->get();
+    }
+
+    /**
+     * Un chef de service saisit sans soumettre : le responsable de programme de son
+     * entité (ou de l'entité parente) est prévenu qu'une activité attend sa soumission.
+     */
+    protected function notifierResponsablesDuChefService(Activite $activite): void
+    {
+        $auteur = Auth::user();
+
+        if (! $auteur?->isChefService() || $auteur->isResponsableProgramme()) {
+            return;
+        }
+
+        $destinataires = User::query()
+            ->role('responsable-programme')
+            ->whereIn('departement_id', array_filter([
+                $activite->departement_id,
+                $activite->departement()->value('parent_id'),
+            ]))
+            ->whereKeyNot($auteur->getKey())
+            ->get();
+
+        if ($destinataires->isNotEmpty()) {
+            Notification::send($destinataires, new ActiviteSaisieNotification($activite));
+        }
     }
 
     protected function notifierValidateurs(Activite $activite): void

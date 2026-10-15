@@ -134,7 +134,7 @@
     <x-doc.section id="export" titre="8. Exporter le cadre logique">
         <p>
             Le bouton <strong>« Exporter (Cadre logique) »</strong> génère un fichier
-            <code class="rounded bg-slate-100 px-1 dark:bg-slate-800">cadre-logique-arbitrage-{date}.xls</code>
+            <code class="rounded bg-slate-100 px-1 dark:bg-slate-800">cadre-logique-arbitrage-{date}.xlsx</code>
             couvrant <strong>toutes les activités de l'exercice en cours, tous statuts confondus</strong> (pas
             seulement celles en attente), dans votre périmètre et selon les filtres actifs (structure, extrant,
             trimestre). Depuis l'écran d'une entité, l'export se restreint à cette entité.

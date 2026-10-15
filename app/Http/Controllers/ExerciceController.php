@@ -12,6 +12,7 @@ use App\Models\Resultat;
 use App\Models\User;
 use App\Notifications\OuvertureSaisieActivitesNotification;
 use App\Support\ActiveExercice;
+use App\Support\ExportCadreLogique;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Notification;
@@ -233,14 +234,24 @@ class ExerciceController extends Controller
             }])
             ->get();
 
-        $html = view('pages.exercices.export', compact('exercice', 'objectifs'))->render();
-
-        $filename = 'PTA_exercice_'.$exercice->annee.'_'.now()->format('Ymd').'.xls';
-
-        return response($html, 200, [
-            'Content-Type' => 'application/vnd.ms-excel; charset=UTF-8',
-            'Content-Disposition' => 'attachment; filename="'.$filename.'"',
+        // Même structure que CadreLogique::grouper(), en gardant résultats et extrants
+        // sans activité : le PTA montre tout le cadre logique de l'exercice.
+        $cadre = $objectifs->map(fn ($objectif) => [
+            'objectif' => $objectif,
+            'resultats' => $objectif->resultats->map(fn ($resultat) => [
+                'resultat' => $resultat,
+                'extrants' => $resultat->extrants->map(fn ($extrant) => [
+                    'extrant' => $extrant,
+                    'activites' => $extrant->activites,
+                ]),
+            ]),
         ]);
+
+        return ExportCadreLogique::programmation(
+            $cadre,
+            'Plan de travail annuel — exercice '.$exercice->annee,
+            'Exporté le '.now()->format('d/m/Y à H:i'),
+        )->telecharger('PTA_exercice_'.$exercice->annee.'_'.now()->format('Ymd').'.xlsx');
     }
 
     public function update(UpdateExerciceRequest $request, Exercice $exercice)

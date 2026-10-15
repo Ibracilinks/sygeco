@@ -5,18 +5,25 @@
                 <h1 class="text-2xl font-semibold text-slate-900 dark:text-white">Programmation / Planification</h1>
                 <p class="text-sm text-slate-500 dark:text-slate-400">Activités programmées par extrant, structure et statut de validation. L'évaluation de l'exécution se fait dans <a href="{{ route('evaluations.index', 'mi-parcours') }}" class="font-medium text-sky-700 hover:underline dark:text-sky-300">Évaluation</a>.</p>
             </div>
-            @can('create', App\Models\Activite::class)
-                <a href="{{ route('activites.create') }}" class="inline-flex items-center rounded-lg bg-slate-800 px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-700 dark:bg-slate-200 dark:text-slate-900 dark:hover:bg-white">
-                    Programmer une activité
+            <div class="flex flex-wrap items-center gap-2">
+                {{-- L'export reprend les filtres de l'écran. --}}
+                <a href="{{ route('activites.export', request()->query(), false) }}"
+                    class="inline-flex items-center rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-emerald-500">
+                    Exporter (Cadre logique)
                 </a>
-            @endcan
-            @cannot('create', App\Models\Activite::class)
-                @if (($exerciceSaisie = App\Support\ActiveExercice::model())?->saisieCloturee())
-                    <p class="inline-flex items-center rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-900 dark:bg-amber-900/30 dark:text-amber-100">
-                        Saisie close depuis le {{ $exerciceSaisie->date_limite_saisie->format('d/m/Y') }}
-                    </p>
-                @endif
-            @endcannot
+                @can('create', App\Models\Activite::class)
+                    <a href="{{ route('activites.create') }}" class="inline-flex items-center rounded-lg bg-slate-800 px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-700 dark:bg-slate-200 dark:text-slate-900 dark:hover:bg-white">
+                        Programmer une activité
+                    </a>
+                @endcan
+                @cannot('create', App\Models\Activite::class)
+                    @if (($exerciceSaisie = App\Support\ActiveExercice::model())?->saisieCloturee())
+                        <p class="inline-flex items-center rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-900 dark:bg-amber-900/30 dark:text-amber-100">
+                            Saisie close depuis le {{ $exerciceSaisie->date_limite_saisie->format('d/m/Y') }}
+                        </p>
+                    @endif
+                @endcannot
+            </div>
         </div>
 
         <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">

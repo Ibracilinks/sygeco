@@ -162,15 +162,14 @@
     <x-doc.section id="export" titre="8. Exporter le PTA de l'exercice">
         <p>
             Le bouton <strong>« Exporter (Excel) »</strong> de la fiche génère un fichier
-            <code class="rounded bg-slate-100 px-1 dark:bg-slate-800">PTA_exercice_{année}_{date}.xls</code> reprenant
+            <code class="rounded bg-slate-100 px-1 dark:bg-slate-800">PTA_exercice_{année}_{date}.xlsx</code> reprenant
             l'intégralité du cadre logique de l'exercice : Objectif → Résultat stratégique → Extrant → Activités, avec
             pour chaque activité l'indicateur, le moyen de vérification, le chronogramme (colonnes 1er à 4e trimestre),
             les structures responsables et le coût, sous-totalisés par résultat puis totalisés en fin de document.
         </p>
         <x-doc.astuce>
-            Le fichier s'ouvre directement dans Excel ou LibreOffice, mais il s'agit techniquement d'un tableau HTML
-            portant l'extension <code class="rounded bg-slate-100 px-1 dark:bg-slate-800">.xls</code> : ne le renommez
-            pas et ouvrez-le avec un tableur plutôt qu'un navigateur si votre poste vous propose ce choix.
+            Le classeur Excel (.xlsx) s'ouvre dans Excel ou LibreOffice : l'en-tête reste visible au défilement et se
+            répète à chaque page imprimée (A4 paysage), et les coûts sont des nombres que l'on peut additionner.
         </x-doc.astuce>
     </x-doc.section>
 

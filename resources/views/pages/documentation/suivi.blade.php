@@ -132,7 +132,7 @@
     <x-doc.section id="export" titre="6. Exporter">
         <p>
             Le bouton d'export génère un fichier
-            <code class="rounded bg-slate-100 px-1 dark:bg-slate-800">cadre-logique-evaluation-{période}-{date}.xls</code>
+            <code class="rounded bg-slate-100 px-1 dark:bg-slate-800">cadre-logique-evaluation-{période}-{date}.xlsx</code>
             reprenant le cadre logique complet (Objectif → Résultat → Extrant → Activités) avec, pour chaque
             activité : indicateur, valeur atteinte, état d'exécution (Réalisé / En cours / Non réalisé), structure(s)
             responsable(s) et observations. Il respecte les mêmes filtres que l'écran de suivi.

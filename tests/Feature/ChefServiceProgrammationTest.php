@@ -7,6 +7,7 @@ use App\Models\Extrant;
 use App\Models\Objectif;
 use App\Models\Resultat;
 use App\Models\User;
+use App\Notifications\ActiviteSaisieNotification;
 use App\Notifications\ActiviteSoumiseNotification;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Notification;
@@ -60,6 +61,51 @@ test('le chef de service programme une activité pour son service', function () 
     $activite = Activite::firstWhere('nom_activite', 'Formation des agents du service');
     expect($activite->departement_id)->toBe($service->id);
     expect($activite->statut)->toBe('brouillon');
+});
+
+test('le responsable de programme est notifié quand son chef de service enregistre une activité', function () {
+    Notification::fake();
+    ['service' => $service, 'chefService' => $chefService, 'responsable' => $responsable] = organigrammeChefService();
+    $autreResponsable = userWithRole('responsable-programme', ['departement_id' => Departement::factory()->departement()->create()->id]);
+
+    $exercice = Exercice::factory()->actif()->create();
+    $objectif = Objectif::factory()->pourExercice($exercice)->create(['annee' => $exercice->annee]);
+    $extrant = Extrant::factory()->forResultat(Resultat::factory()->forObjectif($objectif)->create())->create();
+
+    $this->actingAs($chefService)->post(route('activites.store'), [
+        'extrant_id' => $extrant->id,
+        'departement_id' => $service->id,
+        'nom_activite' => 'Inventaire du matériel du service',
+        'indicateur_objectivement_verifiable' => 'Inventaire réalisé',
+        'moyen_verification' => 'Fiche d\'inventaire',
+        'cout' => 500_000,
+        'trimestre_2' => 'on',
+    ])->assertSessionHasNoErrors();
+
+    Notification::assertSentTo($responsable, ActiviteSaisieNotification::class,
+        fn ($notification) => $notification->activite->nom_activite === 'Inventaire du matériel du service');
+    Notification::assertNotSentTo($autreResponsable, ActiviteSaisieNotification::class);
+});
+
+test('une activité enregistrée par le responsable lui-même ne notifie personne', function () {
+    Notification::fake();
+    ['direction' => $direction, 'responsable' => $responsable] = organigrammeChefService();
+
+    $exercice = Exercice::factory()->actif()->create();
+    $objectif = Objectif::factory()->pourExercice($exercice)->create(['annee' => $exercice->annee]);
+    $extrant = Extrant::factory()->forResultat(Resultat::factory()->forObjectif($objectif)->create())->create();
+
+    $this->actingAs($responsable)->post(route('activites.store'), [
+        'extrant_id' => $extrant->id,
+        'departement_id' => $direction->id,
+        'nom_activite' => 'Activité de la direction',
+        'indicateur_objectivement_verifiable' => 'Indicateur',
+        'moyen_verification' => 'Rapport',
+        'cout' => 100_000,
+        'trimestre_1' => 'on',
+    ])->assertSessionHasNoErrors();
+
+    Notification::assertNothingSentTo($responsable);
 });
 
 test('le chef de service modifie une activité de son service mais ne la soumet pas', function () {

@@ -8,6 +8,7 @@ use App\Models\Departement;
 use App\Models\Extrant;
 use App\Support\ActiveExercice;
 use App\Support\CadreLogique;
+use App\Support\ExportCadreLogique;
 use App\Support\VisibiliteActivites;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -245,13 +246,13 @@ class EvaluationController extends Controller
         $periodeLibelle = ActiviteEvaluation::PERIODES[$periode];
         $entetePeriode = $periode === ActiviteEvaluation::PERIODE_MI_PARCOURS ? '1er SEMESTRE' : 'ANNÉE';
 
-        $html = view('pages.evaluations.export', compact('objectifs', 'periode', 'periodeLibelle', 'entetePeriode'))->render();
-        $filename = 'cadre-logique-evaluation-'.ActiviteEvaluation::slugDePeriode($periode).'-'.now()->format('Ymd_His').'.xls';
-
-        return response($html, 200, [
-            'Content-Type' => 'application/vnd.ms-excel; charset=UTF-8',
-            'Content-Disposition' => 'attachment; filename="'.$filename.'"',
-        ]);
+        return ExportCadreLogique::evaluation(
+            $objectifs,
+            'Cadre logique — évaluation '.$periodeLibelle,
+            'Exercice '.ActiveExercice::model()?->annee.' — exporté le '.now()->format('d/m/Y à H:i'),
+            $periode,
+            $entetePeriode,
+        )->telecharger('cadre-logique-evaluation-'.ActiviteEvaluation::slugDePeriode($periode).'-'.now()->format('Ymd_His').'.xlsx');
     }
 
     /**
