@@ -45,7 +45,15 @@ class EvaluationController extends Controller
             ? round($summary['evaluees'] / $summary['total'] * 100, 1)
             : 0.0;
 
-        $activites = $query->orderBy('extrant_id')->orderBy('id')->paginate(20)->withQueryString();
+        // D'abord ce qui reste à faire : les activités non encore évaluées pour la
+        // période, puis les évaluées ; ensuite par extrant.
+        $tableEvaluations = (new ActiviteEvaluation)->getTable();
+        $activites = $query
+            ->orderByRaw("case when exists (select 1 from {$tableEvaluations} where {$tableEvaluations}.activite_id = activites.id and {$tableEvaluations}.periode = ?) then 1 else 0 end", [$periode])
+            ->orderBy('extrant_id')
+            ->orderBy('id')
+            ->paginate(20)
+            ->withQueryString();
 
         $exerciceId = ActiveExercice::id();
         $extrants = Extrant::query()

@@ -54,3 +54,20 @@ test('les liens et la saisie des évaluations conservent le protocole du navigat
         'valeur_indicateur' => 'Rapport produit',
     ]);
 })->with(['mi-parcours', 'fin-annee'])->with(['http', 'https']);
+
+test('l\'évaluation liste d\'abord les activités non évaluées, puis les évaluées', function () {
+    $admin = userWithRole('dbcgoq');
+    $exercice = Exercice::factory()->actif()->create();
+    $periode = ActiviteEvaluation::PERIODE_MI_PARCOURS;
+
+    // Créée en premier, l'activité évaluée viendrait en tête sans ce tri.
+    $evaluee = Activite::factory()->pourExercice($exercice)->valide()->tousTrimestres()->create(['nom_activite' => 'ACT_EVALUEE']);
+    $evaluee->evaluations()->create(['periode' => $periode, 'statut_execution' => 'realise']);
+    Activite::factory()->pourExercice($exercice)->valide()->tousTrimestres()->create(['nom_activite' => 'ACT_A_EVALUER']);
+
+    $this->actingAs($admin)
+        ->withSession([ActiveExercice::SESSION_KEY => $exercice->id])
+        ->get(route('evaluations.index', 'mi-parcours'))
+        ->assertOk()
+        ->assertSeeInOrder(['ACT_A_EVALUER', 'ACT_EVALUEE']);
+});
