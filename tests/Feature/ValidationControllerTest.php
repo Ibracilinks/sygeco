@@ -170,22 +170,21 @@ test("l'index concentre les activités des services dans leur Direction Centrale
     $response->assertSee('5 000 000');
 });
 
-test('un service rattaché à une Direction remonte lui aussi dans son entité', function () {
+test('un service rattaché directement à la DG apparaît en son propre nom', function () {
     $admin = userWithRole('dbcgoq');
 
-    // Cas réel : un service peut dépendre d'une Direction et non d'une Direction Centrale.
+    // Les services rattachés à la DG envoient leurs activités au nom de leur entité.
     $exercice = exerciceArbitre();
-    $direction = Departement::factory()->direction()->create(['nom' => 'DAGRH']);
-    $service = Departement::factory()->service()->enfantDe($direction)->create(['nom' => 'SJC']);
+    $dg = Departement::factory()->direction()->create(['nom' => 'Direction Generale']);
+    $service = Departement::factory()->service()->enfantDe($dg)->create(['nom' => 'SJC']);
 
     Activite::factory()->pourExercice($exercice)->pourDepartement($service)->create(['statut' => 'en_attente']);
 
     $this->actingAs($admin)->get(route('validations.index'))
         ->assertOk()
-        ->assertSee('DAGRH')
-        ->assertDontSee('SJC')
-        ->assertSee(route('validations.entite', $direction))
-        ->assertDontSee(route('validations.entite', $service));
+        ->assertSee('SJC')
+        ->assertSee(route('validations.entite', $service))
+        ->assertDontSee(route('validations.entite', $dg));
 });
 
 test('un service à deux niveaux de profondeur remonte à son entité non-service', function () {

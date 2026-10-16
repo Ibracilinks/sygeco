@@ -114,9 +114,16 @@ class ActivitePolicy
             return VisibiliteActivites::dansPerimetre($user, $activite);
         }
 
-        // Le chef de service saisit seulement : la soumission revient à son
-        // responsable de programme.
-        return $user->hasRole('agent-planification')
-            && (int) $user->departement_id === (int) $activite->departement_id;
+        $memeEntite = (int) $user->departement_id === (int) $activite->departement_id;
+
+        // Un service rattaché directement à la DG envoie ses activités en son nom :
+        // son chef de service les soumet.
+        if ($user->hasRole('chef-service') && $memeEntite && $user->departement?->estServiceRattacheDg()) {
+            return true;
+        }
+
+        // Ailleurs, le chef de service saisit seulement : la soumission revient à
+        // son responsable de programme.
+        return $user->hasRole('agent-planification') && $memeEntite;
     }
 }

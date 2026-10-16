@@ -67,6 +67,11 @@ class DepartementFactory extends Factory
         return $this->state(fn () => ['type' => Departement::TYPE_BUREAU_REGIONAL]);
     }
 
+    public function pointFocal(): static
+    {
+        return $this->state(fn () => ['type' => Departement::TYPE_POINT_FOCAL]);
+    }
+
     /**
      * Rattache l'entité à une entité parente (du niveau supérieur).
      */

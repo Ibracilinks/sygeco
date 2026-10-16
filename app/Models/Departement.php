@@ -24,12 +24,15 @@ class Departement extends Model
 
     public const TYPE_BUREAU_REGIONAL = 'bureau_regional';
 
+    public const TYPE_POINT_FOCAL = 'point_focal';
+
     public const TYPES = [
         self::TYPE_DIRECTION,
         self::TYPE_DEPARTEMENT,
         self::TYPE_SERVICE,
         self::TYPE_AGENCE_COMPTABLE,
         self::TYPE_BUREAU_REGIONAL,
+        self::TYPE_POINT_FOCAL,
     ];
 
     public const TYPE_LABELS = [
@@ -38,25 +41,55 @@ class Departement extends Model
         self::TYPE_SERVICE => 'Service',
         self::TYPE_AGENCE_COMPTABLE => 'Agence Comptable',
         self::TYPE_BUREAU_REGIONAL => 'Bureau Régional',
+        self::TYPE_POINT_FOCAL => 'Point Focal',
+    ];
+
+    /**
+     * Types qui n'existent qu'en un exemplaire : la Direction Générale et l'Agence
+     * Comptable.
+     */
+    public const TYPES_UNIQUES = [
+        self::TYPE_DIRECTION,
+        self::TYPE_AGENCE_COMPTABLE,
     ];
 
     /**
      * Entités rattachées directement à la Direction Générale et qui lui soumettent
-     * leurs activités : Directions Centrales, Agence Comptable, Bureaux Régionaux.
-     * L'Agence Comptable et les Bureaux Régionaux ne sont pas des Directions
-     * Centrales mais jouent le même rôle dans le circuit de planification.
+     * leurs activités : Directions Centrales, Agence Comptable, Bureaux Régionaux,
+     * Points Focaux. Ces derniers ne sont pas des Directions Centrales mais jouent
+     * le même rôle dans le circuit de planification.
      */
     public const TYPES_RATTACHES_DG = [
         self::TYPE_DEPARTEMENT,
         self::TYPE_AGENCE_COMPTABLE,
         self::TYPE_BUREAU_REGIONAL,
+        self::TYPE_POINT_FOCAL,
     ];
 
-    /** Types qui ne peuvent jamais avoir d'entité enfant. */
+    /**
+     * Types qui ne peuvent jamais avoir d'entité enfant. L'Agence Comptable, elle,
+     * peut chapeauter des services.
+     */
     public const TYPES_FEUILLES = [
         self::TYPE_SERVICE,
-        self::TYPE_AGENCE_COMPTABLE,
         self::TYPE_BUREAU_REGIONAL,
+        self::TYPE_POINT_FOCAL,
+    ];
+
+    /**
+     * Types de parent autorisés pour chaque type d'entité (la Direction Générale
+     * n'a pas de parent).
+     *
+     * @var array<string, array<int, string>>
+     */
+    public const PARENTS_AUTORISES = [
+        self::TYPE_DEPARTEMENT => [self::TYPE_DIRECTION],
+        self::TYPE_AGENCE_COMPTABLE => [self::TYPE_DIRECTION],
+        self::TYPE_BUREAU_REGIONAL => [self::TYPE_DIRECTION],
+        self::TYPE_POINT_FOCAL => [self::TYPE_DIRECTION],
+        // Service : sous une direction centrale, l'Agence Comptable, ou directement
+        // sous la Direction Générale (service rattaché).
+        self::TYPE_SERVICE => [self::TYPE_DEPARTEMENT, self::TYPE_AGENCE_COMPTABLE, self::TYPE_DIRECTION],
     ];
 
     /** Libellés des groupes utilisés dans les listes déroulantes hiérarchiques. */
@@ -67,6 +100,8 @@ class Departement extends Model
     public const GROUPE_AGENCE_COMPTABLE = 'Agence Comptable';
 
     public const GROUPE_BUREAUX_REGIONAUX = 'Bureaux Régionaux';
+
+    public const GROUPE_POINTS_FOCAUX = 'Points Focaux';
 
     protected $fillable = [
         'code',
@@ -116,10 +151,21 @@ class Departement extends Model
         return ! in_array($this->type, self::TYPES_FEUILLES, true);
     }
 
-    /** Soumet-elle ses activités directement à la Direction Générale ? */
+    /**
+     * Soumet-elle ses activités directement à la Direction Générale ? C'est le cas
+     * des niveaux rattachés à la DG, et des services rattachés directement à la DG,
+     * qui envoient leurs activités en leur propre nom.
+     */
     public function estRattacheeDg(): bool
     {
-        return in_array($this->type, self::TYPES_RATTACHES_DG, true);
+        return in_array($this->type, self::TYPES_RATTACHES_DG, true) || $this->estServiceRattacheDg();
+    }
+
+    /** Service placé directement sous la Direction Générale (service rattaché). */
+    public function estServiceRattacheDg(): bool
+    {
+        return $this->type === self::TYPE_SERVICE
+            && $this->parent?->type === self::TYPE_DIRECTION;
     }
 
     /**
@@ -157,7 +203,9 @@ class Departement extends Model
      */
     public function entiteDeRattachement(): self
     {
-        if ($this->type !== self::TYPE_SERVICE) {
+        // Un service rattaché à la DG se représente lui-même : il envoie ses
+        // activités en son propre nom.
+        if ($this->type !== self::TYPE_SERVICE || $this->estServiceRattacheDg()) {
             return $this;
         }
 
@@ -251,7 +299,16 @@ class Departement extends Model
      */
     public function scopeRattacheesDg($query)
     {
-        return $query->whereIn('type', self::TYPES_RATTACHES_DG);
+        return $query->where(fn ($q) => $q
+            ->whereIn('type', self::TYPES_RATTACHES_DG)
+            ->orWhere(fn ($service) => self::servicesRattachesDg($service)));
+    }
+
+    /** Restreint une requête aux services placés directement sous la DG. */
+    protected static function servicesRattachesDg($query)
+    {
+        return $query->where('type', self::TYPE_SERVICE)
+            ->whereIn('parent_id', self::query()->select('id')->where('type', self::TYPE_DIRECTION));
     }
 
     /**
@@ -261,7 +318,9 @@ class Departement extends Model
      */
     public function scopeStructuresIntervenantes($query)
     {
-        return $query->whereIn('type', [self::TYPE_DIRECTION, ...self::TYPES_RATTACHES_DG]);
+        return $query->where(fn ($q) => $q
+            ->whereIn('type', [self::TYPE_DIRECTION, ...self::TYPES_RATTACHES_DG])
+            ->orWhere(fn ($service) => self::servicesRattachesDg($service)));
     }
 
     /**
@@ -325,6 +384,10 @@ class Departement extends Model
 
             if ($courant->type === self::TYPE_BUREAU_REGIONAL) {
                 return self::GROUPE_BUREAUX_REGIONAUX;
+            }
+
+            if ($courant->type === self::TYPE_POINT_FOCAL) {
+                return self::GROUPE_POINTS_FOCAUX;
             }
 
             $courant = $courant->parent_id ? ($carte[$courant->parent_id] ?? null) : null;

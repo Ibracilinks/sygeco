@@ -190,7 +190,7 @@ class ActiviteController extends Controller
             'extrant_id' => 'required|exists:extrants,id',
             'departement_id' => 'required|exists:departements,id',
             'structures_intervenantes' => 'nullable|array',
-            'structures_intervenantes.*' => ['integer', Rule::exists('departements', 'id')->whereIn('type', [Departement::TYPE_DIRECTION, ...Departement::TYPES_RATTACHES_DG])],
+            'structures_intervenantes.*' => ['integer', Rule::in(Departement::query()->structuresIntervenantes()->pluck('id')->all())],
             'nom_activite' => $this->regleNomUnique(),
             'indicateur_objectivement_verifiable' => 'required|string',
             'moyen_verification' => 'required|string',
@@ -346,7 +346,7 @@ class ActiviteController extends Controller
             'extrant_id' => 'required|exists:extrants,id',
             'departement_id' => 'required|exists:departements,id',
             'structures_intervenantes' => 'nullable|array',
-            'structures_intervenantes.*' => ['integer', Rule::exists('departements', 'id')->whereIn('type', [Departement::TYPE_DIRECTION, ...Departement::TYPES_RATTACHES_DG])],
+            'structures_intervenantes.*' => ['integer', Rule::in(Departement::query()->structuresIntervenantes()->pluck('id')->all())],
             'nom_activite' => $this->regleNomUnique($activite),
             'indicateur_objectivement_verifiable' => 'required|string',
             'moyen_verification' => 'required|string',
@@ -639,6 +639,11 @@ class ActiviteController extends Controller
         $auteur = Auth::user();
 
         if (! $auteur?->isChefService() || $auteur->isResponsableProgramme()) {
+            return;
+        }
+
+        // Un service rattaché à la DG soumet lui-même : personne à prévenir.
+        if ($auteur->departement?->estServiceRattacheDg()) {
             return;
         }
 

@@ -6,22 +6,18 @@
     $parentCourant = old('parent_id', $departement?->parent_id);
 
     // Types de parent autorisés par niveau, partagés avec Alpine pour filtrer la liste.
-    $parentsAutorises = [
-        \App\Models\Departement::TYPE_DEPARTEMENT => [\App\Models\Departement::TYPE_DIRECTION],
-        \App\Models\Departement::TYPE_AGENCE_COMPTABLE => [\App\Models\Departement::TYPE_DIRECTION],
-        \App\Models\Departement::TYPE_BUREAU_REGIONAL => [\App\Models\Departement::TYPE_DIRECTION],
-        \App\Models\Departement::TYPE_SERVICE => [\App\Models\Departement::TYPE_DEPARTEMENT, \App\Models\Departement::TYPE_DIRECTION],
-    ];
+    $parentsAutorises = \App\Models\Departement::PARENTS_AUTORISES;
 
-    // La Direction Générale est unique : on ne propose son niveau que si elle n'existe
-    // pas encore (ou si c'est justement l'entité en cours d'édition).
-    $dgDejaCreee = \App\Models\Departement::query()
-        ->where('type', \App\Models\Departement::TYPE_DIRECTION)
+    // La Direction Générale et l'Agence Comptable sont uniques : on ne propose leur
+    // niveau que s'il n'existe pas encore (ou si c'est l'entité en cours d'édition).
+    $typesDejaPris = \App\Models\Departement::query()
+        ->whereIn('type', \App\Models\Departement::TYPES_UNIQUES)
         ->when($departement, fn ($query) => $query->whereKeyNot($departement->id))
-        ->exists();
+        ->pluck('type')
+        ->all();
 
     $aidesRattachement = [
-        \App\Models\Departement::TYPE_SERVICE => '(direction centrale ou Direction Générale)',
+        \App\Models\Departement::TYPE_SERVICE => '(direction centrale, Agence Comptable ou Direction Générale)',
     ];
 @endphp
 
@@ -69,7 +65,7 @@
                     class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-800 focus:border-slate-500 focus:outline-none dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
                 >
                     @foreach (\App\Models\Departement::TYPE_LABELS as $valeur => $libelle)
-                        @continue($valeur === \App\Models\Departement::TYPE_DIRECTION && $dgDejaCreee)
+                        @continue(in_array($valeur, $typesDejaPris, true))
                         <option value="{{ $valeur }}" @selected($typeCourant === $valeur)>{{ $libelle }}</option>
                     @endforeach
                 </select>

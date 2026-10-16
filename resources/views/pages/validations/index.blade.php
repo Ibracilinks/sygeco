@@ -38,6 +38,7 @@
                 \App\Models\Departement::TYPE_SERVICE => 'Services',
                 \App\Models\Departement::TYPE_AGENCE_COMPTABLE => \App\Models\Departement::GROUPE_AGENCE_COMPTABLE,
                 \App\Models\Departement::TYPE_BUREAU_REGIONAL => \App\Models\Departement::GROUPE_BUREAUX_REGIONAUX,
+                \App\Models\Departement::TYPE_POINT_FOCAL => \App\Models\Departement::GROUPE_POINTS_FOCAUX,
                 'autres' => 'Autres structures',
             ];
         @endphp

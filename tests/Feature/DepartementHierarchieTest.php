@@ -95,14 +95,16 @@ test('la fiche affiche le fil d\'ariane et les sous-entités', function () {
         ->assertSee('Service Gamma');
 });
 
-test('l\'agence comptable et un bureau régional se rattachent à la Direction Générale', function () {
+test('l\'agence comptable, un bureau régional et un point focal se rattachent à la Direction Générale', function () {
     $admin = userWithRole('dbcgoq');
     $dg = Departement::factory()->direction()->create(['nom' => 'Direction Générale']);
 
     foreach ([
-        ['AC', 'Agence Comptable', Departement::TYPE_AGENCE_COMPTABLE],
-        ['BR_BKO', 'Bureau Régional de Bamako', Departement::TYPE_BUREAU_REGIONAL],
-    ] as [$code, $nom, $type]) {
+        // [code, nom, type, peut chapeauter des services]
+        ['AC', 'Agence Comptable', Departement::TYPE_AGENCE_COMPTABLE, true],
+        ['BR_BKO', 'Bureau Régional de Bamako', Departement::TYPE_BUREAU_REGIONAL, false],
+        ['PF_GENRE', 'Point Focal Genre', Departement::TYPE_POINT_FOCAL, false],
+    ] as [$code, $nom, $type, $parent]) {
         $this->actingAs($admin)
             ->from(route('departements.create'))
             ->post(route('departements.store'), [
@@ -116,8 +118,38 @@ test('l\'agence comptable et un bureau régional se rattachent à la Direction G
         expect($entite->type)->toBe($type);
         expect($entite->parent->is($dg))->toBeTrue();
         expect($entite->estRattacheeDg())->toBeTrue();
-        expect($entite->peutAvoirDesEnfants())->toBeFalse();
+        expect($entite->peutAvoirDesEnfants())->toBe($parent);
     }
+});
+
+test('l\'agence comptable est unique et peut chapeauter des services', function () {
+    $admin = userWithRole('dbcgoq');
+    $dg = Departement::factory()->direction()->create();
+    $agence = Departement::factory()->agenceComptable()->enfantDe($dg)->create();
+
+    // Une seconde agence comptable est refusée.
+    $this->actingAs($admin)->from(route('departements.create'))->post(route('departements.store'), [
+        'code' => 'AC2', 'nom' => 'Autre agence', 'type' => Departement::TYPE_AGENCE_COMPTABLE, 'parent_id' => $dg->id,
+    ])->assertSessionHasErrors('type');
+
+    // Un service peut s'y rattacher, et il relève de l'agence.
+    $this->actingAs($admin)->post(route('departements.store'), [
+        'code' => 'SRV_AC', 'nom' => 'Service de la comptabilité', 'type' => Departement::TYPE_SERVICE, 'parent_id' => $agence->id,
+    ])->assertSessionHasNoErrors();
+
+    $service = Departement::where('code', 'SRV_AC')->firstOrFail();
+    expect($service->parent->is($agence))->toBeTrue()
+        ->and($service->entiteDeRattachement()->is($agence))->toBeTrue();
+});
+
+test('un point focal ne peut pas chapeauter de service', function () {
+    $admin = userWithRole('dbcgoq');
+    $dg = Departement::factory()->direction()->create();
+    $pointFocal = Departement::factory()->pointFocal()->enfantDe($dg)->create();
+
+    $this->actingAs($admin)->from(route('departements.create'))->post(route('departements.store'), [
+        'code' => 'SRV_PF', 'nom' => 'Service sous point focal', 'type' => Departement::TYPE_SERVICE, 'parent_id' => $pointFocal->id,
+    ])->assertSessionHasErrors('parent_id');
 });
 
 test('un bureau régional rattaché à une direction centrale est refusé', function () {

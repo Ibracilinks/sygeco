@@ -8,8 +8,9 @@ use App\Models\Activite;
 use App\Models\ActiviteEvaluation;
 use App\Models\Departement;
 use App\Support\ActiveExercice;
-use Illuminate\Http\Request;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
 class DepartementController extends Controller
@@ -210,26 +211,27 @@ class DepartementController extends Controller
     }
 
     /**
-     * Entités pouvant servir de parent : directions et départements
-     * (un service est toujours une feuille, jamais un parent).
+     * Entités pouvant servir de parent : Direction Générale, directions centrales et
+     * Agence Comptable (service, bureau régional et point focal sont des feuilles).
      *
-     * @return \Illuminate\Support\Collection<int, Departement>
+     * @return Collection<int, Departement>
      */
     private function parentsCandidats()
     {
         return Departement::query()
-            ->whereIn('type', [Departement::TYPE_DIRECTION, Departement::TYPE_DEPARTEMENT])
+            // Seuls les niveaux qui peuvent chapeauter d'autres entités.
+            ->whereNotIn('type', Departement::TYPES_FEUILLES)
             ->ordered()
             ->get(['id', 'nom', 'type']);
     }
 
     /**
-     * @param array{search: string, status: string, type?: string, sort?: string, direction?: string} $filters
+     * @param  array{search: string, status: string, type?: string, sort?: string, direction?: string}  $filters
      */
     private function applyFilters(Builder $query, array $filters): void
     {
         if ($filters['search'] !== '') {
-            $term = '%' . str_replace(' ', '%', $filters['search']) . '%';
+            $term = '%'.str_replace(' ', '%', $filters['search']).'%';
 
             $query->where(function (Builder $builder) use ($term) {
                 $builder

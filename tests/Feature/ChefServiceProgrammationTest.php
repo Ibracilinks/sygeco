@@ -167,3 +167,29 @@ test('un responsable de programme d\'une autre entité ne peut pas valider', fun
     $this->actingAs($autreResponsable)->post(route('validations.valider', $activite))->assertForbidden();
     expect($activite->fresh()->statut)->toBe('en_attente');
 });
+
+test('le chef d\'un service rattaché à la DG soumet lui-même les activités de son service', function () {
+    Notification::fake();
+    $dg = Departement::factory()->direction()->create();
+    $serviceRattache = Departement::factory()->service()->enfantDe($dg)->create();
+    $chefService = userWithRole('chef-service', ['departement_id' => $serviceRattache->id]);
+    $activite = Activite::factory()->brouillon()->pourDepartement($serviceRattache)->saisiePar($chefService)->create();
+
+    expect($serviceRattache->estRattacheeDg())->toBeTrue();
+
+    $this->actingAs($chefService)->post(route('activites.soumettre', $activite))
+        ->assertRedirect(route('activites.index'));
+
+    expect($activite->fresh()->statut)->toBe('en_attente');
+});
+
+test('les services rattachés à la DG sont proposés comme structures intervenantes', function () {
+    $dg = Departement::factory()->direction()->create();
+    $serviceRattache = Departement::factory()->service()->enfantDe($dg)->create();
+    $serviceDeDc = Departement::factory()->service()
+        ->enfantDe(Departement::factory()->departement()->enfantDe($dg)->create())->create();
+
+    $ids = Departement::query()->structuresIntervenantes()->pluck('id')->all();
+
+    expect($ids)->toContain($dg->id, $serviceRattache->id)->not->toContain($serviceDeDc->id);
+});
