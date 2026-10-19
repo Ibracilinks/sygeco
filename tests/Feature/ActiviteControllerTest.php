@@ -359,7 +359,7 @@ test("un chef voit les activités de sa direction et d'aucune autre", function (
         ->assertDontSee('ACTAILLEURS');
 });
 
-test('le dbcgoq ne voit pas les activités encore en brouillon', function () {
+test('le dbcgoq voit les activités de toutes les entités, brouillons compris', function () {
     seedRolesAndPermissions();
     $exercice = Exercice::factory()->actif()->create();
     $direction = Departement::factory()->direction()->create();
@@ -372,13 +372,13 @@ test('le dbcgoq ne voit pas les activités encore en brouillon', function () {
     activiteNommee($exercice, $direction, 'ACTBROUILLON', $agent, ['statut' => 'brouillon']);
     activiteNommee($exercice, $direction, 'ACTSOUMISE', $agent, ['statut' => 'en_attente']);
 
-    // Une programmation n'entre dans le champ du dbcgoq qu'une fois soumise.
+    // Comme le contrôle de gestion, le dbcgoq voit aussi les brouillons d'autrui.
     $this->actingAs($dbcgoq)
         ->withSession([ActiveExercice::SESSION_KEY => $exercice->id])
         ->get(route('activites.index'))
         ->assertOk()
         ->assertSee('ACTSOUMISE')
-        ->assertDontSee('ACTBROUILLON');
+        ->assertSee('ACTBROUILLON');
 });
 
 test('le dbcgoq voit ses propres brouillons', function () {

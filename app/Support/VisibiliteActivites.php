@@ -10,10 +10,9 @@ use Illuminate\Database\Eloquent\Builder;
  * Règles de visibilité des activités, en un seul endroit : la programmation, le
  * tableau de bord, l'évaluation et la policy doivent répondre la même chose.
  *
- * - superadmin et service contrôle de gestion : tout ;
+ * - superadmin, dbcgoq et service contrôle de gestion : tout, brouillons compris,
+ *   pour toutes les entités ;
  * - agent : ses seules saisies, et rien d'autre ;
- * - dbcgoq : tout sauf les brouillons d'autrui, qui ne le concernent pas tant
- *   qu'ils ne sont pas soumis ;
  * - chef : son entité et son sous-arbre ;
  * - cellules planification et suivi & évaluation : leur entité de rattachement.
  *
@@ -37,20 +36,12 @@ class VisibiliteActivites
     {
         // Hors requête HTTP authentifiée (tests, commandes), on ne restreint rien :
         // c'est l'appelant qui porte alors la responsabilité du périmètre.
-        if ($user === null || $user->hasAnyRole(['superadmin', 'service-controle-gestion'])) {
+        if ($user === null || self::voitTout($user)) {
             return;
         }
 
         if (self::estSimpleAgent($user)) {
             $query->where('activites.saisi_par', $user->getKey());
-
-            return;
-        }
-
-        if ($user->hasRole('dbcgoq')) {
-            $query->where(fn ($q) => $q
-                ->where('activites.statut', '!=', 'brouillon')
-                ->orWhere('activites.saisi_par', $user->getKey()));
 
             return;
         }
@@ -93,17 +84,12 @@ class VisibiliteActivites
      */
     public static function dansPerimetre(User $user, Activite $activite): bool
     {
-        if ($user->hasAnyRole(['superadmin', 'service-controle-gestion'])) {
+        if (self::voitTout($user)) {
             return true;
         }
 
         if (self::estSimpleAgent($user)) {
             return (int) $activite->saisi_par === (int) $user->getKey();
-        }
-
-        if ($user->hasRole('dbcgoq')) {
-            return $activite->statut !== 'brouillon'
-                || (int) $activite->saisi_par === (int) $user->getKey();
         }
 
         $perimetre = $user->perimetreActivitesIds();
@@ -115,15 +101,15 @@ class VisibiliteActivites
     /**
      * Signature du périmètre de visibilité, pour les caches. Deux utilisateurs ne
      * partagent une entrée que s'ils voient exactement les mêmes activités : ceux
-     * dont la vue dépend de leur identité (agent, dbcgoq) ont donc leur propre clé.
+     * dont la vue dépend de leur identité (agent) ont donc leur propre clé.
      */
     public static function signature(?User $user): string
     {
-        if ($user === null || $user->hasAnyRole(['superadmin', 'service-controle-gestion'])) {
+        if ($user === null || self::voitTout($user)) {
             return 'global';
         }
 
-        if (self::estSimpleAgent($user) || $user->hasRole('dbcgoq')) {
+        if (self::estSimpleAgent($user)) {
             return 'u'.$user->getKey();
         }
 
@@ -144,13 +130,18 @@ class VisibiliteActivites
      */
     private static function estRestreint(User $user): bool
     {
-        if ($user->hasAnyRole(['superadmin', 'service-controle-gestion'])) {
+        if (self::voitTout($user)) {
             return false;
         }
 
         return self::estSimpleAgent($user)
-            || $user->hasRole('dbcgoq')
             || (bool) $user->perimetreActivitesIds();
+    }
+
+    /** Rôles sans restriction : toutes les activités de toutes les entités. */
+    private static function voitTout(User $user): bool
+    {
+        return $user->hasAnyRole(['superadmin', 'dbcgoq', 'service-controle-gestion']);
     }
 
     /**
