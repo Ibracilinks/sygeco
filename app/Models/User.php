@@ -77,7 +77,7 @@ class User extends Authenticatable
     }
 
     /**
-     * Cellule planification : saisit et soumet le PTA de son entité.
+     * Cellule planification : saisit et modifie le PTA de son entité, sans le soumettre.
      */
     public function isAgentPlanification()
     {

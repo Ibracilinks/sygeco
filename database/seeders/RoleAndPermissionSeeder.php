@@ -48,7 +48,7 @@ class RoleAndPermissionSeeder extends Seeder
         // le niveau découle du type de l'entité rattachée à l'utilisateur
         $roleResponsableProgramme = Role::firstOrCreate(['name' => 'responsable-programme']);
         $roleChefService = Role::firstOrCreate(['name' => 'chef-service']);
-        // agent-planification : saisit et soumet la programmation de son entité.
+        // agent-planification : saisit et modifie la programmation de son entité, sans la soumettre.
         // Il ne voit ni l'évaluation, ni l'arbitrage, ni l'administration.
         $roleAgentPlanification = Role::firstOrCreate(['name' => 'agent-planification']);
         // suivi-evaluation : renseigne le suivi d'exécution et les évaluations
@@ -76,7 +76,7 @@ class RoleAndPermissionSeeder extends Seeder
             'evaluate_activites',
             'view_departements',
             'view_users',
-            'view_exercices'
+            'view_exercices',
         ]);
 
         // Le chef de service saisit les activités de son service sans les soumettre :

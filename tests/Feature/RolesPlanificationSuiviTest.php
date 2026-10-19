@@ -88,16 +88,15 @@ test('la cellule planification n\'accède pas à l\'évaluation', function () {
         ->assertDontSee('Évaluation : Mi-parcours');
 });
 
-test('la cellule planification crée et soumet une activité de son entité', function () {
+test('la cellule planification crée et modifie une activité de son entité', function () {
     $departement = Departement::factory()->create();
     $user = userWithRole('agent-planification', ['departement_id' => $departement->id]);
-    // Un brouillon : seul état encore modifiable / soumettable.
+    // Un brouillon : seul état encore modifiable.
     $activite = activiteValideePour($departement);
     $activite->update(['statut' => 'brouillon']);
 
     expect($user->can('create', Activite::class))->toBeTrue();
     expect($user->can('update', $activite->fresh()))->toBeTrue();
-    expect($user->can('submit', $activite->fresh()))->toBeTrue();
 });
 
 test('la cellule planification voit les activités de toutes les entités sans pouvoir y toucher', function () {
@@ -128,4 +127,16 @@ test('la cellule suivi & évaluation accède à l\'évaluation sans pouvoir modi
     expect($user->can('create', Activite::class))->toBeFalse();
     expect($user->can('update', $activite))->toBeFalse();
     expect($user->can('delete', $activite))->toBeFalse();
+});
+
+test('la cellule planification modifie les activités de son entité sans pouvoir les soumettre', function () {
+    $departement = Departement::factory()->create();
+    $user = userWithRole('agent-planification', ['departement_id' => $departement->id]);
+    $brouillon = Activite::factory()->brouillon()->pourDepartement($departement)->create();
+
+    expect($user->can('update', $brouillon))->toBeTrue();
+    expect($user->can('submit', $brouillon))->toBeFalse();
+
+    $this->actingAs($user)->post(route('activites.soumettre', $brouillon))->assertForbidden();
+    expect($brouillon->fresh()->statut)->toBe('brouillon');
 });
