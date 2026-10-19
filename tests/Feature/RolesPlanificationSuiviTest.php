@@ -100,15 +100,22 @@ test('la cellule planification crée et soumet une activité de son entité', fu
     expect($user->can('submit', $activite->fresh()))->toBeTrue();
 });
 
-test('la cellule planification ne peut pas toucher une activité hors de son entité', function () {
+test('la cellule planification voit les activités de toutes les entités sans pouvoir y toucher', function () {
     $user = userWithRole('agent-planification', ['departement_id' => Departement::factory()->create()->id]);
     $activite = activiteValideePour(Departement::factory()->create());
 
-    // Validée, elle est consultable par tous, mais reste hors de son périmètre de travail.
+    // Elle voit les activités de toutes les entités, quel que soit leur statut,
+    // mais elles restent hors de son périmètre de travail.
+    $enAttente = Activite::factory()->enAttente()->pourDepartement($activite->departement)->create();
+    $brouillon = Activite::factory()->brouillon()->pourDepartement($activite->departement)->create();
+
     expect($user->can('view', $activite))->toBeTrue();
+    expect($user->can('view', $enAttente))->toBeTrue();
+    expect($user->can('view', $brouillon))->toBeTrue();
     expect($user->can('update', $activite))->toBeFalse();
+    expect($user->can('update', $brouillon))->toBeFalse();
     expect($user->can('joindre', $activite))->toBeFalse();
-    expect($user->can('view', Activite::factory()->enAttente()->pourDepartement($activite->departement)->create()))->toBeFalse();
+    expect($user->can('submit', $brouillon))->toBeFalse();
 });
 
 test('la cellule suivi & évaluation accède à l\'évaluation sans pouvoir modifier le PTA', function () {

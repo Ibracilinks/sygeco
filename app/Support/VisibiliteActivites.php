@@ -12,6 +12,8 @@ use Illuminate\Database\Eloquent\Builder;
  *
  * - superadmin, dbcgoq et service contrôle de gestion : tout, brouillons compris,
  *   pour toutes les entités ;
+ * - cellule planification : voit tout elle aussi, mais ne travaille (pièces
+ *   jointes, soumission) que sur son entité — cf. dansPerimetre() ;
  * - agent : ses seules saisies, et rien d'autre ;
  * - chef : son entité et son sous-arbre ;
  * - cellules planification et suivi & évaluation : leur entité de rattachement.
@@ -75,7 +77,9 @@ class VisibiliteActivites
      */
     public static function peutVoir(User $user, Activite $activite): bool
     {
-        return $activite->statut === 'valide' || self::dansPerimetre($user, $activite);
+        return self::voitTout($user)
+            || $activite->statut === 'valide'
+            || self::dansPerimetre($user, $activite);
     }
 
     /**
@@ -84,7 +88,7 @@ class VisibiliteActivites
      */
     public static function dansPerimetre(User $user, Activite $activite): bool
     {
-        if (self::voitTout($user)) {
+        if (self::travailleSurTout($user)) {
             return true;
         }
 
@@ -138,8 +142,17 @@ class VisibiliteActivites
             || (bool) $user->perimetreActivitesIds();
     }
 
-    /** Rôles sans restriction : toutes les activités de toutes les entités. */
+    /** Rôles qui voient toutes les activités de toutes les entités. */
     private static function voitTout(User $user): bool
+    {
+        return self::travailleSurTout($user) || $user->hasRole('agent-planification');
+    }
+
+    /**
+     * Rôles dont le périmètre de travail (pièces jointes, évaluation, soumission)
+     * couvre toutes les entités. La cellule planification voit tout sans y travailler.
+     */
+    private static function travailleSurTout(User $user): bool
     {
         return $user->hasAnyRole(['superadmin', 'dbcgoq', 'service-controle-gestion']);
     }
