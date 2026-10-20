@@ -69,9 +69,7 @@ class ActivitePolicy
             return $activite->peutEtreModifie();
         }
 
-        return $user->hasAnyRole(['responsable-programme', 'chef-service', 'agent-planification'])
-            && (int) $user->departement_id === (int) $activite->departement_id
-            && $activite->peutEtreModifie();
+        return $this->surSaPartDuPta($user, $activite);
     }
 
     public function delete(User $user, Activite $activite): bool
@@ -89,9 +87,7 @@ class ActivitePolicy
             return $activite->peutEtreModifie();
         }
 
-        return $user->hasAnyRole(['responsable-programme', 'chef-service', 'agent-planification'])
-            && (int) $user->departement_id === (int) $activite->departement_id
-            && $activite->peutEtreModifie();
+        return $this->surSaPartDuPta($user, $activite);
     }
 
     public function submit(User $user, Activite $activite): bool
@@ -121,5 +117,24 @@ class ActivitePolicy
         return $user->hasRole('chef-service')
             && (int) $user->departement_id === (int) $activite->departement_id
             && (bool) $user->departement?->estServiceRattacheDg();
+    }
+
+    /**
+     * Modifier / supprimer une activité de son périmètre de saisie :
+     * - le responsable de programme, sur son entité et ses sous-entités, jusqu'à
+     *   l'arbitrage (brouillon, rejetée ou en attente de la décision de la DBCGOQ) ;
+     * - le chef de service et la cellule planification, sur leur entité, tant que
+     *   l'activité n'est pas soumise (brouillon ou rejetée).
+     */
+    private function surSaPartDuPta(User $user, Activite $activite): bool
+    {
+        if ($user->hasRole('responsable-programme')) {
+            return $activite->estModifiableAvantArbitrage()
+                && VisibiliteActivites::dansPerimetre($user, $activite);
+        }
+
+        return $user->hasAnyRole(['chef-service', 'agent-planification'])
+            && (int) $user->departement_id === (int) $activite->departement_id
+            && $activite->peutEtreModifie();
     }
 }

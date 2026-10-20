@@ -173,11 +173,12 @@
                                         <div class="flex flex-wrap items-center gap-1">
                                             <x-actions.view :href="route('activites.show', $activite)" />
 
-                                            @if ($activite->estModifiable())
-                                                @can('edit_activites')
+                                            {{-- Jusqu'à l'arbitrage ; la policy dit qui peut agir (périmètre, statut). --}}
+                                            @if ($activite->estModifiableAvantArbitrage())
+                                                @can('update', $activite)
                                                     <x-actions.edit :href="route('activites.edit', $activite)" />
                                                 @endcan
-                                                @can('delete_activites')
+                                                @can('delete', $activite)
                                                     <x-actions.delete :action="route('activites.destroy', $activite)" confirm="Confirmer la suppression ?" sans-rechargement />
                                                 @endcan
                                             @endif

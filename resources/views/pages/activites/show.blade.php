@@ -82,8 +82,8 @@
                 </div>
 
                 <div class="flex flex-wrap gap-2">
-                    @if ($activite->estModifiable())
-                        @can('edit_activites')
+                    @if ($activite->estModifiableAvantArbitrage())
+                        @can('update', $activite)
                             <a href="{{ route('activites.edit', $activite) }}" class="inline-flex items-center rounded-lg bg-amber-500 px-4 py-2 text-sm font-medium text-white transition hover:bg-amber-400">Modifier</a>
                         @endcan
                     @endif

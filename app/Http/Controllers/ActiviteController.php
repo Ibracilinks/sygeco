@@ -382,6 +382,8 @@ class ActiviteController extends Controller
 
         $activite->departements()->sync($this->structuresIntervenantes($validated));
 
+        $activite->tracerChangementAvantArbitrage('modification', 'Modifiée avant arbitrage par '.Auth::user()->name.'.');
+
         $this->notifierChangementCout($activite, $ancienCout, (float) $validated['cout'], 'edition');
 
         return redirect()->route('activites.index')
@@ -415,6 +417,7 @@ class ActiviteController extends Controller
             route('activites.edit', $activite),
         ]);
 
+        $activite->tracerChangementAvantArbitrage('suppression', 'Supprimée avant arbitrage par '.Auth::user()->name.'.');
         $activite->delete();
 
         return redirect()->to($retour)->with('success', 'Activité supprimée.');

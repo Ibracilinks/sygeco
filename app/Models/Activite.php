@@ -490,4 +490,24 @@ class Activite extends Model
     {
         return $this->peutEtreModifie();
     }
+
+    /**
+     * Encore modifiable par le responsable de programme : jusqu'à la décision
+     * d'arbitrage, l'activité soumise (en attente) comprise.
+     */
+    public function estModifiableAvantArbitrage(): bool
+    {
+        return $this->peutEtreModifie() || $this->statut === 'en_attente';
+    }
+
+    /**
+     * Trace une modification ou une suppression faite pendant l'attente d'arbitrage :
+     * la DBCGOQ voit qu'une activité qu'elle examine a changé.
+     */
+    public function tracerChangementAvantArbitrage(string $action, string $commentaire): void
+    {
+        if ($this->statut === 'en_attente') {
+            $this->logHistorique($action, $this->statut, $this->statut, $commentaire);
+        }
+    }
 }

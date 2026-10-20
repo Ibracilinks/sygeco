@@ -9,6 +9,7 @@ use App\Models\Resultat;
 use App\Models\User;
 use App\Notifications\ActiviteSaisieNotification;
 use App\Notifications\ActiviteSoumiseNotification;
+use App\Support\ActiveExercice;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Notification;
 
@@ -194,7 +195,7 @@ test('les services rattachés à la DG sont proposés comme structures intervena
     expect($ids)->toContain($dg->id, $serviceRattache->id)->not->toContain($serviceDeDc->id);
 });
 
-test('une activité en brouillon de son entité est supprimable, pas une activité soumise ni celle d\'une autre entité', function (string $role) {
+test('une activité en brouillon de son entité est supprimable, une activité soumise seulement par le responsable, jamais celle d\'une autre entité', function (string $role) {
     $departement = Departement::factory()->departement()->create();
     $user = userWithRole($role, ['departement_id' => $departement->id]);
 
@@ -203,7 +204,9 @@ test('une activité en brouillon de son entité est supprimable, pas une activit
     $ailleurs = Activite::factory()->brouillon()->pourDepartement(Departement::factory()->departement()->create())->create();
 
     expect($user->can('delete', $brouillon))->toBeTrue()
-        ->and($user->can('delete', $soumise))->toBeFalse()
+        // Le responsable de programme garde la main jusqu'à l'arbitrage ; les autres
+        // profils seulement jusqu'à la soumission.
+        ->and($user->can('delete', $soumise))->toBe($role === 'responsable-programme')
         ->and($user->can('delete', $ailleurs))->toBeFalse();
 
     // Depuis la liste filtrée : suppression, puis retour sur la même liste.
@@ -255,4 +258,45 @@ test('un service sous un autre service remonte au premier parent qui n\'est ni u
 
     expect($sousService->entiteDeSoumission()?->is($dc))->toBeTrue()
         ->and($dc->entiteDeSoumission())->toBeNull();
+});
+
+test('le responsable de programme modifie et supprime les activités de ses sous-entités jusqu\'à l\'arbitrage', function () {
+    ['direction' => $direction, 'service' => $service, 'responsable' => $responsable] = organigrammeChefService();
+    $ailleurs = Departement::factory()->departement()->create();
+
+    $brouillonService = Activite::factory()->brouillon()->pourDepartement($service)->create();
+    $enAttente = Activite::factory()->enAttente()->pourDepartement($direction)->create();
+    $rejetee = Activite::factory()->state(['statut' => 'rejete'])->pourDepartement($service)->create();
+    $validee = Activite::factory()->valide()->pourDepartement($direction)->create();
+    $horsPerimetre = Activite::factory()->brouillon()->pourDepartement($ailleurs)->create();
+
+    foreach ([$brouillonService, $enAttente, $rejetee] as $activite) {
+        expect($responsable->can('update', $activite))->toBeTrue()
+            ->and($responsable->can('delete', $activite))->toBeTrue();
+    }
+
+    // Après l'arbitrage, ou hors de son périmètre : plus la main.
+    foreach ([$validee, $horsPerimetre] as $activite) {
+        expect($responsable->can('update', $activite))->toBeFalse()
+            ->and($responsable->can('delete', $activite))->toBeFalse();
+    }
+
+    // La liste lui propose les actions sur l'activité en attente d'arbitrage.
+    $exercice = Exercice::factory()->actif()->create();
+    $enAttente->update(['exercice_id' => $exercice->id]);
+    $this->actingAs($responsable)->withSession([ActiveExercice::SESSION_KEY => $exercice->id])
+        ->get(route('activites.index'))->assertOk()
+        ->assertSee(route('activites.edit', $enAttente), false)
+        ->assertSee(route('activites.destroy', $enAttente), false);
+});
+
+test('une activité en attente supprimée avant arbitrage laisse une trace dans l\'historique', function () {
+    ['direction' => $direction, 'responsable' => $responsable] = organigrammeChefService();
+    $activite = Activite::factory()->enAttente()->pourDepartement($direction)->create();
+
+    $this->actingAs($responsable)->delete(route('activites.destroy', $activite))->assertRedirect();
+
+    expect(Activite::find($activite->id))->toBeNull()
+        ->and($activite->validationHistoriques()->where('action', 'suppression')->value('commentaire'))
+        ->toBe('Supprimée avant arbitrage par '.$responsable->name.'.');
 });
