@@ -72,6 +72,7 @@ class RoleAndPermissionSeeder extends Seeder
             'view_activites',
             'create_activites',
             'edit_activites',
+            'delete_activites',
             'submit_activites',
             'evaluate_activites',
             'view_departements',
@@ -85,6 +86,7 @@ class RoleAndPermissionSeeder extends Seeder
             'view_activites',
             'create_activites',
             'edit_activites',
+            'delete_activites',
             'submit_activites',
         ]);
 
@@ -96,6 +98,7 @@ class RoleAndPermissionSeeder extends Seeder
             'view_activites',
             'create_activites',
             'edit_activites',
+            'delete_activites',
             'submit_activites',
             'view_exercices',
         ]);

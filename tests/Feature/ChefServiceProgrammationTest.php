@@ -193,3 +193,23 @@ test('les services rattachés à la DG sont proposés comme structures intervena
 
     expect($ids)->toContain($dg->id, $serviceRattache->id)->not->toContain($serviceDeDc->id);
 });
+
+test('une activité en brouillon de son entité est supprimable, pas une activité soumise ni celle d\'une autre entité', function (string $role) {
+    $departement = Departement::factory()->departement()->create();
+    $user = userWithRole($role, ['departement_id' => $departement->id]);
+
+    $brouillon = Activite::factory()->brouillon()->pourDepartement($departement)->saisiePar($user)->create();
+    $soumise = Activite::factory()->enAttente()->pourDepartement($departement)->saisiePar($user)->create();
+    $ailleurs = Activite::factory()->brouillon()->pourDepartement(Departement::factory()->departement()->create())->create();
+
+    expect($user->can('delete', $brouillon))->toBeTrue()
+        ->and($user->can('delete', $soumise))->toBeFalse()
+        ->and($user->can('delete', $ailleurs))->toBeFalse();
+
+    // Depuis la liste filtrée : suppression, puis retour sur la même liste.
+    $liste = route('activites.index', ['search' => 'atelier']);
+    $this->actingAs($user)->from($liste)->delete(route('activites.destroy', $brouillon))
+        ->assertRedirect($liste);
+
+    expect(Activite::find($brouillon->id))->toBeNull();
+})->with(['responsable-programme', 'chef-service', 'agent-planification']);

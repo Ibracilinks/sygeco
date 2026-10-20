@@ -42,7 +42,9 @@ test('le rôle cumule les permissions des cellules planification et suivi & éva
 
     expect(Role::findByName('service-controle-gestion')->permissions->pluck('name')->sort()->values()->all())
         ->toBe($attendues)
-        ->not->toContain('validate_activites', 'delete_activites', 'view_users');
+        // Il supprime les activités encore modifiables (brouillons, rejetées), sans les valider.
+        ->toContain('delete_activites')
+        ->not->toContain('validate_activites', 'view_users');
 });
 
 test("le rôle n'est pas restreint à son entité", function () {
@@ -59,7 +61,8 @@ test('le rôle met à jour et soumet une activité brouillon de toute entité', 
     expect($user->can('create', Activite::class))->toBeTrue();
     expect($user->can('update', $activite))->toBeTrue();
     expect($user->can('submit', $activite))->toBeTrue();
-    expect($user->can('delete', $activite))->toBeFalse();
+    // Brouillon : supprimable, comme pour les profils qui saisissent.
+    expect($user->can('delete', $activite))->toBeTrue();
 });
 
 test('le rôle ne modifie plus une activité validée', function () {
@@ -70,7 +73,7 @@ test('le rôle ne modifie plus une activité validée', function () {
     expect($user->can('update', $activite))->toBeFalse();
 });
 
-test("le rôle voit les activités de toutes les entités dans la programmation", function () {
+test('le rôle voit les activités de toutes les entités dans la programmation', function () {
     $user = userWithRole('service-controle-gestion', ['departement_id' => Departement::factory()->create()->id]);
     $autre = activiteScg(Departement::factory()->create(), 'brouillon');
 

@@ -40,8 +40,8 @@ test('les deux rôles existent avec leurs permissions', function () {
     $suivi = Role::findByName('suivi-evaluation');
 
     expect($planification->permissions->pluck('name')->all())
-        ->toContain('create_activites', 'edit_activites', 'submit_activites', 'view_objectifs')
-        ->not->toContain('evaluate_activites', 'validate_activites', 'view_users', 'delete_activites');
+        ->toContain('create_activites', 'edit_activites', 'delete_activites', 'view_objectifs')
+        ->not->toContain('evaluate_activites', 'validate_activites', 'view_users');
 
     expect($suivi->permissions->pluck('name')->all())
         ->toContain('evaluate_activites', 'view_activites', 'edit_indicateurs')

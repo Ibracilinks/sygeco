@@ -178,7 +178,7 @@
                                                     <x-actions.edit :href="route('activites.edit', $activite)" />
                                                 @endcan
                                                 @can('delete_activites')
-                                                    <x-actions.delete :action="route('activites.destroy', $activite)" confirm="Confirmer la suppression ?" />
+                                                    <x-actions.delete :action="route('activites.destroy', $activite)" confirm="Confirmer la suppression ?" sans-rechargement />
                                                 @endcan
                                             @endif
 

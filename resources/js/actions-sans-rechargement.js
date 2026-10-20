@@ -11,6 +11,18 @@ const SELECTEUR_ZONE = '[data-zone-actualisable]';
 
 const envoyerNormalement = (formulaire) => HTMLFormElement.prototype.submit.call(formulaire);
 
+/** Indicateur « Envoi en cours… » au centre de l'écran, pendant que la liste est floutée. */
+const afficherChargement = () => {
+    const indicateur = document.createElement('div');
+    indicateur.className = 'chargement-action';
+    indicateur.setAttribute('role', 'status');
+    indicateur.setAttribute('aria-live', 'polite');
+    indicateur.innerHTML = '<div class="chargement-action__boite"><span class="chargement-action__roue" aria-hidden="true"></span><span>Envoi en cours…</span></div>';
+    document.body.appendChild(indicateur);
+
+    return () => indicateur.remove();
+};
+
 document.addEventListener('submit', async (evenement) => {
     const formulaire = evenement.target;
 
@@ -28,7 +40,10 @@ document.addEventListener('submit', async (evenement) => {
 
     const boutons = formulaire.querySelectorAll('button, [type="submit"]');
     boutons.forEach((bouton) => { bouton.disabled = true; });
+    // Les fenêtres modales (hors zone) se referment dès l'envoi.
+    document.querySelectorAll('[id$="Modal"]').forEach((modale) => modale.classList.add('hidden'));
     zone.setAttribute('aria-busy', 'true');
+    const masquerChargement = afficherChargement();
 
     try {
         const reponse = await fetch(formulaire.action, {
@@ -56,14 +71,12 @@ document.addEventListener('submit', async (evenement) => {
             throw new Error('Zone introuvable');
         }
 
-        // Les fenêtres modales sont hors zone : on referme celles restées ouvertes.
-        document.querySelectorAll('[id$="Modal"]').forEach((modale) => modale.classList.add('hidden'));
-
         zone.replaceWith(document.importNode(nouvelleZone, true));
         document.dispatchEvent(new CustomEvent('zone:actualisee'));
     } catch (erreur) {
         envoyerNormalement(formulaire);
     } finally {
+        masquerChargement();
         boutons.forEach((bouton) => { bouton.disabled = false; });
         zone.removeAttribute('aria-busy');
     }

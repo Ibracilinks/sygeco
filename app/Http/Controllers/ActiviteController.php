@@ -406,12 +406,18 @@ class ActiviteController extends Controller
     /**
      * Suppression
      */
-    public function destroy(Activite $activite)
+    public function destroy(Request $request, Activite $activite)
     {
+        // Retour sur la page d'origine (filtres compris), sauf la fiche de l'activité
+        // supprimée, qui n'existe plus.
+        $retour = $this->pagePrecedente($request, route('activites.index'), [
+            route('activites.show', $activite),
+            route('activites.edit', $activite),
+        ]);
+
         $activite->delete();
 
-        return redirect()->route('activites.index')
-            ->with('success', 'Activité supprimée.');
+        return redirect()->to($retour)->with('success', 'Activité supprimée.');
     }
 
     /**
