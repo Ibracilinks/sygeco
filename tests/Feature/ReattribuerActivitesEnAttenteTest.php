@@ -27,18 +27,25 @@ test('la commande rattache les activités en attente des services à leur entit�
     $rattacheDg = Activite::factory()->enAttente()->pourDepartement($serviceRattache)->create();
     $direction = Activite::factory()->enAttente()->pourDepartement($dc)->create();
 
+    // Soumise avec la première version de la règle : déjà sur la DC, mais le service
+    // figure encore parmi ses structures intervenantes (« DBCGOQ / Service Qualité »).
+    $dejaRemontee = Activite::factory()->enAttente()->pourDepartement($dc)->create();
+    $dejaRemontee->departements()->attach([$service->id, $agence->id]);
+
     // Simulation : rien ne change.
     $this->artisan('activites:reattribuer-entite', ['--dry-run' => true])
-        ->expectsOutputToContain('Simulation : 2 activité(s)')
+        ->expectsOutputToContain('Simulation : 2 activité(s) à rattacher, 1 à nettoyer')
         ->assertSuccessful();
     expect($aRattacher->fresh()->departement_id)->toBe($service->id);
 
     $this->artisan('activites:reattribuer-entite')
-        ->expectsConfirmation('Rattacher ces 2 activité(s) ?', 'yes')
+        ->expectsConfirmation('Appliquer (2 activité(s) à rattacher, 1 à nettoyer) ?', 'yes')
         ->assertSuccessful();
 
     expect($aRattacher->fresh()->departement_id)->toBe($dc->id)
-        ->and($aRattacher->fresh()->departements->pluck('id')->all())->toContain($service->id)
+        ->and($aRattacher->fresh()->departements)->toBeEmpty()
+        // Le service est retiré ; une vraie structure intervenante reste.
+        ->and($dejaRemontee->fresh()->departements->pluck('id')->all())->toBe([$agence->id])
         ->and($aRattacherAgence->fresh()->departement_id)->toBe($agence->id)
         ->and($aRattacher->validationHistoriques()->where('action', 'reattribution')->value('commentaire'))
         ->toBe('Structure : Service Qualité → DBCGOQ (reprise des activités en attente)');
@@ -49,6 +56,6 @@ test('la commande rattache les activités en attente des services à leur entit�
 
     // Relancée, elle n'a plus rien à faire.
     $this->artisan('activites:reattribuer-entite')
-        ->expectsOutputToContain('Aucune activité en attente à rattacher')
+        ->expectsOutputToContain('Aucune activité à reprendre')
         ->assertSuccessful();
 });

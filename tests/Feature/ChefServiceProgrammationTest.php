@@ -229,8 +229,8 @@ test('à la soumission, l\'activité d\'un service remonte à l\'entité qui le 
     $activite->refresh();
     expect($activite->statut)->toBe('en_attente')
         ->and($activite->departement_id)->toBe($entite->id)
-        // Le service d'origine reste visible parmi les structures intervenantes.
-        ->and($activite->departements->pluck('id')->all())->toContain($service->id)
+        // Le service d'origine n'apparaît plus : seul l'historique en garde la trace.
+        ->and($activite->departements->pluck('id')->all())->not->toContain($service->id)
         ->and($activite->validationHistoriques()->latest('id')->value('commentaire'))
         ->toBe('Structure : SERVICE_ORIGINE → ENTITE_PARENTE');
 })->with([Departement::TYPE_DEPARTEMENT, Departement::TYPE_AGENCE_COMPTABLE]);

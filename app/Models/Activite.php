@@ -372,8 +372,8 @@ class Activite extends Model
 
     /**
      * L'activité d'un service remonte à l'entité qui le chapeaute (hors DG) : c'est
-     * elle qui la porte désormais. Le service reste visible parmi les structures
-     * intervenantes. Renvoie la trace du changement, ou null si rien ne change
+     * elle qui la porte désormais, et le service n'apparaît plus (seul l'historique
+     * en garde la trace). Renvoie la trace du changement, ou null si rien ne change
      * (service rattaché à la DG, entité de premier niveau).
      */
     public function remonterVersEntiteDeSoumission(): ?string
@@ -386,7 +386,6 @@ class Activite extends Model
         }
 
         $this->forceFill(['departement_id' => $entite->id])->save();
-        $this->departements()->syncWithoutDetaching([$service->id]);
         $this->unsetRelation('departement');
 
         return "Structure : {$service->nom} → {$entite->nom}";
@@ -530,5 +529,19 @@ class Activite extends Model
         if ($this->statut === 'en_attente') {
             $this->logHistorique($action, $this->statut, $this->statut, $commentaire);
         }
+    }
+
+    /**
+     * Services ajoutés d'office aux structures intervenantes par une soumission
+     * antérieure : ceux dont l'activité est remontée vers sa structure actuelle.
+     * Ils ne doivent plus apparaître.
+     *
+     * @return Collection<int, Departement>
+     */
+    public function servicesRemontesParmiIntervenantes()
+    {
+        return $this->departements
+            ->filter(fn (Departement $structure) => $structure->entiteDeSoumission()?->id === (int) $this->departement_id)
+            ->values();
     }
 }
