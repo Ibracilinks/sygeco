@@ -282,7 +282,8 @@ test('le responsable de programme modifie et supprime les activités de ses sous
     }
 
     // La liste lui propose les actions sur l'activité en attente d'arbitrage.
-    $exercice = Exercice::factory()->actif()->create();
+    // Année hors de la plage des fabriques (2020-2030) : pas de collision.
+    $exercice = Exercice::factory()->actif()->create(['annee' => 2049, 'date_debut' => '2049-01-01', 'date_fin' => '2049-12-31']);
     $enAttente->update(['exercice_id' => $exercice->id]);
     $this->actingAs($responsable)->withSession([ActiveExercice::SESSION_KEY => $exercice->id])
         ->get(route('activites.index'))->assertOk()

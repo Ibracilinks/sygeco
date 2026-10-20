@@ -357,33 +357,54 @@ class Activite extends Model
 
         $ancienStatut = $this->statut;
 
-        // L'activité d'un service remonte à l'entité qui le chapeaute (hors DG) : c'est
-        // elle qui la porte désormais. Le service reste visible parmi les structures
-        // intervenantes.
-        $service = $this->departement;
-        $entite = $service?->entiteDeSoumission();
-
         $this->update([
             'statut' => 'en_attente',
             'date_soumission' => now(),
             'motif_refus' => null,
             'refuse_le' => null,
             'refuse_par' => null,
-        ] + ($entite ? ['departement_id' => $entite->id] : []));
+        ]);
 
-        if ($entite) {
-            $this->departements()->syncWithoutDetaching([$service->id]);
-            $this->unsetRelation('departement');
-        }
-
-        $this->logHistorique(
-            'soumission',
-            $ancienStatut,
-            'en_attente',
-            $entite ? "Structure : {$service->nom} → {$entite->nom}" : null,
-        );
+        $this->logHistorique('soumission', $ancienStatut, 'en_attente', $this->remonterVersEntiteDeSoumission());
 
         return true;
+    }
+
+    /**
+     * L'activité d'un service remonte à l'entité qui le chapeaute (hors DG) : c'est
+     * elle qui la porte désormais. Le service reste visible parmi les structures
+     * intervenantes. Renvoie la trace du changement, ou null si rien ne change
+     * (service rattaché à la DG, entité de premier niveau).
+     */
+    public function remonterVersEntiteDeSoumission(): ?string
+    {
+        $service = $this->departement;
+        $entite = $service?->entiteDeSoumission();
+
+        if (! $entite) {
+            return null;
+        }
+
+        $this->forceFill(['departement_id' => $entite->id])->save();
+        $this->departements()->syncWithoutDetaching([$service->id]);
+        $this->unsetRelation('departement');
+
+        return "Structure : {$service->nom} → {$entite->nom}";
+    }
+
+    /**
+     * Applique la remontée à une activité déjà soumise (reprise de l'existant) et la
+     * trace dans l'historique. Renvoie la trace, ou null si rien ne change.
+     */
+    public function reattribuerAEntiteDeSoumission(): ?string
+    {
+        $trace = $this->remonterVersEntiteDeSoumission();
+
+        if ($trace !== null) {
+            $this->logHistorique('reattribution', $this->statut, $this->statut, $trace.' (reprise des activités en attente)');
+        }
+
+        return $trace;
     }
 
     public function valider(?string $commentaire = null)
