@@ -1,5 +1,5 @@
 <x-layouts::app title="Programmation / Planification">
-    <div class="flex h-full w-full flex-1 flex-col gap-5 rounded-xl">
+    <div class="flex h-full w-full flex-1 flex-col gap-5 rounded-xl" data-zone-actualisable>
         <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
             <div>
                 <h1 class="text-2xl font-semibold text-slate-900 dark:text-white">Programmation / Planification</h1>

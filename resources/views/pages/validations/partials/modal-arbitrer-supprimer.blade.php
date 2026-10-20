@@ -8,7 +8,7 @@
             <button type="button" onclick="closeModal('arbSupprimerModal')" class="text-zinc-500 hover:text-zinc-800 dark:hover:text-white">✕</button>
         </div>
 
-        <form id="arbSupprimerForm" method="POST" class="mt-6 space-y-4">
+        <form id="arbSupprimerForm" method="POST" data-sans-rechargement class="mt-6 space-y-4">
             @csrf
             <div>
                 <label class="text-sm font-medium text-zinc-700 dark:text-zinc-200">Motif de la suppression (notifié à l'auteur)</label>

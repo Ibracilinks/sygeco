@@ -260,3 +260,20 @@ test("la page d'arbitrage affiche les activités déjà validées avec leur date
         ->assertSee('Activité déjà validée')
         ->assertSee('03/04/2026 09:30');
 });
+
+test('une décision d\'arbitrage ramène sur la page d\'origine, filtres compris', function () {
+    $admin = userWithRole('dbcgoq');
+    $activite = Activite::factory()->soumis()->create();
+    $pageFiltree = route('validations.entite', $activite->departement_id).'?search=atelier';
+
+    // Depuis la page de l'entité filtrée : retour sur cette page, filtre conservé.
+    $this->actingAs($admin)->from($pageFiltree)
+        ->post(route('validations.valider', $activite))
+        ->assertRedirect($pageFiltree);
+
+    // Depuis la fiche de l'activité : retour sur la page de son entité.
+    $autre = Activite::factory()->soumis()->create();
+    $this->actingAs($admin)->from(route('validations.show', $autre))
+        ->post(route('validations.refuser', $autre), ['motif_refus' => 'Budget à revoir entièrement.'])
+        ->assertRedirect(route('validations.entite', $autre->departement_id));
+});

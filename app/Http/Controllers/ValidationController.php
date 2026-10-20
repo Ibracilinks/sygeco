@@ -166,7 +166,7 @@ class ValidationController extends Controller
             $activite->saisiePar->notify(new ActiviteValidee($activite, $request->input('commentaire')));
         }
 
-        return redirect()->route('validations.entite', $activite->departement_id)
+        return redirect()->to($this->retourArbitrage($request, $activite))
             ->with('success', 'Activité validée avec succès.');
     }
 
@@ -191,8 +191,22 @@ class ValidationController extends Controller
             $activite->saisiePar->notify(new ActiviteRefusee($activite, $validated['motif_refus']));
         }
 
-        return redirect()->route('validations.entite', $activite->departement_id)
+        return redirect()->to($this->retourArbitrage($request, $activite))
             ->with('success', 'Activité refusée avec succès.');
+    }
+
+    /**
+     * Après une décision d'arbitrage, retour à la page d'où elle a été prise (page de
+     * l'entité, filtres compris) ; depuis la fiche de l'activité, ou sans page
+     * d'origine, sur la page de son entité.
+     */
+    private function retourArbitrage(Request $request, Activite $activite): string
+    {
+        return $this->pagePrecedente(
+            $request,
+            route('validations.entite', $activite->departement_id),
+            [route('validations.show', $activite)],
+        );
     }
 
     public function validerPlusieurs(Request $request)
@@ -250,7 +264,7 @@ class ValidationController extends Controller
             }
         }
 
-        return redirect()->route('validations.entite', $activite->departement_id)
+        return redirect()->to($this->retourArbitrage($request, $activite))
             ->with('success', 'Activité modifiée et l\'auteur a été notifié.');
     }
 
@@ -274,7 +288,7 @@ class ValidationController extends Controller
 
         $this->notifierArbitrage($saisiPar, 'supprimee', $nom, $validated['motif']);
 
-        return redirect()->route('validations.entite', $activite->departement_id)
+        return redirect()->to($this->retourArbitrage($request, $activite))
             ->with('success', 'Activité supprimée et l\'auteur a été notifié.');
     }
 

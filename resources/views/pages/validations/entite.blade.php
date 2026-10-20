@@ -1,5 +1,5 @@
 <x-layouts::app title="Arbitrage — {{ $departement->nom }}">
-    <div class="flex h-full w-full flex-1 flex-col gap-5 rounded-xl">
+    <div class="flex h-full w-full flex-1 flex-col gap-5 rounded-xl" data-zone-actualisable>
         <div>
             <a href="{{ route('validations.index') }}" wire:navigate class="text-sm font-medium text-slate-500 hover:text-sky-700 dark:text-slate-400 dark:hover:text-sky-300">← Toutes les entités</a>
         </div>
@@ -59,7 +59,7 @@
             </div>
         @endif
 
-        <form id="bulkValidateForm" action="{{ route('validations.valider-plusieurs') }}" method="POST" class="hidden">@csrf</form>
+        <form id="bulkValidateForm" action="{{ route('validations.valider-plusieurs') }}" method="POST" class="hidden" data-sans-rechargement>@csrf</form>
 
         {{-- Activités regroupées par Résultat stratégique puis par Extrant --}}
         @forelse ($resultats as $blocResultat)
@@ -217,7 +217,8 @@
                 form.appendChild(input);
             });
 
-            form.submit();
+            // requestSubmit déclenche l'envoi sans rechargement (submit() le contournerait).
+            form.requestSubmit();
         }
 
         function openValiderModal(id, title, history) {

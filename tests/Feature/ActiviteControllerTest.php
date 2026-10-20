@@ -672,3 +672,19 @@ test('la programmation liste d\'abord les brouillons, puis les rejetées, les ac
         ->assertOk()
         ->assertSeeInOrder(['ACT_BROUILLON', 'ACT_REJETEE', 'ACT_EN_VALIDATION', 'ACT_VALIDEE']);
 });
+
+test('soumettre depuis la liste filtrée y ramène, filtres et page compris', function () {
+    seedRolesAndPermissions();
+    $departement = Departement::factory()->create();
+    $chef = User::factory()->dansDepartement($departement)->create();
+    $chef->assignRole('responsable-programme');
+    $activite = Activite::factory()->brouillon()->pourDepartement($departement)->create();
+    $listeFiltree = route('activites.index', ['search' => 'atelier', 'statut' => 'brouillon', 'page' => 2]);
+
+    $this->actingAs($chef)->from($listeFiltree)
+        ->post(route('activites.soumettre', $activite))
+        ->assertRedirect($listeFiltree)
+        ->assertSessionHas('success');
+
+    expect($activite->fresh()->statut)->toBe('en_attente');
+});

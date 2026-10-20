@@ -3,3 +3,4 @@ window.Chart = Chart;
 
 import './report-pdf-export';
 import './enhanced-multiselect';
+import './actions-sans-rechargement';

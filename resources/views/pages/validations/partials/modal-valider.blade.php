@@ -12,7 +12,7 @@
             </button>
         </div>
 
-        <form id="validerForm" method="POST" class="mt-6 space-y-4">
+        <form id="validerForm" method="POST" data-sans-rechargement class="mt-6 space-y-4">
             @csrf
             <div>
                 <label class="text-sm font-medium text-zinc-700 dark:text-zinc-200">Commentaire (optionnel)</label>

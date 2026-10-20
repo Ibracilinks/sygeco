@@ -417,19 +417,20 @@ class ActiviteController extends Controller
     /**
      * Soumettre une activité (brouillon -> soumis)
      */
-    public function soumettre(Activite $activite)
+    public function soumettre(Request $request, Activite $activite)
     {
         $this->authorize('submit', $activite);
+
+        // Retour sur la page d'origine : la liste garde ses filtres et sa page.
+        $retour = $this->pagePrecedente($request, route('activites.index'));
 
         if ($activite->soumettre()) {
             $this->notifierValidateurs($activite);
 
-            return redirect()->route('activites.index')
-                ->with('success', 'Activité soumise avec succès.');
+            return redirect()->to($retour)->with('success', 'Activité soumise avec succès.');
         }
 
-        return redirect()->route('activites.index')
-            ->with('error', 'Impossible de soumettre cette activité.');
+        return redirect()->to($retour)->with('error', 'Impossible de soumettre cette activité.');
     }
 
     /**

@@ -12,7 +12,7 @@
             </button>
         </div>
 
-        <form id="refuserForm" method="POST" class="mt-6 space-y-4">
+        <form id="refuserForm" method="POST" data-sans-rechargement class="mt-6 space-y-4">
             @csrf
             <div>
                 <label class="text-sm font-medium text-zinc-700 dark:text-zinc-200">Motif du rejet</label>

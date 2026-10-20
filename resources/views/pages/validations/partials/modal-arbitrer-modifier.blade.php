@@ -8,7 +8,7 @@
             <button type="button" onclick="closeModal('arbModifierModal')" class="text-zinc-500 hover:text-zinc-800 dark:hover:text-white">✕</button>
         </div>
 
-        <form id="arbModifierForm" method="POST" class="mt-6 space-y-4">
+        <form id="arbModifierForm" method="POST" data-sans-rechargement class="mt-6 space-y-4">
             @csrf
             <div>
                 <label class="text-sm font-medium text-zinc-700 dark:text-zinc-200">Nom de l'activité</label>

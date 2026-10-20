@@ -153,3 +153,5 @@ const demarrer = () => {
 
 document.addEventListener('DOMContentLoaded', demarrer);
 document.addEventListener('livewire:navigated', demarrer);
+// Zone de page remplacée après une action sans rechargement.
+document.addEventListener('zone:actualisee', demarrer);
