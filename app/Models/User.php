@@ -71,20 +71,28 @@ class User extends Authenticatable
         return $this->hasRole('responsable-programme');
     }
 
-    /**
-     * Rôles donnant un accès total : seuls le superadmin et la DBCGOQ les attribuent
-     * ou gèrent les comptes qui les portent (le contrôle de gestion gère les autres).
-     */
-    public const ROLES_PROTEGES = ['superadmin', 'dbcgoq'];
+    /** Rôles qui administrent tous les comptes et attribuent tous les rôles. */
+    public const ROLES_ADMINISTRATEURS = ['superadmin', 'dbcgoq'];
+
+    /** Comptes que seuls les administrateurs peuvent modifier. */
+    public const COMPTES_PROTEGES = ['superadmin', 'admin', 'dbcgoq'];
+
+    /** Rôles que le contrôle de gestion ne peut pas attribuer. */
+    public const ROLES_RESERVES_AUX_ADMINISTRATEURS = ['superadmin', 'dbcgoq', 'service-controle-gestion', 'service-budget'];
+
+    public function estAdministrateur(): bool
+    {
+        return $this->hasAnyRole(self::ROLES_ADMINISTRATEURS);
+    }
 
     public function peutAttribuerRole(string $role): bool
     {
-        return $this->hasAnyRole(self::ROLES_PROTEGES) || ! in_array($role, self::ROLES_PROTEGES, true);
+        return $this->estAdministrateur() || ! in_array($role, self::ROLES_RESERVES_AUX_ADMINISTRATEURS, true);
     }
 
     public function peutGererUtilisateur(User $cible): bool
     {
-        return $this->hasAnyRole(self::ROLES_PROTEGES) || ! $cible->hasAnyRole(self::ROLES_PROTEGES);
+        return $this->estAdministrateur() || ! $cible->hasAnyRole(self::COMPTES_PROTEGES);
     }
 
     public function isChefService()

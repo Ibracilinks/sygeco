@@ -6,6 +6,7 @@ use App\Models\Exercice;
 use App\Models\Extrant;
 use App\Models\Objectif;
 use App\Models\Resultat;
+use App\Models\User;
 use Database\Seeders\RoleAndPermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Spatie\Permission\Models\Role;
@@ -135,25 +136,56 @@ test('le rôle ajoute et modifie sans pouvoir supprimer', function () {
     $this->actingAs($user)->post(route('exercices.annoncer-ouverture', $exercice))->assertForbidden();
 });
 
-test('le rôle n\'attribue ni ne gère les comptes superadmin ou dbcgoq', function () {
+test('le rôle attribue tous les rôles sauf superadmin, dbcgoq, service-controle-gestion et service-budget', function () {
     $user = userWithRole('service-controle-gestion', ['departement_id' => Departement::factory()->create()->id]);
-    $dbcgoq = userWithRole('dbcgoq');
-    $agent = userWithRole('agent-planification');
 
-    // Création d'un compte dbcgoq : refusée.
-    $this->actingAs($user)->post(route('users.store'), [
-        'name' => 'Nouveau DBCGOQ', 'email' => 'nouveau@test.local',
-        'roles' => [Role::findByName('dbcgoq')->id],
-    ])->assertSessionHasErrors('roles.0');
-
-    // Le formulaire ne propose pas ces rôles.
+    // Le formulaire ne propose que les rôles attribuables.
     $this->actingAs($user)->get(route('users.create'))->assertOk()
-        ->assertViewHas('roles', fn ($roles) => ! $roles->pluck('name')->intersect(['superadmin', 'dbcgoq'])->count()
-            && $roles->pluck('name')->contains('agent-planification'));
+        ->assertViewHas('roles', fn ($roles) => $roles->pluck('name')->sort()->values()->all() === [
+            'agent-planification', 'chef-service', 'responsable-programme', 'suivi-evaluation',
+        ]);
 
-    // Un compte dbcgoq ne se modifie pas ; un compte ordinaire, si.
-    $this->actingAs($user)->get(route('users.edit', $dbcgoq))->assertForbidden();
-    $this->actingAs($user)->get(route('users.edit', $agent))->assertOk();
+    foreach (['superadmin', 'dbcgoq', 'service-controle-gestion', 'service-budget'] as $role) {
+        $this->actingAs($user)->post(route('users.store'), [
+            'name' => 'Compte '.$role, 'email' => $role.'@test.local',
+            'roles' => [Role::findByName($role)->id],
+        ])->assertSessionHasErrors('roles.0');
+    }
+
+    $this->actingAs($user)->post(route('users.store'), [
+        'name' => 'Nouvel agent', 'email' => 'agent@test.local',
+        'roles' => [Role::findByName('agent-planification')->id],
+    ])->assertSessionHasNoErrors();
+    expect(User::where('email', 'agent@test.local')->first()->hasRole('agent-planification'))->toBeTrue();
+});
+
+test('le rôle ne touche pas aux comptes superadmin et dbcgoq', function () {
+    $user = userWithRole('service-controle-gestion', ['departement_id' => Departement::factory()->create()->id]);
+
+    foreach (['superadmin', 'dbcgoq'] as $role) {
+        $protege = userWithRole($role);
+
+        $this->actingAs($user)->get(route('users.edit', $protege))->assertForbidden();
+        $this->actingAs($user)->put(route('users.update', $protege), [
+            'name' => 'Renommé', 'email' => $protege->email, 'roles' => [Role::findByName('chef-service')->id],
+        ])->assertForbidden();
+        $this->actingAs($user)->post(route('users.reinitialiser-mot-de-passe', $protege))->assertForbidden();
+        // Pas de bouton Modifier sur sa fiche.
+        $this->actingAs($user)->get(route('users.show', $protege))->assertOk()
+            ->assertDontSee(route('users.edit', $protege), false);
+    }
+});
+
+test('modifier un compte conserve les rôles que le contrôle de gestion ne peut pas attribuer', function () {
+    $user = userWithRole('service-controle-gestion', ['departement_id' => Departement::factory()->create()->id]);
+    $chargeMissions = userWithRole('service-budget');
+
+    $this->actingAs($user)->put(route('users.update', $chargeMissions), [
+        'name' => $chargeMissions->name, 'email' => $chargeMissions->email,
+        'roles' => [Role::findByName('chef-service')->id],
+    ])->assertSessionHasNoErrors();
+
+    expect($chargeMissions->fresh()->getRoleNames()->sort()->values()->all())->toBe(['chef-service', 'service-budget']);
 });
 
 test("le rôle évalue une activité validée d'une autre entité", function () {

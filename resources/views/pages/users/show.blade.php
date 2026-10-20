@@ -6,7 +6,8 @@
                 <p class="text-sm text-slate-500 dark:text-slate-400">{{ $user->email }}</p>
             </div>
             <div class="flex flex-wrap gap-2">
-                @can('edit_users')
+                {{-- Un compte superadmin, admin ou dbcgoq n'est géré que par un administrateur. --}}
+                @if (auth()->user()->can('edit_users') && auth()->user()->peutGererUtilisateur($user))
                     <a href="{{ route('users.edit', $user) }}" class="inline-flex items-center rounded-lg bg-amber-500 px-4 py-2 text-sm font-medium text-white transition hover:bg-amber-400">Modifier</a>
 
                     <flux:modal.trigger name="reinitialiser-mot-de-passe">
@@ -30,7 +31,7 @@
                             </div>
                         </form>
                     </flux:modal>
-                @endcan
+                @endif
                 <a href="{{ route('users.index') }}" class="inline-flex items-center rounded-lg bg-slate-200 px-4 py-2 text-sm font-medium text-slate-800 transition hover:bg-slate-300 dark:bg-slate-700 dark:text-slate-100 dark:hover:bg-slate-600">Retour</a>
             </div>
         </div>

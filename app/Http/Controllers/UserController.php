@@ -141,7 +141,11 @@ class UserController extends Controller
             'telephone' => $validated['telephone'] ?? null,
         ]);
 
-        $roleNames = Role::whereIn('id', $validated['roles'])->pluck('name')->toArray();
+        // Les rôles que l'utilisateur connecté ne peut pas attribuer ne lui sont pas
+        // proposés : ceux que le compte porte déjà sont conservés tels quels.
+        $roleNames = Role::whereIn('id', $validated['roles'])->pluck('name')
+            ->merge($user->getRoleNames()->reject(fn ($role) => Auth::user()->peutAttribuerRole($role)))
+            ->unique()->values()->all();
         $user->syncRoles($roleNames);
 
         return redirect()->route('users.index')
@@ -177,7 +181,8 @@ class UserController extends Controller
 
     /**
      * Rôles que l'utilisateur connecté peut attribuer (le contrôle de gestion
-     * n'attribue ni superadmin ni dbcgoq).
+     * n'attribue ni superadmin, ni dbcgoq, ni service-controle-gestion, ni
+     * service-budget).
      */
     private function rolesAttribuables()
     {
@@ -186,7 +191,7 @@ class UserController extends Controller
             ->values();
     }
 
-    /** Un compte superadmin ou dbcgoq n'est géré que par un superadmin ou la DBCGOQ. */
+    /** Un compte superadmin, admin ou dbcgoq n'est géré que par un superadmin ou la DBCGOQ. */
     private function verifierGestion(User $user): void
     {
         abort_unless(Auth::user()->peutGererUtilisateur($user), 403);

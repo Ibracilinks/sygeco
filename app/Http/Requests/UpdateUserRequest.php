@@ -29,7 +29,7 @@ class UpdateUserRequest extends FormRequest
             'poste' => 'nullable|string|max:100',
             'telephone' => 'nullable|string|max:30',
             'roles' => 'required|array|min:1',
-            // Le contrôle de gestion n'attribue ni superadmin ni dbcgoq.
+            // Le contrôle de gestion n'attribue ni superadmin, ni dbcgoq, ni service-controle-gestion, ni service-budget.
             'roles.*' => ['required', Rule::in(
                 Role::query()->get(['id', 'name'])
                     ->filter(fn ($role) => $this->user()?->peutAttribuerRole($role->name))

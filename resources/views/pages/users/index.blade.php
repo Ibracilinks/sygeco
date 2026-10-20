@@ -125,9 +125,9 @@
                             <td class="px-5 py-4">
                                 <div class="flex flex-wrap items-center gap-1">
                                     <x-actions.view :href="route('users.show', $user)" />
-                                    @can('edit_users')
+                                    @if (auth()->user()->can('edit_users') && auth()->user()->peutGererUtilisateur($user))
                                         <x-actions.edit :href="route('users.edit', $user)" />
-                                    @endcan
+                                    @endif
                                     @can('delete_users')
                                         <x-actions.delete :action="route('users.destroy', $user)" confirm="Confirmer la suppression ?" />
                                     @endcan
