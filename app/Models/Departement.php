@@ -213,6 +213,27 @@ class Departement extends Model
     }
 
     /**
+     * Entité vers laquelle remonte l'activité d'un service à sa soumission : son plus
+     * proche ancêtre qui n'est ni un service ni la Direction Générale (Direction
+     * Centrale, Agence Comptable…). Null si l'entité n'est pas un service ou si elle
+     * relève directement de la DG (service rattaché) : elle garde alors l'activité.
+     */
+    public function entiteDeSoumission(): ?self
+    {
+        if ($this->type !== self::TYPE_SERVICE) {
+            return null;
+        }
+
+        $courant = $this->parent;
+
+        while ($courant && $courant->type === self::TYPE_SERVICE) {
+            $courant = $courant->parent;
+        }
+
+        return $courant && $courant->type !== self::TYPE_DIRECTION ? $courant : null;
+    }
+
+    /**
      * Chaîne des ancêtres, de la racine jusqu'au parent direct.
      *
      * @return Collection<int, Departement>

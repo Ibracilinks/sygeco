@@ -357,15 +357,31 @@ class Activite extends Model
 
         $ancienStatut = $this->statut;
 
+        // L'activité d'un service remonte à l'entité qui le chapeaute (hors DG) : c'est
+        // elle qui la porte désormais. Le service reste visible parmi les structures
+        // intervenantes.
+        $service = $this->departement;
+        $entite = $service?->entiteDeSoumission();
+
         $this->update([
             'statut' => 'en_attente',
             'date_soumission' => now(),
             'motif_refus' => null,
             'refuse_le' => null,
             'refuse_par' => null,
-        ]);
+        ] + ($entite ? ['departement_id' => $entite->id] : []));
 
-        $this->logHistorique('soumission', $ancienStatut, 'en_attente');
+        if ($entite) {
+            $this->departements()->syncWithoutDetaching([$service->id]);
+            $this->unsetRelation('departement');
+        }
+
+        $this->logHistorique(
+            'soumission',
+            $ancienStatut,
+            'en_attente',
+            $entite ? "Structure : {$service->nom} → {$entite->nom}" : null,
+        );
 
         return true;
     }

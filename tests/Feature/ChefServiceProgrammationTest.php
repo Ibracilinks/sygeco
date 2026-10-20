@@ -213,3 +213,46 @@ test('une activité en brouillon de son entité est supprimable, pas une activit
 
     expect(Activite::find($brouillon->id))->toBeNull();
 })->with(['responsable-programme', 'chef-service', 'agent-planification']);
+
+test('à la soumission, l\'activité d\'un service remonte à l\'entité qui le chapeaute', function (string $typeParent) {
+    $dg = Departement::factory()->direction()->create();
+    $entite = Departement::factory()->state(['type' => $typeParent])->enfantDe($dg)->create(['nom' => 'ENTITE_PARENTE']);
+    $service = Departement::factory()->service()->enfantDe($entite)->create(['nom' => 'SERVICE_ORIGINE']);
+    $responsable = userWithRole('responsable-programme', ['departement_id' => $entite->id]);
+    $activite = Activite::factory()->brouillon()->pourDepartement($service)->create();
+
+    $this->actingAs($responsable)->post(route('activites.soumettre', $activite))->assertRedirect();
+
+    $activite->refresh();
+    expect($activite->statut)->toBe('en_attente')
+        ->and($activite->departement_id)->toBe($entite->id)
+        // Le service d'origine reste visible parmi les structures intervenantes.
+        ->and($activite->departements->pluck('id')->all())->toContain($service->id)
+        ->and($activite->validationHistoriques()->latest('id')->value('commentaire'))
+        ->toBe('Structure : SERVICE_ORIGINE → ENTITE_PARENTE');
+})->with([Departement::TYPE_DEPARTEMENT, Departement::TYPE_AGENCE_COMPTABLE]);
+
+test('à la soumission, une activité rattachée à la DG ou d\'une entité de premier niveau garde sa structure', function () {
+    $dg = Departement::factory()->direction()->create();
+    $serviceRattache = Departement::factory()->service()->enfantDe($dg)->create();
+    $directionCentrale = Departement::factory()->departement()->enfantDe($dg)->create();
+
+    foreach ([$serviceRattache, $directionCentrale] as $structure) {
+        $activite = Activite::factory()->brouillon()->pourDepartement($structure)->create();
+
+        $this->actingAs(userWithRole('dbcgoq'))->post(route('activites.soumettre', $activite))->assertRedirect();
+
+        expect($activite->fresh()->departement_id)->toBe($structure->id)
+            ->and($activite->fresh()->departements)->toBeEmpty();
+    }
+});
+
+test('un service sous un autre service remonte au premier parent qui n\'est ni un service ni la DG', function () {
+    $dg = Departement::factory()->direction()->create();
+    $dc = Departement::factory()->departement()->enfantDe($dg)->create();
+    $service = Departement::factory()->service()->enfantDe($dc)->create();
+    $sousService = Departement::factory()->service()->enfantDe($service)->create();
+
+    expect($sousService->entiteDeSoumission()?->is($dc))->toBeTrue()
+        ->and($dc->entiteDeSoumission())->toBeNull();
+});
