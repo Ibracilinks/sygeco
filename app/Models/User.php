@@ -71,6 +71,22 @@ class User extends Authenticatable
         return $this->hasRole('responsable-programme');
     }
 
+    /**
+     * Rôles donnant un accès total : seuls le superadmin et la DBCGOQ les attribuent
+     * ou gèrent les comptes qui les portent (le contrôle de gestion gère les autres).
+     */
+    public const ROLES_PROTEGES = ['superadmin', 'dbcgoq'];
+
+    public function peutAttribuerRole(string $role): bool
+    {
+        return $this->hasAnyRole(self::ROLES_PROTEGES) || ! in_array($role, self::ROLES_PROTEGES, true);
+    }
+
+    public function peutGererUtilisateur(User $cible): bool
+    {
+        return $this->hasAnyRole(self::ROLES_PROTEGES) || ! $cible->hasAnyRole(self::ROLES_PROTEGES);
+    }
+
     public function isChefService()
     {
         return $this->hasRole('chef-service');

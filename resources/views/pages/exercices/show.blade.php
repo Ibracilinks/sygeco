@@ -197,7 +197,7 @@
                                                 @endif
                                             </p>
                                         </div>
-                                        @can('update', $exercice)
+                                        @can('annoncer', $exercice)
                                             @if ($exercice->saisieOuverte())
                                                 <flux:modal.trigger name="annoncer-ouverture">
                                                     <button type="button" class="inline-flex items-center gap-1.5 rounded-lg bg-slate-800 px-3 py-1.5 text-xs font-medium text-white transition hover:bg-slate-700 dark:bg-slate-200 dark:text-slate-900 dark:hover:bg-white">

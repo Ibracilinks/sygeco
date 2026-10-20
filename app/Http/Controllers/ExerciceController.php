@@ -283,7 +283,7 @@ class ExerciceController extends Controller
      */
     public function annoncerOuverture(Exercice $exercice)
     {
-        $this->authorize('update', $exercice);
+        $this->authorize('annoncer', $exercice);
 
         if (! $exercice->saisieOuverte()) {
             return redirect()->route('exercices.show', $exercice)

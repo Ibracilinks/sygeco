@@ -66,7 +66,7 @@ class UserController extends Controller
             ->orderBy('nom')
             ->get(['id', 'nom']);
 
-        $roles = DB::table('roles')->orderBy('name')->get(['id', 'name']);
+        $roles = $this->rolesAttribuables();
 
         return view('pages.users.create', compact('departements', 'roles'));
     }
@@ -114,6 +114,8 @@ class UserController extends Controller
 
     public function edit(User $user)
     {
+        $this->verifierGestion($user);
+
         $departements = DB::table('departements')
             ->whereNull('deleted_at')
             ->where('is_active', true)
@@ -121,13 +123,14 @@ class UserController extends Controller
             ->orderBy('nom')
             ->get(['id', 'nom']);
 
-        $roles = DB::table('roles')->orderBy('name')->get(['id', 'name']);
+        $roles = $this->rolesAttribuables();
 
         return view('pages.users.edit', compact('user', 'departements', 'roles'));
     }
 
     public function update(UpdateUserRequest $request, User $user)
     {
+        $this->verifierGestion($user);
         $validated = $request->validated();
 
         $user->update([
@@ -151,6 +154,8 @@ class UserController extends Controller
      */
     public function reinitialiserMotDePasse(User $user)
     {
+        $this->verifierGestion($user);
+
         $user->notify(new MotDePasseReinitialiseNotification(MotDePasseProvisoire::attribuer($user)));
 
         return redirect()->route('users.show', $user)
@@ -168,6 +173,23 @@ class UserController extends Controller
 
         return redirect()->route('users.index')
             ->with('success', 'Utilisateur supprimé.');
+    }
+
+    /**
+     * Rôles que l'utilisateur connecté peut attribuer (le contrôle de gestion
+     * n'attribue ni superadmin ni dbcgoq).
+     */
+    private function rolesAttribuables()
+    {
+        return DB::table('roles')->orderBy('name')->get(['id', 'name'])
+            ->filter(fn ($role) => Auth::user()->peutAttribuerRole($role->name))
+            ->values();
+    }
+
+    /** Un compte superadmin ou dbcgoq n'est géré que par un superadmin ou la DBCGOQ. */
+    private function verifierGestion(User $user): void
+    {
+        abort_unless(Auth::user()->peutGererUtilisateur($user), 403);
     }
 
     /**

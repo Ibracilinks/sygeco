@@ -67,7 +67,7 @@
             </flux:sidebar.group>
 
             <!-- Organisation -->
-            @if ($currentUser->hasAnyRole(['superadmin', 'dbcgoq']))
+            @if ($currentUser->hasAnyRole(['superadmin', 'dbcgoq', 'service-controle-gestion']))
                 <flux:sidebar.group expandable icon="building-office-2" :heading="__('Organisation')"
                     class="app-sidebar-group grid" data-groupe="organisation">
                     <flux:sidebar.item icon="building-office" href="{{ route('departements.index') }}"
@@ -123,7 +123,7 @@
             @if ($voitPlanification)
             <flux:sidebar.group expandable icon="chart-bar-square" :heading="__('Planification Stratégique')"
                 class="app-sidebar-group grid" data-groupe="planification">
-                @if ($currentUser->hasAnyRole(['superadmin', 'dbcgoq']))
+                @if ($currentUser->hasAnyRole(['superadmin', 'dbcgoq', 'service-controle-gestion']))
                     <flux:sidebar.item icon="calendar-days" href="{{ route('exercices.index') }}"
                         :current="request()->routeIs('exercices.*')">
                         {{ __('Exercices') }}

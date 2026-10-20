@@ -5,6 +5,7 @@ namespace App\Http\Requests;
 use App\Models\User;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use Spatie\Permission\Models\Role;
 
 class UpdateUserRequest extends FormRequest
 {
@@ -28,7 +29,12 @@ class UpdateUserRequest extends FormRequest
             'poste' => 'nullable|string|max:100',
             'telephone' => 'nullable|string|max:30',
             'roles' => 'required|array|min:1',
-            'roles.*' => 'required|exists:roles,id',
+            // Le contrôle de gestion n'attribue ni superadmin ni dbcgoq.
+            'roles.*' => ['required', Rule::in(
+                Role::query()->get(['id', 'name'])
+                    ->filter(fn ($role) => $this->user()?->peutAttribuerRole($role->name))
+                    ->pluck('id')->all()
+            )],
         ];
     }
 }

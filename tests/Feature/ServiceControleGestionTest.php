@@ -6,6 +6,7 @@ use App\Models\Exercice;
 use App\Models\Extrant;
 use App\Models\Objectif;
 use App\Models\Resultat;
+use Database\Seeders\RoleAndPermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Spatie\Permission\Models\Role;
 
@@ -33,18 +34,20 @@ function activiteScg(Departement $departement, string $statut = 'valide'): Activ
     return $activite->fresh();
 }
 
-test('le rôle cumule les permissions des cellules planification et suivi & évaluation', function () {
+test('le rôle cumule les permissions des cellules planification et suivi & évaluation, plus l\'administration du référentiel', function () {
     seedRolesAndPermissions();
 
     $attendues = Role::findByName('agent-planification')->permissions->pluck('name')
         ->merge(Role::findByName('suivi-evaluation')->permissions->pluck('name'))
+        ->merge(RoleAndPermissionSeeder::ADMINISTRATION_CONTROLE_GESTION)
         ->unique()->sort()->values()->all();
 
     expect(Role::findByName('service-controle-gestion')->permissions->pluck('name')->sort()->values()->all())
         ->toBe($attendues)
-        // Il supprime les activités encore modifiables (brouillons, rejetées), sans les valider.
-        ->toContain('delete_activites')
-        ->not->toContain('validate_activites', 'view_users');
+        // Il supprime les activités encore modifiables (brouillons, rejetées), sans les valider ;
+        // il administre le référentiel sans rien y supprimer.
+        ->toContain('delete_activites', 'create_users', 'edit_departements', 'manage_exercices', 'create_resultats')
+        ->not->toContain('validate_activites', 'delete_users', 'delete_departements', 'delete_exercices', 'delete_objectifs', 'delete_resultats', 'delete_extrants');
 });
 
 test("le rôle n'est pas restreint à son entité", function () {
@@ -91,16 +94,67 @@ test("le rôle accède à la programmation, au cadre logique et à l'évaluation
     $this->actingAs($user)->get(route('evaluations.index', 'mi-parcours'))->assertOk();
 });
 
-test("le rôle est interdit sur l'administration et l'arbitrage", function (string $name) {
+test("le rôle est interdit sur l'arbitrage", function () {
     $user = userWithRole('service-controle-gestion', ['departement_id' => Departement::factory()->create()->id]);
 
-    $this->actingAs($user)->get(route($name))->assertForbidden();
+    $this->actingAs($user)->get(route('validations.index'))->assertForbidden();
+});
+
+test('le rôle consulte et ouvre les formulaires d\'ajout du référentiel', function (string $name) {
+    Exercice::factory()->actif()->create();
+    $user = userWithRole('service-controle-gestion', ['departement_id' => Departement::factory()->create()->id]);
+
+    $this->actingAs($user)->get(route($name))->assertOk();
 })->with([
-    'departements.index',
-    'users.index',
-    'exercices.index',
-    'validations.index',
+    'departements.index', 'departements.create',
+    'users.index', 'users.create',
+    'exercices.index', 'exercices.create',
+    'objectifs.index', 'objectifs.create',
+    'resultats.index', 'resultats.create',
+    'extrants.index', 'extrants.create',
 ]);
+
+test('le rôle ajoute et modifie sans pouvoir supprimer', function () {
+    $user = userWithRole('service-controle-gestion', ['departement_id' => Departement::factory()->create()->id]);
+    $exercice = Exercice::factory()->create(['annee' => 2041, 'statut' => 'brouillon']);
+    $dg = Departement::factory()->direction()->create();
+
+    $this->actingAs($user)->post(route('departements.store'), [
+        'code' => 'DC_SCG', 'nom' => 'Direction créée par le contrôle de gestion',
+        'type' => Departement::TYPE_DEPARTEMENT, 'parent_id' => $dg->id,
+    ])->assertSessionHasNoErrors();
+    expect(Departement::where('code', 'DC_SCG')->exists())->toBeTrue();
+
+    $this->actingAs($user)->put(route('exercices.update', $exercice), [
+        'annee' => 2041, 'date_debut' => '2041-01-01', 'date_fin' => '2041-12-31', 'statut' => 'brouillon', 'libelle' => 'Exercice 2041',
+    ])->assertSessionHasNoErrors();
+
+    foreach ([route('exercices.destroy', $exercice), route('departements.destroy', $dg)] as $suppression) {
+        $this->actingAs($user)->delete($suppression)->assertForbidden();
+    }
+    $this->actingAs($user)->post(route('exercices.annoncer-ouverture', $exercice))->assertForbidden();
+});
+
+test('le rôle n\'attribue ni ne gère les comptes superadmin ou dbcgoq', function () {
+    $user = userWithRole('service-controle-gestion', ['departement_id' => Departement::factory()->create()->id]);
+    $dbcgoq = userWithRole('dbcgoq');
+    $agent = userWithRole('agent-planification');
+
+    // Création d'un compte dbcgoq : refusée.
+    $this->actingAs($user)->post(route('users.store'), [
+        'name' => 'Nouveau DBCGOQ', 'email' => 'nouveau@test.local',
+        'roles' => [Role::findByName('dbcgoq')->id],
+    ])->assertSessionHasErrors('roles.0');
+
+    // Le formulaire ne propose pas ces rôles.
+    $this->actingAs($user)->get(route('users.create'))->assertOk()
+        ->assertViewHas('roles', fn ($roles) => ! $roles->pluck('name')->intersect(['superadmin', 'dbcgoq'])->count()
+            && $roles->pluck('name')->contains('agent-planification'));
+
+    // Un compte dbcgoq ne se modifie pas ; un compte ordinaire, si.
+    $this->actingAs($user)->get(route('users.edit', $dbcgoq))->assertForbidden();
+    $this->actingAs($user)->get(route('users.edit', $agent))->assertOk();
+});
 
 test("le rôle évalue une activité validée d'une autre entité", function () {
     $user = userWithRole('service-controle-gestion', ['departement_id' => Departement::factory()->create()->id]);

@@ -56,27 +56,41 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('budget-analysis', [BudgetAnalysisController::class, 'index'])->name('budget.analysis');
         Route::get('journal', [JournalController::class, 'index'])->name('journal.index');
 
-        // Ressource complète en un seul enregistrement : Laravel place la route `create`
-        // (GET exercices/create) AVANT `show` (GET exercices/{exercice}), évitant que
-        // « /exercices/create » soit capturé par le joker {exercice} (bug 404 précédent).
-        Route::resource('exercices', ExerciceController::class);
-        Route::post('exercices/{exercice}/activate', [ExerciceController::class, 'activate'])->name('exercices.activate');
+        // Annonce par e-mail à tous les comptes, et suppressions : DBCGOQ seule.
         Route::post('exercices/{exercice}/annoncer-ouverture', [ExerciceController::class, 'annoncerOuverture'])->name('exercices.annoncer-ouverture');
+        Route::resource('exercices', ExerciceController::class)->only(['destroy']);
+        Route::resource('objectifs', ObjectifController::class)->only(['destroy']);
+        Route::resource('resultats', ResultatController::class)->only(['destroy']);
+        Route::resource('extrants', ExtrantController::class)->only(['destroy']);
+        Route::resource('departements', DepartementController::class)->only(['destroy']);
+        Route::resource('users', UserController::class)->only(['destroy']);
+    });
+
+    // Administration du référentiel : le service contrôle de gestion consulte, ajoute
+    // et modifie (sans supprimer) entités, utilisateurs, exercices et cadre logique.
+    Route::middleware(['role:superadmin|dbcgoq|service-controle-gestion'])->group(function () {
+        // `create` est enregistrée avant `show` dans le même appel : « /exercices/create »
+        // n'est pas capturée par le joker {exercice} (bug 404 précédent).
+        Route::resource('exercices', ExerciceController::class)->except(['destroy']);
+        Route::post('exercices/{exercice}/activate', [ExerciceController::class, 'activate'])->name('exercices.activate');
         Route::put('exercices/{exercice}/calendrier', [ExerciceController::class, 'updateCalendrier'])->name('exercices.calendrier');
         Route::get('exercices/{exercice}/export', [ExerciceController::class, 'export'])->name('exercices.export');
 
         Route::post('objectifs/{objectif}/toggle-statut', [ObjectifController::class, 'toggleStatut'])->name('objectifs.toggle-statut');
-        Route::resource('objectifs', ObjectifController::class)->except(['index', 'show']);
+        Route::resource('objectifs', ObjectifController::class)->only(['create', 'store', 'edit', 'update']);
 
-        Route::resource('resultats', ResultatController::class)->except(['index', 'show']);
+        Route::resource('resultats', ResultatController::class)->only(['create', 'store', 'edit', 'update']);
         Route::post('resultats/{resultat}/toggle-status', [ResultatController::class, 'toggleStatus'])->name('resultats.toggle-status');
 
-        Route::resource('extrants', ExtrantController::class)->except(['index', 'show']);
+        Route::resource('extrants', ExtrantController::class)->only(['create', 'store', 'edit', 'update']);
         Route::post('extrants/{extrant}/toggle-status', [ExtrantController::class, 'toggleStatus'])->name('extrants.toggle-status');
 
-        Route::resource('departements', DepartementController::class)->except(['index', 'show']);
-        Route::resource('users', UserController::class)->except(['index', 'show']);
+        Route::resource('departements', DepartementController::class)->only(['create', 'store', 'edit', 'update']);
+        Route::resource('users', UserController::class)->only(['create', 'store', 'edit', 'update']);
         Route::post('users/{user}/reinitialiser-mot-de-passe', [UserController::class, 'reinitialiserMotDePasse'])->name('users.reinitialiser-mot-de-passe');
+
+        Route::resource('departements', DepartementController::class)->only(['index', 'show']);
+        Route::resource('users', UserController::class)->only(['index', 'show']);
     });
 
     Route::middleware(['role:superadmin|dbcgoq|responsable-programme'])->group(function () {
@@ -100,11 +114,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::resource('objectifs', ObjectifController::class)->only(['index', 'show']);
         Route::resource('resultats', ResultatController::class)->only(['index', 'show']);
         Route::resource('extrants', ExtrantController::class)->only(['index', 'show']);
-    });
-
-    Route::middleware(['role:superadmin|dbcgoq'])->group(function () {
-        Route::resource('departements', DepartementController::class)->only(['index', 'show']);
-        Route::resource('users', UserController::class)->only(['index', 'show']);
     });
 
     // L'évaluation est fermée à la cellule planification (agent-planification).

@@ -9,6 +9,19 @@ use Spatie\Permission\PermissionRegistrar;
 
 class RoleAndPermissionSeeder extends Seeder
 {
+    /**
+     * Administration du référentiel confiée au service contrôle de gestion :
+     * entités, utilisateurs, exercices et cadre logique (sans suppression).
+     */
+    public const ADMINISTRATION_CONTROLE_GESTION = [
+        'view_departements', 'create_departements', 'edit_departements',
+        'view_users', 'create_users', 'edit_users',
+        'view_exercices', 'manage_exercices',
+        'view_objectifs', 'create_objectifs', 'edit_objectifs',
+        'view_resultats', 'create_resultats', 'edit_resultats',
+        'view_extrants', 'create_extrants', 'edit_extrants',
+    ];
+
     public function run(): void
     {
         // Reset cached roles and permissions
@@ -19,6 +32,8 @@ class RoleAndPermissionSeeder extends Seeder
         $permissions = [
             // Objectifs
             'view_objectifs', 'create_objectifs', 'edit_objectifs', 'delete_objectifs', 'validate_objectifs',
+            // Résultats
+            'view_resultats', 'create_resultats', 'edit_resultats', 'delete_resultats',
             // Extrants
             'view_extrants', 'create_extrants', 'edit_extrants', 'delete_extrants',
             // Activités
@@ -28,7 +43,7 @@ class RoleAndPermissionSeeder extends Seeder
             // Utilisateurs
             'view_users', 'create_users', 'edit_users', 'delete_users',
             // Exercices
-            'view_exercices', 'manage_exercices',
+            'view_exercices', 'manage_exercices', 'delete_exercices',
             // Indicateurs
             'view_indicateurs', 'create_indicateurs', 'edit_indicateurs', 'delete_indicateurs', 'validate_indicateurs',
             // Missions
@@ -125,9 +140,13 @@ class RoleAndPermissionSeeder extends Seeder
             'view_exercices',
         ]);
 
-        // Service contrôle de gestion : union des deux cellules ci-dessus.
+        // Service contrôle de gestion : union des deux cellules ci-dessus, plus
+        // l'administration du référentiel (consulter, ajouter, modifier — sans supprimer).
         $roleServiceControleGestion->syncPermissions(
-            $roleAgentPlanification->permissions->merge($roleSuiviEvaluation->permissions)->unique('id')
+            $roleAgentPlanification->permissions
+                ->merge($roleSuiviEvaluation->permissions)
+                ->merge(Permission::whereIn('name', self::ADMINISTRATION_CONTROLE_GESTION)->get())
+                ->unique('id')
         );
     }
 }

@@ -108,8 +108,10 @@
                                 <div class="inline-flex items-center justify-end gap-1">
                                     <x-actions.activate :action="route('exercices.activate', $exercice)" label="Utiliser" />
                                     <x-actions.view :href="route('exercices.show', $exercice)" />
-                                    @can('manage_exercices')
+                                    @can('update', $exercice)
                                         <x-actions.edit :href="route('exercices.edit', $exercice)" />
+                                    @endcan
+                                    @can('delete', $exercice)
                                         <x-actions.delete :action="route('exercices.destroy', $exercice)"
                                             confirm="Supprimer cet exercice ?" />
                                     @endcan
