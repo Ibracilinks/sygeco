@@ -992,3 +992,39 @@ test('mission à l\'intérieur : la destination du document vient des étapes, a
         ->assertSee('"destination":"Sikasso, Koutiala"', false)
         ->assertSee('"code_budgetaire":"'.Mission::CODES_BUDGETAIRES[2].'"', false);
 });
+
+test('les litres de carburant et les montants sont arrondis à l\'entier supérieur, sans décimales', function () {
+    $admin = userWithRole('dbcgoq');
+
+    $this->actingAs($admin)->post(route('missions.store'), [
+        'type' => Mission::TYPE_REGION,
+        'reference' => '321/MSDS-CANAM-DAGRH',
+        'destination' => 'Ségou',
+        'departement_id' => Departement::factory()->create()->id,
+        'objet' => 'Mission avec carburant',
+        'date_depart' => '2026-11-02',
+        'date_retour' => '2026-11-03',
+        'statut' => 'brouillon',
+        // 630 km à 12 L/100 = 75,6 L → 76 L ; 76 × 875 = 66 500 FCFA.
+        'nombre_vehicules' => 1,
+        'distance_totale_km' => 630,
+        'consommation_aux_cent' => 12,
+        'prix_litre_carburant' => 875,
+        'participants' => [['nom_complet' => 'MOUSSA TRAORE', 'categorie' => 'cat_4']],
+        'etapes' => [['type_etape' => 'region', 'localite' => 'Ségou', 'nombre_jours' => 2]],
+        'signataires' => missionSignatairesPayload(),
+    ])->assertSessionHasNoErrors();
+
+    $mission = Mission::where('reference', '321/MSDS-CANAM-DAGRH')->firstOrFail();
+    expect($mission->litresTrajet())->toBe(76)
+        ->and((float) $mission->montant_carburant_trajet)->toBe(66500.0)
+        ->and(fmod((float) $mission->montant_total, 1.0))->toBe(0.0);
+
+    $this->actingAs($admin)->get(route('missions.show', $mission))->assertOk()
+        ->assertSee('66 500')
+        ->assertDontSee('75,6');
+
+    // Une valeur entière ne doit pas être poussée à l'entier suivant par une imprécision de calcul.
+    expect(Mission::arrondiSuperieur(500 * 8 / 100))->toBe(40)
+        ->and(Mission::arrondiSuperieur(0.1 + 0.2))->toBe(1);
+});

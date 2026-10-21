@@ -404,20 +404,20 @@ class Mission extends Model
 
                 $lignes[] = [
                     'nom' => $participant->nom_complet,
-                    'montant_par_jour' => $jours > 0 ? round($totalFrais / $jours, 2) : 0.0,
+                    'montant_par_jour' => $jours > 0 ? self::arrondiSuperieur($totalFrais / $jours) : 0.0,
                     'jours' => $jours,
-                    'frais_mission' => round($totalFrais, 2),
-                    'montant_par_nuitee' => $nuitees > 0 ? round($totalIndemnites / $nuitees, 2) : 0.0,
+                    'frais_mission' => self::arrondiSuperieur($totalFrais),
+                    'montant_par_nuitee' => $nuitees > 0 ? self::arrondiSuperieur($totalIndemnites / $nuitees) : 0.0,
                     'nuitees' => $nuitees,
-                    'indemnites' => round($totalIndemnites, 2),
-                    'total' => round($totalFrais + $totalIndemnites, 2),
+                    'indemnites' => self::arrondiSuperieur($totalIndemnites),
+                    'total' => self::arrondiSuperieur($totalFrais + $totalIndemnites),
                 ];
             }
 
             $resultat[] = [
                 'libelle' => $groupe['libelle'],
                 'lignes' => $lignes,
-                'sous_total' => round(collect($lignes)->sum('total'), 2),
+                'sous_total' => self::arrondiSuperieur(collect($lignes)->sum('total')),
             ];
         }
 
@@ -570,9 +570,9 @@ class Mission extends Model
             $indemnites = (float) ($categorie['indemnites'] ?? 0);
             // Les nuitées d'une mission à l'étranger découlent de la durée : jours − 1.
             $nuites = $defaultNuitees;
-            $sousTotal = round(($fraisMission * $jours) + ($indemnites * $nuites), 2);
-            $majoration = round($sousTotal * ((float) $this->zone_taux / 100), 2);
-            $total = round($sousTotal + $majoration, 2);
+            $sousTotal = self::arrondiSuperieur(($fraisMission * $jours) + ($indemnites * $nuites));
+            $majoration = self::arrondiSuperieur($sousTotal * ((float) $this->zone_taux / 100));
+            $total = self::arrondiSuperieur($sousTotal + $majoration);
 
             return array_merge($participant, [
                 'montant_par_jour' => $fraisMission,
@@ -590,22 +590,20 @@ class Mission extends Model
             $montantMajoration += (float) $participant['majoration_montant'];
         }
 
-        $this->montant_indemnites = round($montantBase, 2);
-        $this->montant_majoration = round($montantMajoration, 2);
+        $this->montant_indemnites = self::arrondiSuperieur($montantBase);
+        $this->montant_majoration = self::arrondiSuperieur($montantMajoration);
 
-        $this->frais_participation_total = round((int) $this->frais_participation_nombre * (float) $this->frais_participation_unitaire, 2);
-        $this->frais_visa_total = round((int) $this->frais_visa_nombre * (float) $this->frais_visa_unitaire, 2);
-        $this->billets_affaire_total = round((int) $this->billets_affaire_nombre * (float) $this->billets_affaire_unitaire, 2);
-        $this->billets_economique_total = round((int) $this->billets_economique_nombre * (float) $this->billets_economique_unitaire, 2);
-        $this->montant_autres_frais = round((float) $this->frais_participation_total + (float) $this->frais_visa_total, 2);
-        $this->montant_billets = round((float) $this->billets_affaire_total + (float) $this->billets_economique_total, 2);
-        $this->montant_total = round(
+        $this->frais_participation_total = self::arrondiSuperieur((int) $this->frais_participation_nombre * (float) $this->frais_participation_unitaire);
+        $this->frais_visa_total = self::arrondiSuperieur((int) $this->frais_visa_nombre * (float) $this->frais_visa_unitaire);
+        $this->billets_affaire_total = self::arrondiSuperieur((int) $this->billets_affaire_nombre * (float) $this->billets_affaire_unitaire);
+        $this->billets_economique_total = self::arrondiSuperieur((int) $this->billets_economique_nombre * (float) $this->billets_economique_unitaire);
+        $this->montant_autres_frais = self::arrondiSuperieur((float) $this->frais_participation_total + (float) $this->frais_visa_total);
+        $this->montant_billets = self::arrondiSuperieur((float) $this->billets_affaire_total + (float) $this->billets_economique_total);
+        $this->montant_total = self::arrondiSuperieur(
             (float) $this->montant_indemnites
             + (float) $this->montant_majoration
             + (float) $this->montant_autres_frais
-            + (float) $this->montant_billets,
-            2
-        );
+            + (float) $this->montant_billets);
 
         return $participants;
     }
@@ -654,44 +652,43 @@ class Mission extends Model
             }
 
             $joursMission = max(1, (int) $this->nombre_jours);
-            $montantParJour = round($montantMission / $joursMission, 2);
-            $montantParNuitee = $totalNuitees > 0 ? round($montantNuitee / $totalNuitees, 2) : 0;
+            $montantParJour = self::arrondiSuperieur($montantMission / $joursMission);
+            $montantParNuitee = $totalNuitees > 0 ? self::arrondiSuperieur($montantNuitee / $totalNuitees) : 0;
 
             return array_merge($participant, [
                 'montant_par_jour' => $montantParJour,
                 'montant_par_nuitee' => $montantParNuitee,
                 'nombre_nuitees' => $totalNuitees,
-                'sous_total' => round($total, 2),
+                'sous_total' => self::arrondiSuperieur($total),
                 'majoration_taux' => 0,
                 'majoration_montant' => 0,
-                'total_general' => round($total, 2),
+                'total_general' => self::arrondiSuperieur($total),
             ]);
         }, $participants);
 
-        $this->montant_indemnites = round(collect($participants)->sum('total_general'), 2);
+        $this->montant_indemnites = self::arrondiSuperieur(collect($participants)->sum('total_general'));
 
         // II- Carburant : trajet (distance × consommation) et circulation en ville.
         $prixLitre = (float) $this->prix_litre_carburant;
-        $litresTrajet = round((float) $this->distance_totale_km * (float) $this->consommation_aux_cent / 100, 2);
-        $litresVille = round((float) $this->litres_par_jour_ville * max(1, (int) $this->nombre_jours), 2);
+        // Litres et montants arrondis à l'entier supérieur : aucune décimale au budget.
+        $litresTrajet = $this->litresTrajet();
+        $litresVille = $this->litresVille();
 
-        $this->montant_carburant_trajet = round($litresTrajet * $prixLitre, 2);
-        $this->montant_carburant_ville = round($litresVille * $prixLitre, 2);
-        $this->montant_carburant = round((float) $this->montant_carburant_trajet + (float) $this->montant_carburant_ville, 2);
-        $this->montant_location_vehicule = round((int) $this->location_vehicule_jours * (float) $this->location_vehicule_tarif, 2);
-        $this->billets_economique_total = round((int) $this->billets_economique_nombre * (float) $this->billets_economique_unitaire, 2);
+        $this->montant_carburant_trajet = self::arrondiSuperieur($litresTrajet * $prixLitre);
+        $this->montant_carburant_ville = self::arrondiSuperieur($litresVille * $prixLitre);
+        $this->montant_carburant = self::arrondiSuperieur((float) $this->montant_carburant_trajet + (float) $this->montant_carburant_ville);
+        $this->montant_location_vehicule = self::arrondiSuperieur((int) $this->location_vehicule_jours * (float) $this->location_vehicule_tarif);
+        $this->billets_economique_total = self::arrondiSuperieur((int) $this->billets_economique_nombre * (float) $this->billets_economique_unitaire);
         $this->montant_billets = (float) $this->billets_economique_total;
 
-        $this->montant_autres_frais = round((float) $this->montant_location_vehicule + (float) $this->montant_peages, 2);
+        $this->montant_autres_frais = self::arrondiSuperieur((float) $this->montant_location_vehicule + (float) $this->montant_peages);
 
-        $this->montant_total = round(
+        $this->montant_total = self::arrondiSuperieur(
             (float) $this->montant_indemnites
             + (float) $this->montant_carburant
             + (float) $this->montant_location_vehicule
             + (float) $this->montant_billets
-            + (float) $this->montant_peages,
-            2
-        );
+            + (float) $this->montant_peages);
 
         return $participants;
     }
@@ -701,6 +698,26 @@ class Mission extends Model
      * jours retenu pour les calculs (`nombre_jours`) exclut, lui, les week-ends d'une
      * mission dans la même ville.
      */
+    /**
+     * Pas de décimales dans le budget : les litres sont arrondis à l'entier
+     * supérieur (75,6 L → 76 L). L'arrondi préalable à 6 décimales évite qu'une
+     * imprécision de calcul (40,000000001) ne fasse passer 40 L à 41 L.
+     */
+    public static function arrondiSuperieur(float $valeur): int
+    {
+        return (int) ceil(round($valeur, 6));
+    }
+
+    public function litresTrajet(): int
+    {
+        return self::arrondiSuperieur((float) $this->distance_totale_km * (float) $this->consommation_aux_cent / 100);
+    }
+
+    public function litresVille(): int
+    {
+        return self::arrondiSuperieur((float) $this->litres_par_jour_ville * max(1, (int) $this->nombre_jours));
+    }
+
     public function getDestinationsEtapesAttribute(): string
     {
         // Mission à l'intérieur : la destination du document est celle des étapes ;

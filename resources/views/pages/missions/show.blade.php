@@ -415,8 +415,9 @@
                                 <td class="border border-black px-1 py-1 text-center uppercase">Montant</td>
                             </tr>
                             @php
-                                $litresTrajet = (float) $mission->distance_totale_km * (float) $mission->consommation_aux_cent / 100;
-                                $litresVille = (float) $mission->litres_par_jour_ville * max(1, (int) $mission->nombre_jours);
+                                // Litres arrondis à l'entier supérieur, comme dans le calcul des montants.
+                                $litresTrajet = $mission->litresTrajet();
+                                $litresVille = $mission->litresVille();
                             @endphp
                             <tr>
                                 <td colspan="2" class="border border-black px-1 py-1 font-bold uppercase">Montant carburant trajet</td>
@@ -557,8 +558,8 @@
                     'lignes' => $groupe['lignes'],
                 ])->all(),
                 'nombre_vehicules' => $mission->nombre_vehicules,
-                'litres_trajet' => round((float) $mission->distance_totale_km * (float) $mission->consommation_aux_cent / 100, 2),
-                'litres_ville' => round((float) $mission->litres_par_jour_ville * max(1, (int) $mission->nombre_jours), 2),
+                'litres_trajet' => $mission->litresTrajet(),
+                'litres_ville' => $mission->litresVille(),
                 'prix_litre' => (float) $mission->prix_litre_carburant,
                 'montant_carburant_trajet' => (float) $mission->montant_carburant_trajet,
                 'montant_carburant_ville' => (float) $mission->montant_carburant_ville,
