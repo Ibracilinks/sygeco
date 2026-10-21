@@ -157,7 +157,18 @@
                         :current="request()->routeIs('budget.analysis')">
                         {{ __('Analyse Budgétaire') }}
                     </flux:sidebar.item>
+                @endif
 
+                {{-- Mêmes rôles que la route missions.analyse. --}}
+                @if ($currentUser->hasAnyRole(['superadmin', 'dbcgoq', 'service-controle-gestion', 'agent-planification']))
+                    <flux:sidebar.item icon="document-magnifying-glass" href="{{ route('missions.analyse') }}"
+                        :current="request()->routeIs('missions.analyse')">
+                        {{ __('Analyse des missions') }}
+                    </flux:sidebar.item>
+                @endif
+
+                {{-- Arbitrage et journal : superadmin et DBCGOQ seulement (cf. routes). --}}
+                @if ($currentUser->hasAnyRole(['superadmin', 'dbcgoq']))
                     <flux:sidebar.item icon="check-badge" href="{{ route('validations.index') }}"
                         :current="request()->routeIs('validations.*')">
                         {{ __('Arbitrage / Validation') }}

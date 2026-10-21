@@ -12,6 +12,9 @@
                     {{ $libelleTypeCourant ? 'Missions '.mb_strtolower($libelleTypeCourant) : 'Toutes les missions' }}
                 </h1>
                 <p class="text-sm text-slate-500 dark:text-slate-400">Ordres de mission avec participants, signataires et génération PDF.</p>
+                @if (auth()->user()->hasAnyRole(['superadmin', 'dbcgoq', 'service-controle-gestion', 'agent-planification']))
+                    <a href="{{ route('missions.analyse') }}" class="mt-1 inline-block text-sm font-medium text-sky-700 hover:underline dark:text-sky-300">Statistiques et doublons potentiels →</a>
+                @endif
             </div>
             @can('create_missions')
                 @if ($typeCourant)
