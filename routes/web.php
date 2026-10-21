@@ -144,21 +144,16 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/{activite}/pieces-jointes/{pieceJointe}', [ActiviteController::class, 'downloadPieceJointe'])->name('pieces-jointes.download');
     });
 
-    // Analyse de toutes les missions (statistiques, doublons potentiels), avant le
-    // joker {mission} : « /missions/analyse » ne doit pas être pris pour une fiche.
-    Route::middleware(['role:superadmin|dbcgoq|service-controle-gestion|agent-planification'])->group(function () {
+    // Analyse des missions (statistiques, doublons potentiels) pour le chargé des
+    // missions, avant le joker {mission} : « /missions/analyse » n'est pas une fiche.
+    Route::middleware(['role:superadmin|dbcgoq|service-budget'])->group(function () {
         Route::get('missions/analyse', [MissionAnalyseController::class, 'index'])->name('missions.analyse');
     });
 
     // Le chargé des missions (service-budget) n'a accès qu'à ce module.
     Route::middleware(['role:superadmin|dbcgoq|responsable-programme|service-budget'])->group(function () {
         Route::post('missions/{mission}/finaliser', [MissionController::class, 'finaliser'])->name('missions.finaliser');
-        Route::resource('missions', MissionController::class)->except(['show']);
-    });
-
-    // Fiche d'une mission : aussi consultable, en lecture seule, depuis l'analyse.
-    Route::middleware(['role:superadmin|dbcgoq|responsable-programme|service-budget|service-controle-gestion|agent-planification'])->group(function () {
-        Route::get('missions/{mission}', [MissionController::class, 'show'])->name('missions.show');
+        Route::resource('missions', MissionController::class);
     });
 
     // Barèmes des missions : montants révisables, liste des catégories/zones figée.

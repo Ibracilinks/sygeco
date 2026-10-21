@@ -106,9 +106,17 @@
                     </flux:sidebar.item>
 
                     <flux:sidebar.item icon="document-duplicate" href="{{ route('missions.index') }}"
-                        :current="request()->routeIs('missions.*') && $typeMissionCourant === null">
+                        :current="request()->routeIs('missions.*') && ! request()->routeIs('missions.analyse') && $typeMissionCourant === null">
                         {{ __('Toutes les missions') }}
                     </flux:sidebar.item>
+
+                    {{-- Mêmes rôles que la route missions.analyse. --}}
+                    @if ($currentUser->hasAnyRole(['superadmin', 'dbcgoq', 'service-budget']))
+                        <flux:sidebar.item icon="document-magnifying-glass" href="{{ route('missions.analyse') }}"
+                            :current="request()->routeIs('missions.analyse')">
+                            {{ __('Analyse des missions') }}
+                        </flux:sidebar.item>
+                    @endif
 
                     @if ($currentUser->hasAnyRole(['superadmin', 'dbcgoq']))
                         <flux:sidebar.item icon="adjustments-horizontal" href="{{ route('mission-baremes.index') }}"
@@ -156,14 +164,6 @@
                     <flux:sidebar.item icon="chart-pie" href="{{ route('budget.analysis') }}"
                         :current="request()->routeIs('budget.analysis')">
                         {{ __('Analyse Budgétaire') }}
-                    </flux:sidebar.item>
-                @endif
-
-                {{-- Mêmes rôles que la route missions.analyse. --}}
-                @if ($currentUser->hasAnyRole(['superadmin', 'dbcgoq', 'service-controle-gestion', 'agent-planification']))
-                    <flux:sidebar.item icon="document-magnifying-glass" href="{{ route('missions.analyse') }}"
-                        :current="request()->routeIs('missions.analyse')">
-                        {{ __('Analyse des missions') }}
                     </flux:sidebar.item>
                 @endif
 

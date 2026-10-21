@@ -7,8 +7,9 @@ use App\Support\AnalyseMissions;
 use Illuminate\Http\Request;
 
 /**
- * Vue d'ensemble des missions (toutes structures) : statistiques et doublons
- * potentiels, pour la DBCGOQ, le contrôle de gestion et la cellule planification.
+ * Vue d'ensemble des missions (toutes structures) : statistiques (destinations,
+ * carburant, dépenses par poste) et doublons potentiels, pour le chargé des
+ * missions et la DBCGOQ.
  */
 class MissionAnalyseController extends Controller
 {
@@ -27,7 +28,7 @@ class MissionAnalyseController extends Controller
         ];
 
         $missions = Mission::query()
-            ->with(['participants:id,mission_id,nom_complet', 'departement:id,code,nom', 'departements:id,code,nom'])
+            ->with(['participants:id,mission_id,nom_complet', 'etapes', 'departement:id,code,nom', 'departements:id,code,nom'])
             ->whereYear('date_depart', $filters['annee'])
             ->when($filters['type'] !== '', fn ($q) => $q->where('type', $filters['type']))
             ->when($filters['statut'] !== '', fn ($q) => $q->where('statut', $filters['statut']))

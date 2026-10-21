@@ -10,7 +10,7 @@ uses(RefreshDatabase::class);
 
 /*
 | Analyse des missions : toutes les missions, statistiques et doublons potentiels,
-| pour la DBCGOQ, le contrôle de gestion et la cellule planification.
+| pour le chargé des missions (service-budget) et la DBCGOQ.
 */
 
 /**
@@ -79,19 +79,36 @@ test('les statistiques comptent missions, budget, participants et jours-personne
         ->and($stats['brouillons'])->toBe(1);
 });
 
-test('la page est ouverte à la DBCGOQ, au contrôle de gestion et à la cellule planification, fiches comprises', function (string $role) {
+test('la page est ouverte au chargé des missions et à la DBCGOQ, dans la rubrique Missions', function (string $role) {
     $user = userWithRole($role, ['departement_id' => Departement::factory()->create()->id]);
-    $mission = missionAnalysee('ANA-1', now()->year.'-03-02', now()->year.'-03-05', ['Awa Diallo']);
+    missionAnalysee('ANA-1', now()->year.'-03-02', now()->year.'-03-05', ['Awa Diallo']);
 
     $this->actingAs($user)->get(route('missions.analyse'))->assertOk()->assertSee('ANA-1');
-    $this->actingAs($user)->get(route('dashboard'))->assertSee(route('missions.analyse'));
-    // La fiche s'ouvre en lecture seule depuis l'analyse.
-    $this->actingAs($user)->get(route('missions.show', $mission))->assertOk();
-})->with(['dbcgoq', 'service-controle-gestion', 'agent-planification']);
+    $this->actingAs($user)->get(route('missions.index'))->assertSee(route('missions.analyse'));
+})->with(['service-budget', 'dbcgoq']);
 
 test('la page est refusée aux autres profils', function (string $role) {
     $this->actingAs(userWithRole($role))->get(route('missions.analyse'))->assertForbidden();
-})->with(['responsable-programme', 'chef-service', 'suivi-evaluation', 'service-budget']);
+})->with(['responsable-programme', 'chef-service', 'suivi-evaluation', 'service-controle-gestion', 'agent-planification']);
+
+test('carburant, tickets, dépenses par poste et destinations des étapes', function () {
+    $interieur = missionAnalysee('INT-1', '2026-06-01', '2026-06-04', ['Awa Diallo'], [
+        'distance_totale_km' => 630, 'consommation_aux_cent' => 12, 'prix_litre_carburant' => 875,
+        'montant_carburant_trajet' => 66500, 'montant_carburant' => 66500, 'montant_indemnites' => 120000,
+    ]);
+    $interieur->etapes()->create(['ordre' => 1, 'type_etape' => 'region', 'bareme' => 'national', 'localite' => 'Sikasso', 'nombre_jours' => 3, 'date_depart' => '2026-06-01', 'date_retour' => '2026-06-03', 'nombre_nuitees' => 2]);
+    $memeVille = missionAnalysee('MV-1', '2026-06-10', '2026-06-11', ['Moussa Traoré'], ['type' => Mission::TYPE_MEME_VILLE, 'nombre_tickets_carburant' => 4]);
+
+    $stats = (new AnalyseMissions(collect([$interieur->load('etapes'), $memeVille->load('etapes')])))->statistiques();
+
+    expect($stats['tickets_carburant'])->toBe(4)
+        ->and($stats['carburant']['litres_trajet'])->toBe(76)
+        ->and($stats['carburant']['montant_trajet'])->toBe(66500.0)
+        ->and($stats['depenses']['Frais de mission et indemnités'])->toBe(120000.0)
+        ->and($stats['destinations_interieur'][0]['localite'])->toBe('Sikasso')
+        ->and($stats['budget_engage'])->toBe(200000.0)
+        ->and($stats['cout_moyen_mission'])->toBe(100000.0);
+});
 
 test('le contrôle de gestion ne voit ni l\'arbitrage ni le journal dans son menu', function () {
     $user = userWithRole('service-controle-gestion', ['departement_id' => Departement::factory()->create()->id]);

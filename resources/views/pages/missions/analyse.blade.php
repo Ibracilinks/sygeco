@@ -3,7 +3,7 @@
         <div class="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
             <div>
                 <h1 class="text-2xl font-semibold text-slate-900 dark:text-white">Analyse des missions</h1>
-                <p class="text-sm text-slate-500 dark:text-slate-400">Toutes les missions de {{ $filters['annee'] }}, toutes structures : statistiques et doublons potentiels.</p>
+                <p class="text-sm text-slate-500 dark:text-slate-400">Toutes les missions de {{ $filters['annee'] }}, toutes structures : destinations, carburant, dépenses et doublons potentiels.</p>
             </div>
             <form method="GET" action="{{ route('missions.analyse') }}" class="flex flex-wrap items-center gap-2">
                 <select name="annee" class="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100">
@@ -31,9 +31,9 @@
         <div class="grid grid-cols-2 gap-4 lg:grid-cols-5">
             @foreach ([
                 ['Missions', number_format($stats['nombre'], 0, ',', ' '), $stats['finalisees'].' finalisée(s) · '.$stats['brouillons'].' brouillon(s)', 'border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900'],
-                ['Budget cumulé (FCFA)', number_format($stats['budget'], 0, ',', ' '), null, 'border-sky-200 bg-sky-50 dark:border-sky-900/70 dark:bg-sky-950/30'],
-                ['Participants', number_format($stats['participants'], 0, ',', ' '), null, 'border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900'],
-                ['Jours-personnes', number_format($stats['jours_personnes'], 0, ',', ' '), 'jours × participants', 'border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900'],
+                ['Budget engagé (FCFA)', number_format($stats['budget_engage'], 0, ',', ' '), 'missions finalisées · '.number_format($stats['budget_prevu'], 0, ',', ' ').' en préparation', 'border-sky-200 bg-sky-50 dark:border-sky-900/70 dark:bg-sky-950/30'],
+                ['Coût moyen par mission', number_format($stats['cout_moyen_mission'], 0, ',', ' '), 'FCFA', 'border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900'],
+                ['Jours-personnes', number_format($stats['jours_personnes'], 0, ',', ' '), number_format($stats['cout_jour_personne'], 0, ',', ' ').' FCFA par jour-personne · '.$stats['participants'].' participant(s)', 'border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900'],
                 ['Doublons potentiels', $doublons->count(), $doublons->where('niveau', 'fort')->count().' à vérifier en priorité', $doublons->isNotEmpty() ? 'border-rose-200 bg-rose-50 dark:border-rose-900/70 dark:bg-rose-950/30' : 'border-emerald-200 bg-emerald-50 dark:border-emerald-900/70 dark:bg-emerald-950/30'],
             ] as [$libelle, $valeur, $aide, $classes])
                 <div class="rounded-xl border p-4 {{ $classes }}">
@@ -42,6 +42,76 @@
                     @if ($aide)<p class="mt-1 text-xs text-slate-500 dark:text-slate-400">{{ $aide }}</p>@endif
                 </div>
             @endforeach
+        </div>
+
+        {{-- Carburant et tickets --}}
+        <div class="grid grid-cols-2 gap-4 lg:grid-cols-4">
+            @foreach ([
+                ['Tickets carburant', number_format($stats['tickets_carburant'], 0, ',', ' '), 'missions même ville'],
+                ['Carburant trajet', number_format($stats['carburant']['montant_trajet'], 0, ',', ' ').' FCFA', number_format($stats['carburant']['litres_trajet'], 0, ',', ' ').' L · '.number_format($stats['carburant']['distance'], 0, ',', ' ').' km'],
+                ['Carburant ville', number_format($stats['carburant']['montant_ville'], 0, ',', ' ').' FCFA', number_format($stats['carburant']['litres_ville'], 0, ',', ' ').' L'],
+                ['Carburant total', number_format($stats['carburant']['montant_trajet'] + $stats['carburant']['montant_ville'], 0, ',', ' ').' FCFA', 'missions à l\'intérieur'],
+            ] as [$libelle, $valeur, $aide])
+                <div class="rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-900">
+                    <p class="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">{{ $libelle }}</p>
+                    <p class="mt-2 text-xl font-semibold text-slate-900 dark:text-white">{{ $valeur }}</p>
+                    <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">{{ $aide }}</p>
+                </div>
+            @endforeach
+        </div>
+
+        <div class="grid grid-cols-1 gap-5 xl:grid-cols-3">
+            {{-- Dépenses par poste --}}
+            <div class="rounded-xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900">
+                <h2 class="border-b border-slate-200 px-5 py-3 font-semibold text-slate-900 dark:border-slate-700 dark:text-white">Dépenses par poste</h2>
+                @php $totalDepenses = max(1, $stats['depenses']->sum()); @endphp
+                <table class="min-w-full text-sm">
+                    <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+                        @forelse ($stats['depenses'] as $poste => $montant)
+                            <tr>
+                                <td class="px-5 py-2 text-slate-800 dark:text-slate-100">
+                                    {{ $poste }}
+                                    <div class="mt-1 h-1.5 rounded bg-slate-100 dark:bg-slate-800"><div class="h-1.5 rounded bg-sky-500" style="width: {{ round($montant / $totalDepenses * 100) }}%"></div></div>
+                                </td>
+                                <td class="whitespace-nowrap px-5 py-2 text-right">{{ number_format($montant, 0, ',', ' ') }}</td>
+                            </tr>
+                        @empty
+                            <tr><td class="px-5 py-4 text-slate-500">Aucune dépense.</td></tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+
+            {{-- Destinations à l'intérieur --}}
+            <div class="rounded-xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900">
+                <h2 class="border-b border-slate-200 px-5 py-3 font-semibold text-slate-900 dark:border-slate-700 dark:text-white">Destinations à l'intérieur</h2>
+                <table class="min-w-full text-sm">
+                    <thead class="text-left text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400"><tr><th class="px-5 py-2">Localité</th><th class="px-5 py-2 text-right">Missions</th><th class="px-5 py-2 text-right">Jours</th></tr></thead>
+                    <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+                        @forelse ($stats['destinations_interieur'] as $ligne)
+                            <tr><td class="px-5 py-2 text-slate-800 dark:text-slate-100">{{ $ligne['localite'] }} <span class="text-xs text-slate-500">({{ $ligne['type'] }})</span></td><td class="px-5 py-2 text-right">{{ $ligne['missions'] }}</td><td class="px-5 py-2 text-right">{{ $ligne['jours'] }}</td></tr>
+                        @empty
+                            <tr><td colspan="3" class="px-5 py-4 text-slate-500">Aucune mission à l'intérieur.</td></tr>
+                        @endforelse
+                    </tbody>
+                </table>
+                <p class="px-5 py-2 text-xs text-slate-500 dark:text-slate-400">D'après les étapes des missions.</p>
+            </div>
+
+            {{-- Destinations à l'étranger --}}
+            <div class="rounded-xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900">
+                <h2 class="border-b border-slate-200 px-5 py-3 font-semibold text-slate-900 dark:border-slate-700 dark:text-white">Destinations à l'étranger</h2>
+                <table class="min-w-full text-sm">
+                    <thead class="text-left text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400"><tr><th class="px-5 py-2">Destination</th><th class="px-5 py-2 text-right">Missions</th><th class="px-5 py-2 text-right">Budget (FCFA)</th></tr></thead>
+                    <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+                        @forelse ($stats['destinations_etranger'] as $ligne)
+                            <tr><td class="px-5 py-2 text-slate-800 dark:text-slate-100">{{ $ligne['destination'] }}@if ($ligne['zone'])<span class="block text-xs text-slate-500">{{ $ligne['zone'] }}</span>@endif</td><td class="px-5 py-2 text-right">{{ $ligne['missions'] }}</td><td class="px-5 py-2 text-right">{{ number_format($ligne['budget'], 0, ',', ' ') }}</td></tr>
+                        @empty
+                            <tr><td colspan="3" class="px-5 py-4 text-slate-500">Aucune mission à l'étranger.</td></tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
         </div>
 
         {{-- Doublons potentiels --}}
