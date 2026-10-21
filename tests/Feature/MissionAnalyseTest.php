@@ -9,7 +9,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 uses(RefreshDatabase::class);
 
 /*
-| Analyse des missions : toutes les missions, statistiques et doublons potentiels,
+| Analyse des missions : toutes les missions et leurs statistiques,
 | pour le chargé des missions (service-budget) et la DBCGOQ.
 */
 
@@ -39,30 +39,6 @@ function missionAnalysee(string $reference, string $depart, string $retour, arra
 
     return $mission->load(['participants', 'departements', 'departement']);
 }
-
-test('une même personne sur deux missions simultanées est un doublon potentiel fort', function () {
-    $a = missionAnalysee('A-1', '2026-03-02', '2026-03-05', ['Moussa  Traoré', 'Awa Diallo']);
-    $b = missionAnalysee('B-1', '2026-03-04', '2026-03-08', ['MOUSSA TRAORE']);
-    // Mêmes personnes, mais périodes disjointes : pas de doublon.
-    $c = missionAnalysee('C-1', '2026-04-01', '2026-04-03', ['Moussa Traoré']);
-
-    $doublons = (new AnalyseMissions(collect([$a, $b, $c])))->doublons();
-
-    expect($doublons)->toHaveCount(1)
-        ->and($doublons[0]['niveau'])->toBe('fort')
-        ->and(collect($doublons[0]['missions'])->pluck('reference')->all())->toBe(['A-1', 'B-1'])
-        ->and($doublons[0]['detail'])->toBe('Moussa  Traoré');
-});
-
-test('même objet, même type et même date de départ : saisie en double', function () {
-    $a = missionAnalysee('A-2', '2026-05-04', '2026-05-06', ['Awa Diallo'], ['objet' => 'Supervision de Kayes']);
-    $b = missionAnalysee('B-2', '2026-05-04', '2026-05-06', ['Fatoumata Koné'], ['objet' => 'supervision de kayes']);
-
-    $doublons = (new AnalyseMissions(collect([$a, $b])))->doublons();
-
-    expect($doublons)->toHaveCount(1)
-        ->and($doublons[0]['motif'])->toBe('Même objet, même type, même date de départ');
-});
 
 test('les statistiques comptent missions, budget, participants et jours-personnes', function () {
     $a = missionAnalysee('A-3', '2026-01-10', '2026-01-12', ['Awa Diallo', 'Moussa Traoré']);

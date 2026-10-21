@@ -8,8 +8,7 @@ use Illuminate\Http\Request;
 
 /**
  * Vue d'ensemble des missions (toutes structures) : statistiques (destinations,
- * carburant, dépenses par poste) et doublons potentiels, pour le chargé des
- * missions et la DBCGOQ.
+ * carburant, dépenses par poste), pour le chargé des missions et la DBCGOQ.
  */
 class MissionAnalyseController extends Controller
 {
@@ -36,13 +35,8 @@ class MissionAnalyseController extends Controller
             ->orderByDesc('id')
             ->get();
 
-        $analyse = new AnalyseMissions($missions);
-        $stats = $analyse->statistiques();
-        $doublons = $analyse->doublons();
+        $stats = (new AnalyseMissions($missions))->statistiques();
 
-        // Missions concernées par un doublon potentiel, pour les signaler dans la liste.
-        $enDoublon = $doublons->flatMap(fn ($alerte) => collect($alerte['missions'])->pluck('id'))->unique()->flip();
-
-        return view('pages.missions.analyse', compact('missions', 'stats', 'doublons', 'enDoublon', 'filters', 'annees'));
+        return view('pages.missions.analyse', compact('missions', 'stats', 'filters', 'annees'));
     }
 }

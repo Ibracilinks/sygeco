@@ -160,6 +160,14 @@
                     {{ __('Programmation / Planification') }}
                 </flux:sidebar.item>
 
+                {{-- Mêmes rôles que la route activites.analyse. --}}
+                @if ($currentUser->hasAnyRole(['superadmin', 'dbcgoq', 'service-controle-gestion', 'agent-planification']))
+                    <flux:sidebar.item icon="document-magnifying-glass" href="{{ route('activites.analyse') }}"
+                        :current="request()->routeIs('activites.analyse')">
+                        {{ __('Analyse des activités') }}
+                    </flux:sidebar.item>
+                @endif
+
                 @if ($currentUser->hasAnyRole(['superadmin', 'dbcgoq', 'service-controle-gestion']))
                     <flux:sidebar.item icon="chart-pie" href="{{ route('budget.analysis') }}"
                         :current="request()->routeIs('budget.analysis')">

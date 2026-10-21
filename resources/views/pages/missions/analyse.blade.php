@@ -3,7 +3,7 @@
         <div class="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
             <div>
                 <h1 class="text-2xl font-semibold text-slate-900 dark:text-white">Analyse des missions</h1>
-                <p class="text-sm text-slate-500 dark:text-slate-400">Toutes les missions de {{ $filters['annee'] }}, toutes structures : destinations, carburant, dépenses et doublons potentiels.</p>
+                <p class="text-sm text-slate-500 dark:text-slate-400">Toutes les missions de {{ $filters['annee'] }}, toutes structures : destinations, carburant et dépenses.</p>
             </div>
             <form method="GET" action="{{ route('missions.analyse') }}" class="flex flex-wrap items-center gap-2">
                 <select name="annee" class="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100">
@@ -28,13 +28,12 @@
         </div>
 
         {{-- Chiffres clés --}}
-        <div class="grid grid-cols-2 gap-4 lg:grid-cols-5">
+        <div class="grid grid-cols-2 gap-4 lg:grid-cols-4">
             @foreach ([
                 ['Missions', number_format($stats['nombre'], 0, ',', ' '), $stats['finalisees'].' finalisée(s) · '.$stats['brouillons'].' brouillon(s)', 'border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900'],
                 ['Budget engagé (FCFA)', number_format($stats['budget_engage'], 0, ',', ' '), 'missions finalisées · '.number_format($stats['budget_prevu'], 0, ',', ' ').' en préparation', 'border-sky-200 bg-sky-50 dark:border-sky-900/70 dark:bg-sky-950/30'],
                 ['Coût moyen par mission', number_format($stats['cout_moyen_mission'], 0, ',', ' '), 'FCFA', 'border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900'],
                 ['Jours-personnes', number_format($stats['jours_personnes'], 0, ',', ' '), number_format($stats['cout_jour_personne'], 0, ',', ' ').' FCFA par jour-personne · '.$stats['participants'].' participant(s)', 'border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900'],
-                ['Doublons potentiels', $doublons->count(), $doublons->where('niveau', 'fort')->count().' à vérifier en priorité', $doublons->isNotEmpty() ? 'border-rose-200 bg-rose-50 dark:border-rose-900/70 dark:bg-rose-950/30' : 'border-emerald-200 bg-emerald-50 dark:border-emerald-900/70 dark:bg-emerald-950/30'],
             ] as [$libelle, $valeur, $aide, $classes])
                 <div class="rounded-xl border p-4 {{ $classes }}">
                     <p class="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">{{ $libelle }}</p>
@@ -114,44 +113,6 @@
             </div>
         </div>
 
-        {{-- Doublons potentiels --}}
-        <div class="rounded-xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900">
-            <div class="border-b border-slate-200 px-5 py-3 dark:border-slate-700">
-                <h2 class="font-semibold text-slate-900 dark:text-white">Doublons potentiels</h2>
-                <p class="text-xs text-slate-500 dark:text-slate-400">Une même personne sur deux missions simultanées, ou deux missions qui se ressemblent fortement. À vérifier : ce n'est pas forcément une erreur.</p>
-            </div>
-            @if ($doublons->isEmpty())
-                <p class="px-5 py-6 text-sm text-emerald-700 dark:text-emerald-300">Aucun doublon potentiel détecté.</p>
-            @else
-                <div class="overflow-x-auto">
-                    <table class="min-w-full divide-y divide-slate-200 text-sm dark:divide-slate-700">
-                        <thead class="bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500 dark:bg-slate-950 dark:text-slate-400">
-                            <tr><th class="px-5 py-2">Niveau</th><th class="px-5 py-2">Motif</th><th class="px-5 py-2">Détail</th><th class="px-5 py-2">Missions</th></tr>
-                        </thead>
-                        <tbody class="divide-y divide-slate-200 dark:divide-slate-700">
-                            @foreach ($doublons as $alerte)
-                                <tr class="align-top">
-                                    <td class="px-5 py-3">
-                                        <span class="rounded-full px-2 py-0.5 text-xs font-semibold {{ $alerte['niveau'] === 'fort' ? 'bg-rose-100 text-rose-800 dark:bg-rose-900/40 dark:text-rose-200' : 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-200' }}">{{ $alerte['niveau'] === 'fort' ? 'Fort' : 'Moyen' }}</span>
-                                    </td>
-                                    <td class="px-5 py-3 text-slate-800 dark:text-slate-100">{{ $alerte['motif'] }}</td>
-                                    <td class="px-5 py-3 text-slate-600 dark:text-slate-300">{{ Str::limit($alerte['detail'], 120) }}</td>
-                                    <td class="px-5 py-3">
-                                        @foreach ($alerte['missions'] as $mission)
-                                            <a href="{{ route('missions.show', $mission) }}" class="block font-medium text-sky-700 hover:underline dark:text-sky-300">
-                                                {{ $mission->reference }}
-                                            </a>
-                                            <span class="block text-xs text-slate-500 dark:text-slate-400">{{ \App\Models\Mission::TYPES[$mission->type] ?? $mission->type }} · {{ $mission->date_depart?->format('d/m/Y') }} → {{ $mission->date_retour?->format('d/m/Y') }}</span>
-                                        @endforeach
-                                    </td>
-                                </tr>
-                            @endforeach
-                        </tbody>
-                    </table>
-                </div>
-            @endif
-        </div>
-
         {{-- Répartitions --}}
         <div class="grid grid-cols-1 gap-5 xl:grid-cols-2">
             <div class="rounded-xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900">
@@ -205,10 +166,9 @@
                     </thead>
                     <tbody class="divide-y divide-slate-200 dark:divide-slate-700">
                         @forelse ($missions as $mission)
-                            <tr class="{{ isset($enDoublon[$mission->id]) ? 'bg-rose-50/60 dark:bg-rose-950/20' : '' }}">
+                            <tr>
                                 <td class="px-5 py-2">
                                     <a href="{{ route('missions.show', $mission) }}" class="font-medium text-sky-700 hover:underline dark:text-sky-300">{{ $mission->reference }}</a>
-                                    @isset($enDoublon[$mission->id])<span class="ml-1 rounded bg-rose-100 px-1.5 py-0.5 text-[10px] font-semibold text-rose-700 dark:bg-rose-900/40 dark:text-rose-200" title="Doublon potentiel">doublon ?</span>@endisset
                                 </td>
                                 <td class="px-5 py-2 text-slate-700 dark:text-slate-200">{{ Str::limit($mission->objet, 70) }}</td>
                                 <td class="px-5 py-2">{{ \App\Models\Mission::TYPES[$mission->type] ?? $mission->type }}</td>

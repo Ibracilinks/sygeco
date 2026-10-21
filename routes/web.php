@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\ActiviteAnalyseController;
 use App\Http\Controllers\ActiviteController;
 use App\Http\Controllers\BudgetAnalysisController;
 use App\Http\Controllers\DashboardController;
@@ -130,6 +131,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/create', [ActiviteController::class, 'create'])->name('create');
         Route::post('/', [ActiviteController::class, 'store'])->name('store');
         Route::get('/export', [ActiviteController::class, 'export'])->name('export');
+        // Analyse de la programmation (indicateurs, doublons potentiels), avant {activite}.
+        Route::get('/analyse', [ActiviteAnalyseController::class, 'index'])
+            ->middleware('role:superadmin|dbcgoq|service-controle-gestion|agent-planification')
+            ->name('analyse');
         Route::post('/non-programmee', [ActiviteController::class, 'storeNonProgrammee'])->name('non-programmee.store');
         Route::get('/{activite}', [ActiviteController::class, 'show'])->name('show');
         Route::get('/{activite}/edit', [ActiviteController::class, 'edit'])->name('edit');
