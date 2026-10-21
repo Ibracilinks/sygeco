@@ -503,6 +503,15 @@ const abscisses = (largeurs) => {
     });
 };
 
+/** Code budgétaire au centre de la ligne « Durée », s'il est renseigné. */
+const codeBudgetaire = (doc, mission, y, k) => {
+    if (!mission.code_budgetaire) return;
+    const pageW = doc.internal.pageSize.getWidth();
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(9 * k);
+    doc.text(`CODE BUDGETAIRE : ${mission.code_budgetaire}`, pageW / 2, y, { align: 'center' });
+};
+
 /** Montant en lettres, lieu, date et signatures : bas commun aux trois modèles. */
 const piedMission = (doc, mission, y, k, { lettres, ecartNom }) => {
     const pageW = doc.internal.pageSize.getWidth();
@@ -569,6 +578,7 @@ window.exportMissionMemeVillePDF = (button, dataElId) => exporterMission(button,
     texteSouligne(doc, 'DUREE :', margin, y, r(9));
     // Durée totale, week-ends compris ; le tableau garde les jours ouvrables.
     doc.text(`${mission.duree_totale ?? mission.nombre_jours} jour(s)`, margin + r(18), y);
+    codeBudgetaire(doc, mission, y, k);
     doc.setFont('helvetica', 'normal');
     doc.text(`${mission.date_depart} au ${mission.date_retour}`, margin, y + r(5));
 
@@ -665,6 +675,7 @@ window.exportMissionExterieurePDF = (button, dataElId) => exporterMission(button
     texteSouligne(doc, 'DUREE MISSION :', margin, y, r(9));
     doc.text(`${mission.nombre_jours} jour(s)`, margin + r(32), y);
     doc.text(String(mission.destination || ''), pageW - margin, y, { align: 'right' });
+    codeBudgetaire(doc, mission, y, k);
 
     doc.setFont('helvetica', 'normal');
     doc.text(`DUREE : Du ${mission.date_depart} au ${mission.date_retour}`, margin, y + r(5));
@@ -781,11 +792,12 @@ window.exportMissionExterieurePDF = (button, dataElId) => exporterMission(button
         ecartNom: 26,
     });
 
+    // Remonté vers les signatures ; l'espace dessous reçoit le visa.
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(r(9));
-    doc.text('VISA DU CONTROLEUR FINANCIER', pageW / 2, y + r(48), { align: 'center' });
+    doc.text('VISA DU CONTROLEUR FINANCIER', pageW / 2, y + r(40), { align: 'center' });
 
-    return y + r(50);
+    return y + r(66);
 });
 
 window.exportMissionRegionPDF = (button, dataElId) => exporterMission(button, dataElId, 'region', (doc, k, mission) => {
@@ -804,6 +816,7 @@ window.exportMissionRegionPDF = (button, dataElId) => exporterMission(button, da
     texteSouligne(doc, 'DUREE :', margin, y, r(9));
     doc.text(`${mission.nombre_jours} JOURS`, margin + r(18), y);
     doc.text(String(mission.destination || ''), pageW - margin, y, { align: 'right' });
+    codeBudgetaire(doc, mission, y, k);
     doc.setFont('helvetica', 'normal');
     doc.text(`DATE : Du ${mission.date_depart} au ${mission.date_retour}`, margin, y + r(5));
 

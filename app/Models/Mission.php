@@ -701,6 +701,15 @@ class Mission extends Model
      * jours retenu pour les calculs (`nombre_jours`) exclut, lui, les week-ends d'une
      * mission dans la même ville.
      */
+    public function getDestinationsEtapesAttribute(): string
+    {
+        // Mission à l'intérieur : la destination du document est celle des étapes ;
+        // les « régions de destination » saisies ne servent qu'aux statistiques.
+        $localites = $this->etapes->pluck('localite')->map(fn ($l) => trim((string) $l))->filter()->unique()->values();
+
+        return $localites->isNotEmpty() ? $localites->join(', ') : (string) $this->destination;
+    }
+
     public function getDureeTotaleAttribute(): int
     {
         return $this->date_depart && $this->date_retour

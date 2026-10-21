@@ -114,9 +114,14 @@
                         <span class="underline">Objet de la mission:</span> {{ $mission->objet }}
                     </p>
 
-                    <div class="mt-5 text-[12px]">
-                        <p><span class="font-bold uppercase underline">Durée :</span> <span class="font-bold">{{ $mission->duree_totale }} jour(s)</span></p>
-                        <p>{{ $mission->date_depart?->format('d/m/Y') }} au {{ $mission->date_retour?->format('d/m/Y') }}</p>
+                    <div class="mt-5 grid grid-cols-3 items-start text-[12px]">
+                        <div>
+                            <p><span class="font-bold uppercase underline">Durée :</span> <span class="font-bold">{{ $mission->duree_totale }} jour(s)</span></p>
+                            <p>{{ $mission->date_depart?->format('d/m/Y') }} au {{ $mission->date_retour?->format('d/m/Y') }}</p>
+                        </div>
+                        {{-- Code budgétaire au centre de la ligne « Durée ». --}}
+                        <p class="text-center font-bold">@if ($mission->code_budgetaire)<span class="uppercase underline">Code budgétaire :</span> {{ $mission->code_budgetaire }}@endif</p>
+                        <div></div>
                     </div>
 
                     <table class="mt-4 w-full border-collapse text-[11px]">
@@ -205,11 +210,13 @@
 
                     <p class="mt-5 text-center text-[12px] font-bold uppercase"><span class="underline">Objet de la mission :</span> {{ $mission->objet }}</p>
 
-                    <div class="mt-5 flex items-start justify-between text-[12px]">
+                    <div class="mt-5 grid grid-cols-3 items-start text-[12px]">
                         <div>
                             <p><span class="font-bold uppercase underline">Durée mission :</span> <span class="font-bold">{{ $mission->nombre_jours }} jour(s)</span></p>
                             <p>Durée : Du {{ $mission->date_depart?->format('d/m/Y') }} au {{ $mission->date_retour?->format('d/m/Y') }}</p>
                         </div>
+                        {{-- Code budgétaire au centre de la ligne « Durée ». --}}
+                        <p class="text-center font-bold">@if ($mission->code_budgetaire)<span class="uppercase underline">Code budgétaire :</span> {{ $mission->code_budgetaire }}@endif</p>
                         <div class="text-right">
                             <p class="font-bold">{{ $mission->destination }}</p>
                             <p class="text-[11px]">{{ $mission->zone_label }}</p>
@@ -318,7 +325,9 @@
                         @endforeach
                     </div>
 
-                    <p class="mt-10 text-center text-[12px] font-bold uppercase">Visa du contrôleur financier</p>
+                    {{-- Remonté vers les signatures ; l'espace dessous reçoit le visa. --}}
+                    <p class="mt-6 text-center text-[12px] font-bold uppercase">Visa du contrôleur financier</p>
+                    <div class="h-24" aria-hidden="true"></div>
                 </div>
             @else
                 {{-- Reproduction du budget officiel « missions à l'intérieur du pays ». --}}
@@ -346,12 +355,15 @@
 
                     <p class="mt-5 text-[12px] font-bold uppercase"><span class="underline">Objet de la mission :</span> {{ $mission->objet }}</p>
 
-                    <div class="mt-5 flex items-start justify-between text-[12px]">
+                    <div class="mt-5 grid grid-cols-3 items-start text-[12px]">
                         <div>
                             <p><span class="font-bold uppercase underline">Durée :</span> <span class="font-bold">{{ $mission->nombre_jours }} jours</span></p>
                             <p>Date : Du {{ $mission->date_depart?->format('d/m/Y') }} au {{ $mission->date_retour?->format('d/m/Y') }}</p>
                         </div>
-                        <p class="font-bold">{{ $mission->destination }}</p>
+                        {{-- Code budgétaire au centre de la ligne « Durée ». --}}
+                        <p class="text-center font-bold">@if ($mission->code_budgetaire)<span class="uppercase underline">Code budgétaire :</span> {{ $mission->code_budgetaire }}@endif</p>
+                        {{-- Destination : les localités des étapes (les régions saisies ne servent qu'aux statistiques). --}}
+                        <p class="text-right font-bold">{{ $mission->destinations_etapes }}</p>
                     </div>
 
                     <table class="mt-4 w-full border-collapse text-[10px]">
@@ -470,6 +482,7 @@
             'date_depart' => $mission->date_depart?->format('d/m/Y'),
             'date_retour' => $mission->date_retour?->format('d/m/Y'),
             'nombre_jours' => $mission->nombre_jours,
+            'code_budgetaire' => $mission->code_budgetaire,
             'lieu_signature' => $mission->lieu_signature,
             'signataires' => $mission->signataires->map(fn ($signataire) => [
                 'libelle' => $signataire->libelle,
@@ -533,7 +546,8 @@
     @else
         @php
             $missionPdf = $missionBase + [
-                'destination' => $mission->destination,
+                // Les localités des étapes, pas les régions saisies pour les statistiques.
+                'destination' => $mission->destinations_etapes,
                 'montant_total' => (float) $mission->montant_total,
                 'montant_total_en_lettres' => $mission->montant_total_en_lettres,
                 // Blocs « indemnités cercles / régions » du document officiel.

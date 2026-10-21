@@ -959,3 +959,36 @@ test('les étapes d\'une mission à l\'intérieur sont une région ou un cercle,
 
     expect($etapes->pluck('bareme')->all())->toBe(['national', 'meme_cercle']);
 });
+
+test('mission à l\'intérieur : la destination du document vient des étapes, avec le code budgétaire sur la ligne durée', function () {
+    $admin = userWithRole('dbcgoq');
+
+    $this->actingAs($admin)->post(route('missions.store'), [
+        'type' => Mission::TYPE_REGION,
+        'reference' => '320/MSDS-CANAM-DAGRH',
+        'departement_id' => Departement::factory()->create()->id,
+        'objet' => 'Supervision des étapes',
+        'code_budgetaire' => Mission::CODES_BUDGETAIRES[2],
+        // Région saisie pour les statistiques, absente des étapes.
+        'destination' => 'Kayes',
+        'date_depart' => '2026-11-02',
+        'date_retour' => '2026-11-05',
+        'statut' => 'brouillon',
+        'participants' => [['nom_complet' => 'MOUSSA TRAORE', 'categorie' => 'cat_4']],
+        'etapes' => [
+            ['type_etape' => 'region', 'localite' => 'Sikasso', 'nombre_jours' => 2],
+            ['type_etape' => 'cercle', 'localite' => 'Koutiala', 'nombre_jours' => 2],
+        ],
+        'signataires' => missionSignatairesPayload(),
+    ])->assertSessionHasNoErrors();
+
+    $mission = Mission::where('reference', '320/MSDS-CANAM-DAGRH')->firstOrFail();
+    expect($mission->destinations_etapes)->toBe('Sikasso, Koutiala');
+
+    $this->actingAs($admin)->get(route('missions.show', $mission))->assertOk()
+        ->assertSee('Sikasso, Koutiala')
+        ->assertSee(Mission::CODES_BUDGETAIRES[2])
+        // Données du PDF : destination des étapes et code budgétaire.
+        ->assertSee('"destination":"Sikasso, Koutiala"', false)
+        ->assertSee('"code_budgetaire":"'.Mission::CODES_BUDGETAIRES[2].'"', false);
+});
