@@ -26,9 +26,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
     // Dashboard parallèle « SAP Cloud Analytics » (présentation autonome, mêmes données),
-    // réservé au dbcgoq.
+    // réservé au dbcgoq et au service contrôle de gestion.
     Route::get('sap-analytics', [SapAnalyticsController::class, 'index'])
-        ->middleware('role:dbcgoq')
+        ->middleware('role:dbcgoq|service-controle-gestion')
         ->name('sap.analytics');
 
     // Manuel d'utilisation (documentation utilisateur), découpé en chapitres.
@@ -53,7 +53,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
     });
 
     Route::middleware(['role:superadmin|dbcgoq'])->group(function () {
-        Route::get('budget-analysis', [BudgetAnalysisController::class, 'index'])->name('budget.analysis');
         Route::get('journal', [JournalController::class, 'index'])->name('journal.index');
 
         // Annonce par e-mail à tous les comptes, et suppressions : DBCGOQ seule.
@@ -69,6 +68,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // Administration du référentiel : le service contrôle de gestion consulte, ajoute
     // et modifie (sans supprimer) entités, utilisateurs, exercices et cadre logique.
     Route::middleware(['role:superadmin|dbcgoq|service-controle-gestion'])->group(function () {
+        Route::get('budget-analysis', [BudgetAnalysisController::class, 'index'])->name('budget.analysis');
+
         // `create` est enregistrée avant `show` dans le même appel : « /exercices/create »
         // n'est pas capturée par le joker {exercice} (bug 404 précédent).
         Route::resource('exercices', ExerciceController::class)->except(['destroy']);

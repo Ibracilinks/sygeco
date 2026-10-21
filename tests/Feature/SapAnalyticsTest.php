@@ -57,7 +57,7 @@ test('le dashboard SAP est refusé aux autres profils, et absent de leur menu', 
 
     $this->actingAs($user)->get(route('sap.analytics'))->assertForbidden();
     $this->actingAs($user)->get(route('dashboard'))->assertDontSee(route('sap.analytics'));
-})->with(['superadmin', 'responsable-programme', 'chef-service', 'service-controle-gestion', 'suivi-evaluation']);
+})->with(['superadmin', 'responsable-programme', 'chef-service', 'suivi-evaluation']);
 
 test('un compte sans rôle n\'accède pas au dashboard SAP', function () {
     seedRolesAndPermissions();
@@ -65,6 +65,9 @@ test('un compte sans rôle n\'accède pas au dashboard SAP', function () {
     $this->actingAs(User::factory()->create())->get(route('sap.analytics'))->assertForbidden();
 });
 
-test('le lien SAP figure dans le menu du dbcgoq', function () {
-    $this->actingAs(userWithRole('dbcgoq'))->get(route('dashboard'))->assertSee(route('sap.analytics'));
-});
+test('le lien SAP figure dans le menu du dbcgoq et du contrôle de gestion, qui y accèdent', function (string $role) {
+    $user = userWithRole($role);
+
+    $this->actingAs($user)->get(route('dashboard'))->assertSee(route('sap.analytics'));
+    $this->actingAs($user)->get(route('sap.analytics'))->assertOk();
+})->with(['dbcgoq', 'service-controle-gestion']);

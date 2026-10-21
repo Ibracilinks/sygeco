@@ -202,3 +202,10 @@ test("le rôle évalue une activité validée d'une autre entité", function () 
         ->statut_execution->toBe('en_cours')
         ->maj_par->toBe($user->id);
 });
+
+test('le rôle accède à l\'analyse budgétaire, présente dans son menu', function () {
+    $user = userWithRole('service-controle-gestion', ['departement_id' => Departement::factory()->create()->id]);
+
+    $this->actingAs($user)->get(route('budget.analysis'))->assertOk();
+    $this->actingAs($user)->get(route('dashboard'))->assertSee(route('budget.analysis'));
+});

@@ -58,8 +58,8 @@
                         {{ __('Notifications') }}
                     </flux:sidebar.item>
                 @endunless
-                {{-- Tableau de pilotage SAP : réservé au dbcgoq. --}}
-                @if ($currentUser->hasRole('dbcgoq'))
+                {{-- Tableau de pilotage SAP : dbcgoq et service contrôle de gestion. --}}
+                @if ($currentUser->hasAnyRole(['dbcgoq', 'service-controle-gestion']))
                     <flux:sidebar.item icon="presentation-chart-line" href="{{ route('sap.analytics') }}" target="_blank">
                         SAP Cloud Analytics
                     </flux:sidebar.item>
@@ -152,7 +152,7 @@
                     {{ __('Programmation / Planification') }}
                 </flux:sidebar.item>
 
-                @if ($currentUser->hasAnyRole(['superadmin', 'dbcgoq']))
+                @if ($currentUser->hasAnyRole(['superadmin', 'dbcgoq', 'service-controle-gestion']))
                     <flux:sidebar.item icon="chart-pie" href="{{ route('budget.analysis') }}"
                         :current="request()->routeIs('budget.analysis')">
                         {{ __('Analyse Budgétaire') }}
