@@ -69,11 +69,12 @@ const texteCentreAjuste = (doc, valeur, centreX, y, largeur, taille) => {
  * blanc (`brouillon` vrai) mesure la hauteur à l'échelle 1 ; si elle dépasse la
  * page, hauteurs de ligne, espacements et polices sont réduits d'un même facteur.
  */
-const surUnePage = (dessiner, debutCorps) => {
+const surUnePage = (dessiner, debutCorps, reserveBas = 0) => {
     const nouveau = () => new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4', compress: true });
     const brouillon = nouveau();
     const fin = dessiner(brouillon, 1, true);
-    const disponible = brouillon.internal.pageSize.getHeight() - MARGE_MISSION - debutCorps;
+    // `reserveBas` : hauteur fixe en bas de page (ex. visa du contrôleur), jamais réduite.
+    const disponible = brouillon.internal.pageSize.getHeight() - MARGE_MISSION - debutCorps - reserveBas;
     const k = Math.min(1, disponible / Math.max(1, fin - debutCorps));
 
     const doc = nouveau();
@@ -84,6 +85,9 @@ const surUnePage = (dessiner, debutCorps) => {
 
 const MARGE_MISSION = 10;
 const DEBUT_CORPS_MISSION = 50;
+
+/** Espace (mm) sous « VISA DU CONTROLEUR FINANCIER », jamais réduit pour tenir sur la page. */
+const ESPACE_VISA_CONTROLEUR = 30;
 
 /** Désactive le bouton et affiche « Génération… » le temps de `tache`. */
 const avecBouton = async (button, tache) => {
@@ -536,7 +540,7 @@ const piedMission = (doc, mission, y, k, { lettres, ecartNom }) => {
  * dessine l'en-tête fixe puis le corps (`dessinerCorps(doc, k, mission)`,
  * qui renvoie l'ordonnée de fin) sur une page A4 portrait, et télécharge.
  */
-const exporterMission = async (button, dataElId, nomParDefaut, dessinerCorps) => {
+const exporterMission = async (button, dataElId, nomParDefaut, dessinerCorps, reserveBas = 0) => {
     const dataEl = document.getElementById(dataElId);
     if (!dataEl) {
         window.print();
@@ -552,7 +556,7 @@ const exporterMission = async (button, dataElId, nomParDefaut, dessinerCorps) =>
                 // La passe de mesure n'a pas besoin du logo : on évite de l'encoder deux fois.
                 enteteOfficiel(page, brouillon ? null : logo);
                 return dessinerCorps(page, k, mission);
-            }, DEBUT_CORPS_MISSION);
+            }, DEBUT_CORPS_MISSION, reserveBas);
 
             doc.save(`mission-${String(mission.reference || nomParDefaut).replace(/[^\w-]+/g, '_')}.pdf`);
         } catch (e) {
@@ -792,13 +796,15 @@ window.exportMissionExterieurePDF = (button, dataElId) => exporterMission(button
         ecartNom: 26,
     });
 
-    // Remonté vers les signatures ; l'espace dessous reçoit le visa.
+    // Remonté vers les signatures. L'espace dessous, qui reçoit le visa, est réservé
+    // hors réduction (ESPACE_VISA_CONTROLEUR) : il reste entier même si la liste des
+    // participants s'allonge. La mention garde elle aussi une taille fixe.
     doc.setFont('helvetica', 'bold');
-    doc.setFontSize(r(9));
+    doc.setFontSize(9);
     doc.text('VISA DU CONTROLEUR FINANCIER', pageW / 2, y + r(40), { align: 'center' });
 
-    return y + r(66);
-});
+    return y + r(42);
+}, ESPACE_VISA_CONTROLEUR);
 
 window.exportMissionRegionPDF = (button, dataElId) => exporterMission(button, dataElId, 'region', (doc, k, mission) => {
     const r = (valeur) => valeur * k;
